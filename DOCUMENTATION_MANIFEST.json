@@ -1,0 +1,30 @@
+{
+  "project": "BLS Learning PWA Documentation",
+  "file_count": 24,
+  "files": [
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "PLAN.md",
+    "README.md",
+    "docs/ACCEPTANCE_TESTS.md",
+    "docs/ACCESSIBILITY.md",
+    "docs/ANALYTICS.md",
+    "docs/ARCHITECTURE.md",
+    "docs/AUTH_ACCESS.md",
+    "docs/COMPONENTS.md",
+    "docs/CONTENT_PROTECTION.md",
+    "docs/DATA_MODEL.md",
+    "docs/DECISIONS.md",
+    "docs/DEPLOYMENT.md",
+    "docs/INDEX.md",
+    "docs/PRODUCT_SPEC.md",
+    "docs/PWA_OFFLINE.md",
+    "docs/QUIZ_ENGINE.md",
+    "docs/RESOURCE_MODULE.md",
+    "docs/ROADMAP.md",
+    "docs/SECURITY_MODEL.md",
+    "docs/TECHNICAL_SPEC.md",
+    "docs/TESTING.md",
+    "docs/UI_UX_SPEC.md"
+  ]
+}
