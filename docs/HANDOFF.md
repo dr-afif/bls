@@ -2,12 +2,13 @@
 
 ## Last updated
 
-2026-08-07
+2026-08-11
 
 ## Current milestone
 
 Milestone 1 is complete using owner-accepted proxy validation. Milestone 2
-production architecture and authentication planning is active.
+identity/access database foundation is verified; frontend authentication work
+is next.
 
 ## Current repository state
 
@@ -16,8 +17,10 @@ production architecture and authentication planning is active.
 - Fictional local data behind small repository interfaces.
 - Clinical Field Guide styling for learner and instructor screens.
 - Compact Operational Course Companion density for administrator screens.
-- No backend, real authentication, real users, protected content, persistence,
-  secure scoring, or real exports.
+- Hosted Supabase development database with the initial identity/access schema,
+  explicit grants, RLS policies, fictional organization seed, and generated
+  TypeScript types. The frontend is not connected yet, and there are no real
+  users, protected content, secure scoring, or real exports.
 
 ## Work completed
 
@@ -44,6 +47,12 @@ production architecture and authentication planning is active.
 - Approved conservative MVP authorization policies and added the initial local
   Supabase configuration, identity/access migration, fictional organization
   seed, explicit grants, deny-by-default RLS policies, and pgTAP tests.
+- Linked the repository to hosted development project
+  `zlaixhnyydxgbphgsetv`, confirmed it was empty, and applied the identity/access
+  migration and fictional seed.
+- Added a follow-up migration covering the four foreign keys identified by the
+  performance advisor and generated `src/lib/supabase/database.types.ts` from
+  the verified hosted schema.
 
 ## Decisions implemented
 
@@ -64,13 +73,19 @@ production architecture and authentication planning is active.
 - `npm run lint`: passed.
 - `npm run test`: passed (10 tests).
 - `npm run build`: passed (1,620 modules transformed).
-- The documentation-only milestone updates and initial backend files were
-  followed by successful typecheck, lint, 10 frontend tests, and production
-  build on 2026-08-07.
-- Local Supabase database verification is pending: Supabase CLI 2.111.0 hung
-  before creating the Postgres container in both full-stack and Postgres-only
-  startup attempts. Docker Desktop itself was healthy, and no migration SQL
-  error was emitted. Generated database types therefore remain pending.
+- The hosted migration, RLS-test portability correction, generated database
+  types, and documentation updates were followed by successful typecheck,
+  lint, 10 frontend tests, and production build (1,620 modules) on 2026-08-11.
+- Hosted Supabase project `zlaixhnyydxgbphgsetv`: active and healthy. Both
+  repository migrations are recorded remotely.
+- Hosted `supabase test db --linked`: passed all 15 pgTAP assertions.
+- Hosted security advisor: zero findings.
+- Hosted performance advisor: no missing-index findings. Remaining informational
+  notices identify unused indexes, which is expected before application traffic.
+- Post-test database check: zero Auth users, one fictional organization, zero
+  profiles, zero public tables without RLS, and no temporary CLI test permission.
+- TypeScript database types generated successfully from the hosted `public`
+  schema.
 - Local Markdown-link validation: passed.
 - Rendered browser and source inspections completed at 320×800, 375×812, 1024×768, and 1440×900 viewports.
 - Checks covered learner, instructor, and administrator headers; route focus to main content; skip navigation accessibility; presentation-view activation and Escape exit; invalid route heading hierarchy; horizontal reflow at 320px; and console warnings/errors.
@@ -78,10 +93,11 @@ production architecture and authentication planning is active.
 
 ## Exact recommended next action
 
-Resolve the local Supabase CLI startup hang, then run `supabase db reset`,
-`supabase test db`, the database advisors, and TypeScript type generation.
-Review and fix every migration or RLS failure before adding the browser client
-or connecting real user data.
+Add pinned `@supabase/supabase-js` and TanStack Query dependencies, establish
+validated public environment configuration, and add the typed browser client
+and query provider without replacing the fictional prototype repositories yet.
+Then implement authentication and account-status boundaries incrementally,
+keeping all authorization enforced by the verified database policies.
 
 ## Proxy-validation follow-up questions
 
@@ -124,8 +140,11 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 - Export buttons never generate files.
 - Analytics are illustrative and are not calculated from persisted attempts.
 - PWA offline caching and install behavior are not part of this milestone.
-- The initial database migration and RLS tests have not yet executed because
-  the local Supabase CLI hung before creating a database container.
+- The local Docker-based Supabase stack remains unavailable, so database
+  verification currently uses the hosted fictional development project.
+- The Supabase MCP connector still has stale project permissions, but the
+  authenticated Supabase CLI can access the project and completed migration,
+  testing, advisor, query, and type-generation operations.
 - The installed UI/UX skill package references a missing design-system
   generator, so its documented design and accessibility rules were applied
   directly.

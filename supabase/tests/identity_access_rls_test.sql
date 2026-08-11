@@ -1,13 +1,15 @@
 begin;
 
+set local role postgres;
 create extension if not exists pgtap with schema extensions;
-select plan(15);
+set local search_path = public, extensions;
+select extensions.plan(15);
 
-select has_table('public', 'profiles', 'profiles table exists');
-select has_table('public', 'user_roles', 'user_roles table exists');
-select has_table('public', 'cohorts', 'cohorts table exists');
-select has_table('public', 'cohort_members', 'cohort_members table exists');
-select has_table('public', 'audit_events', 'audit_events table exists');
+select extensions.has_table('public', 'profiles', 'profiles table exists');
+select extensions.has_table('public', 'user_roles', 'user_roles table exists');
+select extensions.has_table('public', 'cohorts', 'cohorts table exists');
+select extensions.has_table('public', 'cohort_members', 'cohort_members table exists');
+select extensions.has_table('public', 'audit_events', 'audit_events table exists');
 
 insert into public.organizations (id, name, slug)
 values
@@ -63,7 +65,7 @@ values (
 
 set local role anon;
 
-select throws_ok(
+select extensions.throws_ok(
   $$select count(*) from public.profiles$$,
   '42501', null,
   'anonymous users cannot read profiles'
@@ -73,19 +75,19 @@ set local role authenticated;
 set local request.jwt.claims =
   '{"sub":"30000000-0000-0000-0000-000000000001","role":"authenticated"}';
 
-select results_eq(
+select extensions.results_eq(
   'select count(*) from public.profiles', array[1::bigint],
   'learner sees only their own profile'
 );
-select results_eq(
+select extensions.results_eq(
   'select count(*) from public.cohort_members', array[1::bigint],
   'learner sees only their own cohort membership'
 );
-select results_eq(
+select extensions.results_eq(
   'select count(*) from public.audit_events', array[0::bigint],
   'learner cannot read audit events'
 );
-select throws_ok(
+select extensions.throws_ok(
   $$update public.profiles set account_status = 'active' where id = '30000000-0000-0000-0000-000000000001'$$,
   '42501', null,
   'learner cannot update protected account-status column'
@@ -94,11 +96,11 @@ select throws_ok(
 set local request.jwt.claims =
   '{"sub":"30000000-0000-0000-0000-000000000003","role":"authenticated"}';
 
-select results_eq(
+select extensions.results_eq(
   'select count(*) from public.profiles', array[2::bigint],
   'instructor sees self and learner in assigned cohort'
 );
-select results_eq(
+select extensions.results_eq(
   'select count(*) from public.cohort_members', array[2::bigint],
   'instructor sees assigned cohort members'
 );
@@ -106,19 +108,19 @@ select results_eq(
 set local request.jwt.claims =
   '{"sub":"30000000-0000-0000-0000-000000000004","role":"authenticated"}';
 
-select results_eq(
+select extensions.results_eq(
   'select count(*) from public.profiles', array[4::bigint],
   'administrator sees profiles only in their organization'
 );
-select results_eq(
+select extensions.results_eq(
   'select count(*) from public.audit_events', array[1::bigint],
   'administrator sees audit events in their organization'
 );
-select throws_ok(
+select extensions.throws_ok(
   $$insert into public.audit_events (action, entity_type) values ('forbidden.write', 'test')$$,
   '42501', null,
   'authenticated users cannot insert audit events directly'
 );
 
-select * from finish();
+select * from extensions.finish();
 rollback;

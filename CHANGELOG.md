@@ -11,6 +11,9 @@ The project uses a `Major.Minor.Patch` versioning convention.
 - Initial local Supabase configuration, identity/access migration, fictional
   organization seed, explicit Data API grants, deny-by-default RLS policies,
   and pgTAP authorization tests
+- Hosted Supabase development foundation with applied identity/access schema,
+  fictional organization seed, generated TypeScript database types, and
+  covering indexes for identity/access foreign keys
 - Production policy decisions for quiz review, cohort membership, post-test
   release, exports, and auditability
 - Validation-readiness documentation and testing materials
@@ -70,6 +73,8 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 - Corrected standalone state heading semantics (accessibility improvement)
 - Improved compact prototype/demo-data labeling on mobile to prevent overflow
+- Made the pgTAP authorization suite portable to the hosted Supabase CLI test
+  runner by explicitly selecting the database-owner role and extensions schema
 
 ### Security
 
@@ -80,6 +85,8 @@ The project uses a `Major.Minor.Patch` versioning convention.
 - Defined RLS requirement for browser-accessible data
 - Defined prohibition against frontend secret keys
 - Defined protected-content service-worker restrictions
+- Verified all 15 identity/access RLS assertions against the hosted development
+  database, with zero security-advisor findings and no real users introduced
 
 ## Versioning guidance
 
