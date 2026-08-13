@@ -196,3 +196,8 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 - The shared test password is intentionally temporary and weak. Replace it with
   unique generated passwords before any broader testing and never reuse these
   accounts for real learner information.
+- The OneDrive workspace's `.git` directory remains an inaccessible cloud
+  reparse point to command-line Git even though the visible project files are
+  hydrated. PR #1 was published from a verified temporary clone outside
+  OneDrive. Repair or replace the workspace checkout before the next Git-based
+  development session.
