@@ -8,6 +8,15 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Added
 
+- Hosted People and Cohorts operations with cohort scheduling, existing-user
+  assignment, retained membership lifecycle states, account access changes,
+  role-scoped learner/instructor reads, and append-only audit events
+- Authenticated administrator People/Cohorts screens, instructor assigned
+  cohort roster, learner physical-course detail, loading/error/empty states,
+  and responsive production workspace navigation
+- Milestone 3 pgTAP coverage for organization isolation, role matching,
+  administrator writes, learner/instructor reads, historical membership, and
+  automatic auditing
 - GitHub Actions verification and deployment workflow for the Vite production
   build on GitHub Pages, with public Supabase values supplied through repository
   variables
@@ -56,6 +65,16 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Changed
 
+- Replaced authenticated People and Cohorts placeholder data with typed
+  Supabase repositories while retaining local fictional resources, quizzes,
+  results, analytics, exports, and the separate `/demo` route tree
+- Regenerated TypeScript database types and advanced the active checkpoint to
+  Resources and Teaching Materials
+- Deployed the merged authentication foundation through GitHub Actions and
+  verified hosted sign-in, sign-out, and password recovery after configuring
+  the Supabase Auth Site URL and redirect allow-list
+- Marked the production architecture and authentication foundation complete
+  before proceeding through the People and Cohorts milestone
 - Configured an explicit `/bls/` production base path for GitHub Pages while
   keeping local Vite development at `/`
 - Verified the local frontend against the hosted development project's public

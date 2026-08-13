@@ -7,8 +7,8 @@ export function RoleRedirect() {
   const roles = data?.roles ?? [];
 
   if (roles.includes("super_admin") || roles.includes("admin")) {
-    return <Navigate replace to="/app/admin" />;
+    return <Navigate replace to="/app/admin/people" />;
   }
-  if (roles.includes("instructor")) return <Navigate replace to="/app/instructor" />;
-  return <Navigate replace to="/app/learner" />;
+  if (roles.includes("instructor")) return <Navigate replace to="/app/instructor/cohorts" />;
+  return <Navigate replace to="/app/learner/cohort" />;
 }
