@@ -96,9 +96,10 @@ export function DemoEntryPage() {
             <div className="mt-8 flex max-w-xl items-start gap-3 rounded-2xl border border-info/20 bg-info-soft p-4 text-sm text-info">
               <LockKeyhole aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
               <p>
-                <strong>Prototype boundary:</strong> authentication, protected
-                resources, post-test release enforcement and secure quiz
-                scoring are not implemented.
+                <strong>Prototype boundary:</strong> this demo does not use the
+                production sign-in or authorization flow. Protected resources,
+                post-test release enforcement and secure quiz scoring are not
+                implemented.
               </p>
             </div>
           </section>

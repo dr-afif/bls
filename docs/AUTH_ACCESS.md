@@ -4,7 +4,7 @@
 
 Use Supabase Auth for:
 
-- Email and password signup
+- Invite-only email and password account activation
 - Email verification
 - Login
 - Logout
@@ -16,7 +16,7 @@ Use Supabase Auth for:
 
 ### Invite-only
 
-Recommended default.
+Implemented default. Public self-registration is not exposed in the frontend.
 
 An administrator creates an invitation. The invited user verifies the email, completes the profile, and receives the configured entitlement.
 
@@ -174,3 +174,21 @@ Recommended guards:
 - `RequireRole`
 - `RequireCourseEntitlement`
 - `RequireQuizEligibility`
+
+## Current implementation boundary
+
+The frontend currently provides:
+
+- Validated public Supabase browser configuration
+- Persistent PKCE Auth sessions and automatic token refresh
+- Email/password sign-in and sign-out
+- Password-reset request, callback, and password-update screens
+- Profile, account-status, and role bootstrap through RLS-protected tables
+- Frontend guards for authentication, active account status, and application role
+- Explicit states for missing profiles, missing roles, pending, suspended,
+  expired, archived, configuration, network, and unauthorized access
+
+Public sign-up, administrative Auth actions, real course entitlements,
+protected resources, quiz security, and server-side scoring remain outside this
+milestone. Frontend guards are navigation controls only; RLS remains the data
+authorization boundary.

@@ -37,8 +37,8 @@ const stateContent: Record<
   { title: string; description: string; icon: LucideIcon; tone: string }
 > = {
   loading: {
-    title: "Loading demo content",
-    description: "Preparing the local prototype data for this screen.",
+    title: "Loading content",
+    description: "Preparing this screen.",
     icon: LoaderCircle,
     tone: "bg-primary-soft text-primary",
   },
@@ -64,7 +64,7 @@ const stateContent: Record<
   },
   error: {
     title: "We could not load this screen",
-    description: "Try again. No fictional prototype data has been changed.",
+    description: "Try again. No data has been changed.",
     icon: AlertCircle,
     tone: "bg-destructive-soft text-destructive",
   },

@@ -2,13 +2,13 @@
 
 ## Last updated
 
-2026-08-11
+2026-08-13
 
 ## Current milestone
 
-Milestone 1 is complete using owner-accepted proxy validation. Milestone 2
-identity/access database foundation is verified; frontend authentication work
-is next.
+Milestone 1 is complete using owner-accepted proxy validation. Milestone 2 now
+includes the verified identity/access database foundation and the frontend
+authentication/account-access slice. Real course data is the next milestone.
 
 ## Current repository state
 
@@ -19,8 +19,10 @@ is next.
 - Compact Operational Course Companion density for administrator screens.
 - Hosted Supabase development database with the initial identity/access schema,
   explicit grants, RLS policies, fictional organization seed, and generated
-  TypeScript types. The frontend is not connected yet, and there are no real
-  users, protected content, secure scoring, or real exports.
+  TypeScript types. The frontend now connects through validated public
+  configuration for invite-only sign-in, recovery, session restoration, and
+  RLS-backed profile/role checks. There are no real users, protected content,
+  secure scoring, or real exports.
 
 ## Work completed
 
@@ -53,6 +55,18 @@ is next.
 - Added a follow-up migration covering the four foreign keys identified by the
   performance advisor and generated `src/lib/supabase/database.types.ts` from
   the verified hosted schema.
+- Added pinned Supabase, TanStack Query, React Hook Form, Zod, and resolver
+  dependencies; a typed browser client and query provider; authentication
+  forms; account/role bootstrap; access-state handling; and guarded production
+  role landing routes.
+- Preserved all `/demo` routes and kept their fictional repositories separate
+  from authenticated production state.
+- Provisioned three email-confirmed fictional test accounts as active learner,
+  instructor, and administrator users in the demonstration organization. Each
+  provisioning action has a corresponding audit event.
+- Added a GitHub Pages workflow that runs typecheck, lint, tests, and the
+  production build before deploying `dist`, using repository variables for the
+  two public Supabase values.
 
 ## Decisions implemented
 
@@ -71,14 +85,27 @@ is next.
 
 - `npm run typecheck`: passed.
 - `npm run lint`: passed.
-- `npm run test`: passed (10 tests).
-- `npm run build`: passed (1,620 modules transformed).
+- `npm run test`: passed (14 tests across 9 files).
+- `npm run build`: passed (1,809 modules transformed; one non-blocking main
+  chunk size warning).
+- Local `.env.local` now contains the hosted development project's URL and
+  publishable browser key and remains excluded by `*.local` in `.gitignore`.
+- Hosted Auth settings responded with HTTP 200 using the publishable key; an
+  anonymous `profiles` request was rejected with HTTP 401 as intended.
 - The hosted migration, RLS-test portability correction, generated database
   types, and documentation updates were followed by successful typecheck,
   lint, 10 frontend tests, and production build (1,620 modules) on 2026-08-11.
 - Hosted Supabase project `zlaixhnyydxgbphgsetv`: active and healthy. Both
   repository migrations are recorded remotely.
 - Hosted `supabase test db --linked`: passed all 15 pgTAP assertions.
+- Hosted `supabase test db --linked` was rerun after frontend configuration on
+  2026-08-11 and again passed all 15 pgTAP assertions.
+- Direct hosted Auth checks passed for the learner, instructor, and
+  administrator test accounts. Each could load its active profile and expected
+  role through RLS and sign out successfully.
+- Rendered local UI checks passed for all three role redirects and sign-out,
+  learner session restoration after reload, learner denial from the admin
+  route, and browser console output.
 - Hosted security advisor: zero findings.
 - Hosted performance advisor: no missing-index findings. Remaining informational
   notices identify unused indexes, which is expected before application traffic.
@@ -93,11 +120,10 @@ is next.
 
 ## Exact recommended next action
 
-Add pinned `@supabase/supabase-js` and TanStack Query dependencies, establish
-validated public environment configuration, and add the typed browser client
-and query provider without replacing the fictional prototype repositories yet.
-Then implement authentication and account-status boundaries incrementally,
-keeping all authorization enforced by the verified database policies.
+Have a Supabase project owner configure the local and GitHub Pages Auth redirect
+URLs, then smoke-test the password-recovery callback on the deployed site.
+After that, design the cohort/entitlement/resource schema slice before replacing
+any mock repository.
 
 ## Proxy-validation follow-up questions
 
@@ -131,8 +157,10 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Known limitations
 
-- All data and state are local, fictional, and reset on reload.
-- The demo role selector is not authentication or authorization.
+- Learning, cohort, resource, quiz, result, and administrative data remains
+  local and fictional; only authentication plus profile/role bootstrap is live.
+- The demo role selector is intentionally separate from authentication and
+  authorization.
 - Post-test release, quiz security, scoring, access expiry, and route visibility
   are not server-enforced.
 - Resource viewers do not provide protected storage, signed URLs, watermark
@@ -148,3 +176,16 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 - The installed UI/UX skill package references a missing design-system
   generator, so its documented design and accessibility rules were applied
   directly.
+- Password recovery requires the deployed and local callback URLs to be added
+  to Supabase Auth configuration.
+- Password recovery remains unverified because the connected Supabase
+  collaborator receives HTTP 403 for Auth configuration changes. A project
+  owner must set the Site URL to `https://dr-afif.github.io/bls/` and allow
+  `http://127.0.0.1:5173/**`, `http://localhost:5173/**`, and
+  `https://dr-afif.github.io/bls/**`.
+- `npm audit` reports two moderate React Router 6 advisories. The remaining
+  supported fix is a breaking React Router 7 migration; the current app is
+  client-side only and constrains post-login redirects to internal paths.
+- The shared test password is intentionally temporary and weak. Replace it with
+  unique generated passwords before any broader testing and never reuse these
+  accounts for real learner information.
