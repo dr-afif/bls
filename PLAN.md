@@ -55,12 +55,12 @@ or work pauses for a user decision.
 
 ### Current work
 
-- Execute and validate the initial migration and RLS suite in the local
-  Supabase stack, then generate TypeScript database types.
-- Add the pinned Supabase browser client and TanStack Query foundation after
-  the database contract passes its tests.
-- Replace prototype session boundaries incrementally; do not connect real user
-  data until authorization tests pass.
+- Complete the hosted Auth redirect allow-list with a project-owner account and
+  verify password recovery on local and GitHub Pages deployments.
+- Use the three fictional learner, instructor, and administrator accounts for
+  authentication smoke testing only; do not introduce real user data.
+- Design the cohort, membership, and entitlement slice for Milestone 3 while
+  preserving RLS as the browser authorization boundary.
 
 ## Milestone 1 — Role-aware frontend prototype
 

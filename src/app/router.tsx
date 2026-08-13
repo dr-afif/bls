@@ -3,6 +3,10 @@ import { createHashRouter, Navigate } from "react-router-dom";
 
 import { RouteLoader } from "../components/common/route-loader";
 import { AdminShell } from "../features/admin/layouts/admin-shell";
+import {
+  RequireAccountAccess,
+  RequireAuthentication,
+} from "../features/auth/guards/access-guards";
 import { InstructorShell } from "../features/instructor/layouts/instructor-shell";
 import { LearnerShell } from "../features/learner/layouts/learner-shell";
 import { RouteErrorPage } from "../features/system/pages/route-error-page";
@@ -10,6 +14,36 @@ import { RouteErrorPage } from "../features/system/pages/route-error-page";
 const DemoEntryPage = lazy(() =>
   import("../features/demo/pages/demo-entry-page").then((module) => ({
     default: module.DemoEntryPage,
+  })),
+);
+const LoginPage = lazy(() =>
+  import("../features/auth/pages/login-page").then((module) => ({
+    default: module.LoginPage,
+  })),
+);
+const ForgotPasswordPage = lazy(() =>
+  import("../features/auth/pages/forgot-password-page").then((module) => ({
+    default: module.ForgotPasswordPage,
+  })),
+);
+const ResetPasswordPage = lazy(() =>
+  import("../features/auth/pages/reset-password-page").then((module) => ({
+    default: module.ResetPasswordPage,
+  })),
+);
+const AuthCallbackPage = lazy(() =>
+  import("../features/auth/pages/auth-callback-page").then((module) => ({
+    default: module.AuthCallbackPage,
+  })),
+);
+const RoleRedirect = lazy(() =>
+  import("../features/auth/pages/role-redirect").then((module) => ({
+    default: module.RoleRedirect,
+  })),
+);
+const ProductionWorkspacePage = lazy(() =>
+  import("../features/auth/pages/production-workspace-page").then((module) => ({
+    default: module.ProductionWorkspacePage,
   })),
 );
 const LearnerHomePage = lazy(() =>
@@ -115,8 +149,63 @@ function deferred(element: ReactNode) {
 export const router = createHashRouter([
   {
     path: "/",
-    element: deferred(<DemoEntryPage />),
+    element: deferred(<LoginPage />),
     errorElement: <RouteErrorPage />,
+  },
+  {
+    path: "/auth/login",
+    element: deferred(<LoginPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: "/auth/forgot-password",
+    element: deferred(<ForgotPasswordPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    path: "/auth/callback",
+    element: deferred(<AuthCallbackPage />),
+    errorElement: <RouteErrorPage />,
+  },
+  {
+    element: <RequireAuthentication />,
+    children: [
+      {
+        path: "/auth/reset-password",
+        element: deferred(<ResetPasswordPage />),
+      },
+      {
+        element: <RequireAccountAccess />,
+        children: [{ path: "/app", element: deferred(<RoleRedirect />) }],
+      },
+      {
+        element: <RequireAccountAccess allowedRoles={["learner", "instructor"]} />,
+        children: [
+          {
+            path: "/app/learner/*",
+            element: deferred(<ProductionWorkspacePage role="learner" />),
+          },
+        ],
+      },
+      {
+        element: <RequireAccountAccess allowedRoles={["instructor"]} />,
+        children: [
+          {
+            path: "/app/instructor/*",
+            element: deferred(<ProductionWorkspacePage role="instructor" />),
+          },
+        ],
+      },
+      {
+        element: <RequireAccountAccess allowedRoles={["admin", "super_admin"]} />,
+        children: [
+          {
+            path: "/app/admin/*",
+            element: deferred(<ProductionWorkspacePage role="admin" />),
+          },
+        ],
+      },
+    ],
   },
   {
     path: "/demo",

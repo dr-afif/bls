@@ -8,6 +8,19 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Added
 
+- GitHub Actions verification and deployment workflow for the Vite production
+  build on GitHub Pages, with public Supabase values supplied through repository
+  variables
+- Three fictional, audited hosted-development accounts for learner, instructor,
+  and administrator authentication smoke testing
+- Invite-only Supabase email/password sign-in, sign-out, password recovery,
+  persistent session restoration, and accessible authentication screens
+- Typed account/profile/role bootstrap with active-account and role-aware route
+  guards backed by the existing RLS-protected identity tables
+- TanStack Query provider, React Hook Form and Zod validation, validated public
+  environment configuration, and an explicit unconfigured-deployment state
+- Production access landing screens that keep protected learning content out of
+  scope while preserving the clearly labelled fictional demo at `/demo`
 - Initial local Supabase configuration, identity/access migration, fictional
   organization seed, explicit Data API grants, deny-by-default RLS policies,
   and pgTAP authorization tests
@@ -43,6 +56,15 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Changed
 
+- Configured an explicit `/bls/` production base path for GitHub Pages while
+  keeping local Vite development at `/`
+- Verified the local frontend against the hosted development project's public
+  Auth endpoint and confirmed anonymous profile access remains denied by the
+  existing database grants and RLS boundary
+- Made the production authentication entry the root route while retaining all
+  existing demo routes and mock repositories
+- Updated compatible dependencies and removed all high-severity npm audit
+  findings; a React Router v7 migration remains deferred as a breaking change
 - Accepted the simulated-persona findings as owner-approved proxy validation,
   approved the prototype information architecture for backend planning, and
   retained an explicit evidence boundary around the absence of recruited users

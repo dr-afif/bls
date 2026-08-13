@@ -8,13 +8,25 @@ instructors delivering it, and administrators coordinating people, cohorts,
 resources, quizzes, and results. It is resource-first and operational; it is
 not a self-paced LMS.
 
-The repository currently contains a role-aware, frontend-only prototype with
-distinct learner, instructor, and administrator experiences. It uses fictional
-local data and implements the approved resource-first information architecture.
+The repository now contains an invite-only Supabase authentication and
+account-access foundation alongside the role-aware frontend prototype. The
+learner, instructor, and administrator demo experiences still use fictional
+local data; protected learning content is not connected yet.
 Read
 [Product direction](docs/PRODUCT_DIRECTION.md),
 [Development handoff](docs/HANDOFF.md), and [Plan](PLAN.md) before planning
 new work.
+
+## Run locally
+
+1. Copy `.env.example` to `.env.local`.
+2. Add the project's public Supabase publishable key. Never add a secret or
+   service-role key.
+3. Install dependencies with `npm install`.
+4. Start the application with `npm run dev`.
+
+The production entry is `/#/`; the authentication-free fictional prototype is
+available at `/#/demo`.
 
 ## Recommended stack
 

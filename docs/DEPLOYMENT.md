@@ -38,7 +38,28 @@ email-provider credentials
 certificate secrets
 ```
 
+Copy `.env.example` to `.env.local` for local development. Configure the same
+two public values in the frontend build environment. The publishable key is
+designed for browser use with RLS; it is not a substitute for database
+policies. Never prefix secret or service-role credentials with `VITE_`.
+
+For Auth redirects, allow the deployed GitHub Pages URL and local Vite URL in
+the Supabase Auth URL configuration. The application uses hash routing and a
+PKCE callback at `/#/auth/callback`.
+
 ## GitHub Actions
+
+The repository deploys the Vite `dist` output through
+`.github/workflows/deploy-pages.yml`. Configure these GitHub Actions repository
+variables before running the workflow:
+
+```text
+VITE_SUPABASE_URL
+VITE_SUPABASE_PUBLISHABLE_KEY
+```
+
+The workflow fails closed when either public value is missing. GitHub Pages
+uses the `/bls/` Vite base path and hash-based application routes.
 
 Recommended workflows:
 
