@@ -119,6 +119,9 @@ export type Database = {
       }
       cohorts: {
         Row: {
+          code: string
+          contact_name: string | null
+          contact_phone: string | null
           created_at: string
           created_by: string | null
           description: string | null
@@ -126,12 +129,16 @@ export type Database = {
           id: string
           name: string
           organization_id: string
+          preparation_notes: string | null
           start_at: string
           status: Database["public"]["Enums"]["cohort_status"]
           updated_at: string
           venue: string | null
         }
         Insert: {
+          code: string
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -139,12 +146,16 @@ export type Database = {
           id?: string
           name: string
           organization_id: string
+          preparation_notes?: string | null
           start_at: string
           status?: Database["public"]["Enums"]["cohort_status"]
           updated_at?: string
           venue?: string | null
         }
         Update: {
+          code?: string
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -152,6 +163,7 @@ export type Database = {
           id?: string
           name?: string
           organization_id?: string
+          preparation_notes?: string | null
           start_at?: string
           status?: Database["public"]["Enums"]["cohort_status"]
           updated_at?: string

@@ -55,20 +55,39 @@ Suggested roles:
 
 - `id`
 - `organization_id`
+- `code`
 - `name`
 - `description`
+- `venue`
 - `start_at`
 - `end_at`
 - `status`
+- `contact_name`
+- `contact_phone`
+- `preparation_notes`
+- `created_by`
 - `created_at`
 - `updated_at`
+
+The implemented Milestone 3 schema enforces unique case-insensitive cohort
+codes within an organization, an end time after the start time, and audited
+administrator-only browser writes.
 
 ### `cohort_members`
 
 - `cohort_id`
 - `user_id`
+- `member_role`
+- `membership_status`
 - `joined_at`
+- `completed_at`
 - `added_by`
+
+Implemented membership validation requires the profile and cohort to share an
+organization and requires `member_role` to match an assigned application role.
+Learners may have only one active membership; removed and completed records are
+retained rather than deleted. Assigned instructors may read the permitted
+roster, while learners read only their own membership.
 
 ## Courses and access
 

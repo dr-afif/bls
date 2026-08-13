@@ -6,15 +6,17 @@
 
 ## Current milestone
 
-Milestone 1 is complete using owner-accepted proxy validation. Milestone 2 now
-includes the verified identity/access database foundation and the frontend
-authentication/account-access slice. Real course data is the next milestone.
+Milestones 1 and 2 are complete. Milestone 3, People and Cohorts, is complete
+in the hosted development environment with audited administrator writes and
+role-scoped learner/instructor reads. Milestone 4, Resources and Teaching
+Materials, is next.
 
 ## Current repository state
 
 - React, TypeScript, Vite, Tailwind, React Router, and Vitest frontend.
 - Distinct learner, instructor, and administrator route trees and shells.
-- Fictional local data behind small repository interfaces.
+- Fictional local data remains for resources, quizzes, results, and analytics;
+  authenticated People and Cohorts data now uses typed Supabase repositories.
 - Clinical Field Guide styling for learner and instructor screens.
 - Compact Operational Course Companion density for administrator screens.
 - Hosted Supabase development database with the initial identity/access schema,
@@ -67,6 +69,20 @@ authentication/account-access slice. Real course data is the next milestone.
 - Added a GitHub Pages workflow that runs typecheck, lint, tests, and the
   production build before deploying `dist`, using repository variables for the
   two public Supabase values.
+- Merged PR #1, deployed the authentication foundation through GitHub Actions,
+  configured the hosted Supabase Site URL and redirect allow-list, and
+  successfully smoke-tested sign-in, sign-out, and password recovery on the
+  deployed application.
+- Added cohort operational fields, same-organization and role-matching
+  membership invariants, administrator-only lifecycle writes, consolidated
+  profile-update RLS, and automatic audit triggers.
+- Added a fictional hosted cohort with learner and instructor assignments,
+  regenerated database types, and connected authenticated People/Cohorts
+  repositories through TanStack Query.
+- Replaced the production placeholder with accessible role-specific workspaces:
+  administrator People/Cohorts management, instructor assigned-cohort roster,
+  and learner physical-course details. The separate `/demo` experience remains
+  unchanged.
 
 ## Decisions implemented
 
@@ -85,7 +101,7 @@ authentication/account-access slice. Real course data is the next milestone.
 
 - `npm run typecheck`: passed.
 - `npm run lint`: passed.
-- `npm run test`: passed (14 tests across 9 files).
+- `npm run test`: passed (19 tests across 11 files).
 - `npm run build`: passed (1,809 modules transformed; one non-blocking main
   chunk size warning).
 - Local `.env.local` now contains the hosted development project's URL and
@@ -117,15 +133,32 @@ authentication/account-access slice. Real course data is the next milestone.
 - Rendered browser and source inspections completed at 320×800, 375×812, 1024×768, and 1440×900 viewports.
 - Checks covered learner, instructor, and administrator headers; route focus to main content; skip navigation accessibility; presentation-view activation and Escape exit; invalid route heading hierarchy; horizontal reflow at 320px; and console warnings/errors.
 - Identified and corrected two objective UI defects: proper semantic `h1` usage for the standalone not-found route, and compacting the prototype/demo data tags into a space-efficient mobile header row without page-level horizontal overflow.
+- PR #1 merged into `main` at commit
+  `30574a98b18a57b587472a98c9a4ffad1b19163e`; the GitHub Pages deployment
+  completed successfully.
+- Product-owner smoke testing confirmed deployed sign-in, sign-out, and
+  password-recovery behaviour after the production and local redirect URLs
+  were configured in Supabase Auth.
+- Hosted Milestone 3 migrations through
+  `20260813035236_consolidate_profile_update_policy.sql` are applied.
+- Hosted pgTAP suites pass all 38 assertions across identity/access and
+  People/Cohorts authorization, invariants, lifecycle writes, and auditing.
+- Rendered local browser verification passed for administrator People/Cohorts,
+  learner course detail, instructor permitted roster, role routing, sign-out,
+  and learner denial from the administrator route.
+- Final typecheck, lint, 19 frontend tests, and GitHub Pages production build
+  pass (1,815 modules transformed; existing non-blocking chunk warning).
+- Supabase security advisor reports no schema/RLS findings. The remaining Auth
+  warning is project-level leaked-password protection being disabled.
+- Performance advisor reports only expected unused-index informational notices
+  before production traffic.
 
 ## Exact recommended next action
 
-Have a repository owner change GitHub Pages **Build and deployment → Source** to
-**GitHub Actions**, and have a Supabase project owner configure the local and
-GitHub Pages Auth redirect URLs. Merge PR #1, confirm the Pages workflow, then
-smoke-test the password-recovery callback on the deployed site. After that,
-design the cohort/entitlement/resource schema slice before replacing any mock
-repository.
+Begin Milestone 4 by designing resource metadata and immutable resource
+versions, audience/topic/teaching-stage taxonomy, a private Storage bucket, and
+short-lived entitlement-checked access. Define Storage and table RLS tests
+before replacing the Guides or Teaching Kit mock repositories.
 
 ## Proxy-validation follow-up questions
 
@@ -159,8 +192,9 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Known limitations
 
-- Learning, cohort, resource, quiz, result, and administrative data remains
-  local and fictional; only authentication plus profile/role bootstrap is live.
+- Resource, quiz, result, analytics, and export data remains local and
+  fictional. Authenticated People and Cohorts use hosted fictional development
+  data; no real learner information is present.
 - The demo role selector is intentionally separate from authentication and
   authorization.
 - Post-test release, quiz security, scoring, access expiry, and route visibility
@@ -172,32 +206,20 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 - PWA offline caching and install behavior are not part of this milestone.
 - The local Docker-based Supabase stack remains unavailable, so database
   verification currently uses the hosted fictional development project.
-- The Supabase MCP connector still has stale project permissions, but the
-  authenticated Supabase CLI can access the project and completed migration,
-  testing, advisor, query, and type-generation operations.
 - The installed UI/UX skill package references a missing design-system
   generator, so its documented design and accessibility rules were applied
   directly.
-- Password recovery requires the deployed and local callback URLs to be added
-  to Supabase Auth configuration.
-- Password recovery remains unverified because the connected Supabase
-  collaborator receives HTTP 403 for Auth configuration changes. A project
-  owner must set the Site URL to `https://dr-afif.github.io/bls/` and allow
-  `http://127.0.0.1:5173/**`, `http://localhost:5173/**`, and
-  `https://dr-afif.github.io/bls/**`.
-- GitHub Pages remains on the legacy `main`-branch publishing source. The
-  connected collaborator can push code and set repository variables but cannot
-  change the Pages source through the repository administration API. A
-  repository owner must select **GitHub Actions** before the new deployment
-  workflow can publish the Vite build.
 - `npm audit` reports two moderate React Router 6 advisories. The remaining
   supported fix is a breaking React Router 7 migration; the current app is
   client-side only and constrains post-login redirects to internal paths.
 - The shared test password is intentionally temporary and weak. Replace it with
   unique generated passwords before any broader testing and never reuse these
   accounts for real learner information.
+- Supabase Auth leaked-password protection is disabled. Enable it and replace
+  the shared fictional test password before broader or real-user testing.
 - The OneDrive workspace's `.git` directory remains an inaccessible cloud
   reparse point to command-line Git even though the visible project files are
-  hydrated. PR #1 was published from a verified temporary clone outside
-  OneDrive. Repair or replace the workspace checkout before the next Git-based
-  development session.
+  hydrated. A healthy replacement clone now exists at
+  `C:\Users\DR-AFIF\Documents\GitHub\bls`; use that non-OneDrive checkout for
+  Git-based development and publication. Keep the OneDrive copy only until all
+  unpublished work has been confirmed in GitHub.

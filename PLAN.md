@@ -25,7 +25,7 @@ Before planning or implementing work, read:
 Update `docs/HANDOFF.md` when a milestone ends, the product direction changes,
 or work pauses for a user decision.
 
-## Current checkpoint — Production architecture and authentication
+## Current checkpoint — Resources and teaching materials
 
 ### Completed
 
@@ -52,15 +52,20 @@ or work pauses for a user decision.
   the current production milestone
 - Recorded the conservative MVP authorization policies and created the initial
   local Supabase identity/access migration, seed, and pgTAP RLS suite
+- Completed and deployed the hosted identity/access and frontend authentication
+  foundation, including role routing, sign-out, session restoration, and
+  password recovery
+- Configured GitHub Pages deployment and the Supabase Auth production/local
+  redirect allow-list
+- Completed hosted People and Cohorts schema, RLS, audit triggers, fictional
+  fixtures, typed repositories, and authenticated role-specific interfaces
 
 ### Current work
 
-- Complete the hosted Auth redirect allow-list with a project-owner account and
-  verify password recovery on local and GitHub Pages deployments.
-- Use the three fictional learner, instructor, and administrator accounts for
-  authentication smoke testing only; do not introduce real user data.
-- Design the cohort, membership, and entitlement slice for Milestone 3 while
-  preserving RLS as the browser authorization boundary.
+- Design resource metadata, immutable versions, audience/topic/stage taxonomy,
+  private Storage, and entitlement-checked short-lived access.
+- Define table and Storage RLS tests before connecting Guides and Teaching Kit.
+- Keep quizzes, results, analytics, and exports fictional until later milestones.
 
 ## Milestone 1 — Role-aware frontend prototype
 
@@ -135,8 +140,9 @@ is not a release gate at this checkpoint.
 
 Begin only after the frontend information architecture is validated.
 
-**Status:** active; production policy decisions and backend foundation are the
-next implementation slice.
+**Status:** complete; deployed and smoke-tested against the hosted development
+project. The unavailable local Docker stack remains a documented development
+limitation.
 
 ### Backend
 
@@ -166,6 +172,8 @@ next implementation slice.
 
 ## Milestone 3 — People and cohorts
 
+**Status:** complete in the hosted fictional development environment.
+
 ### Backend
 
 - People/profile administration
@@ -191,6 +199,8 @@ next implementation slice.
 - All material administrative changes are audited.
 
 ## Milestone 4 — Resources and teaching materials
+
+**Status:** active; this is the next coding milestone.
 
 ### Backend
 

@@ -41,10 +41,17 @@ const RoleRedirect = lazy(() =>
     default: module.RoleRedirect,
   })),
 );
-const ProductionWorkspacePage = lazy(() =>
-  import("../features/auth/pages/production-workspace-page").then((module) => ({
-    default: module.ProductionWorkspacePage,
-  })),
+const OperationsShell = lazy(() =>
+  import("../features/operations/layouts/operations-shell").then((module) => ({ default: module.OperationsShell })),
+);
+const OperationsPeoplePage = lazy(() =>
+  import("../features/operations/pages/people-page").then((module) => ({ default: module.OperationsPeoplePage })),
+);
+const OperationsCohortsAdminPage = lazy(() =>
+  import("../features/operations/pages/cohorts-admin-page").then((module) => ({ default: module.OperationsCohortsAdminPage })),
+);
+const MyCohortsPage = lazy(() =>
+  import("../features/operations/pages/my-cohorts-page").then((module) => ({ default: module.MyCohortsPage })),
 );
 const LearnerHomePage = lazy(() =>
   import("../features/learner/pages/home-page").then((module) => ({
@@ -183,7 +190,11 @@ export const router = createHashRouter([
         children: [
           {
             path: "/app/learner/*",
-            element: deferred(<ProductionWorkspacePage role="learner" />),
+            element: deferred(<OperationsShell role="learner" />),
+            children: [
+              { index: true, element: <Navigate replace to="cohort" /> },
+              { path: "cohort", element: deferred(<MyCohortsPage />) },
+            ],
           },
         ],
       },
@@ -192,7 +203,11 @@ export const router = createHashRouter([
         children: [
           {
             path: "/app/instructor/*",
-            element: deferred(<ProductionWorkspacePage role="instructor" />),
+            element: deferred(<OperationsShell role="instructor" />),
+            children: [
+              { index: true, element: <Navigate replace to="cohorts" /> },
+              { path: "cohorts", element: deferred(<MyCohortsPage instructor />) },
+            ],
           },
         ],
       },
@@ -201,7 +216,12 @@ export const router = createHashRouter([
         children: [
           {
             path: "/app/admin/*",
-            element: deferred(<ProductionWorkspacePage role="admin" />),
+            element: deferred(<OperationsShell role="admin" />),
+            children: [
+              { index: true, element: <Navigate replace to="people" /> },
+              { path: "people", element: deferred(<OperationsPeoplePage />) },
+              { path: "cohorts", element: deferred(<OperationsCohortsAdminPage />) },
+            ],
           },
         ],
       },
