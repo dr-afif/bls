@@ -120,10 +120,12 @@ authentication/account-access slice. Real course data is the next milestone.
 
 ## Exact recommended next action
 
-Have a Supabase project owner configure the local and GitHub Pages Auth redirect
-URLs, then smoke-test the password-recovery callback on the deployed site.
-After that, design the cohort/entitlement/resource schema slice before replacing
-any mock repository.
+Have a repository owner change GitHub Pages **Build and deployment → Source** to
+**GitHub Actions**, and have a Supabase project owner configure the local and
+GitHub Pages Auth redirect URLs. Merge PR #1, confirm the Pages workflow, then
+smoke-test the password-recovery callback on the deployed site. After that,
+design the cohort/entitlement/resource schema slice before replacing any mock
+repository.
 
 ## Proxy-validation follow-up questions
 
@@ -183,6 +185,11 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
   owner must set the Site URL to `https://dr-afif.github.io/bls/` and allow
   `http://127.0.0.1:5173/**`, `http://localhost:5173/**`, and
   `https://dr-afif.github.io/bls/**`.
+- GitHub Pages remains on the legacy `main`-branch publishing source. The
+  connected collaborator can push code and set repository variables but cannot
+  change the Pages source through the repository administration API. A
+  repository owner must select **GitHub Actions** before the new deployment
+  workflow can publish the Vite build.
 - `npm audit` reports two moderate React Router 6 advisories. The remaining
   supported fix is a breaking React Router 7 migration; the current app is
   client-side only and constrains post-login redirects to internal paths.
