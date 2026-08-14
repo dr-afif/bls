@@ -239,12 +239,19 @@ development project.
 
 ### Phase 4 — Administrator workflow
 
+**Status:** implemented and verified on 2026-08-14. Follow
+[`MILESTONE_4_PHASE_4_PLAN.md`](MILESTONE_4_PHASE_4_PLAN.md) for lifecycle
+hardening, exact-path cleanup, UI routes, and the completed verification matrix.
+
 1. Add resource list and filters.
 2. Add metadata and taxonomy editing.
 3. Add immutable version creation and private PDF upload.
 4. Add review, approval, publication, retirement, preview, and audit feedback.
 
 ### Phase 5 — Verification and publication
+
+**Status:** next. Phase 4 awaits branch review, pull-request publication, and
+deployed role/resource smoke testing.
 
 1. Run typecheck, lint, unit/component tests, production build, pgTAP, Edge
    Function tests, Storage-policy tests, and advisors.

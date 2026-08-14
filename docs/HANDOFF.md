@@ -8,8 +8,10 @@
 
 Milestones 1 through 3 are complete. Milestone 4, Resources and Teaching
 Materials, is active. Phase 1 schema/RLS, Phase 2 private Storage/signed access,
-and Phase 3 production learner/instructor resource experiences are complete
-and verified. Phase 4 administrator resource workflow is next.
+Phase 3 production learner/instructor resource experiences, and Phase 4
+administrator resource authoring are complete and verified. PR #4 is merged and
+deployed; Phase 4 is implemented on branch
+`agent/milestone-4-phase-4-admin-resources` and is ready for review/publication.
 
 ## Current repository state
 
@@ -17,8 +19,9 @@ and verified. Phase 4 administrator resource workflow is next.
 - Distinct learner, instructor, and administrator route trees and shells.
 - Fictional local data remains visible for quizzes, results, analytics, and all
   `/demo` routes. Authenticated People/Cohorts, learner Guides, instructor
-  Teaching Kit, structured resource viewing, and protected fictional PDFs now
-  use Supabase through typed repositories and server-enforced access.
+  Teaching Kit, administrator Resources, structured resource viewing, and
+  protected fictional PDFs now use Supabase through typed repositories and
+  server-enforced access.
 - Clinical Field Guide styling for learner and instructor screens.
 - Compact Operational Course Companion density for administrator screens.
 - Hosted Supabase development database with the initial identity/access schema,
@@ -128,6 +131,30 @@ and verified. Phase 4 administrator resource workflow is next.
   fictional cohort after a previous smoke-test mutation had removed membership
   from the original demonstration cohort. The targeted hosted correction was
   recorded as `course.entitlement_updated` in the audit log.
+- Merged PR #4 into `main` at commit
+  `bb817de`, and the product owner confirmed that the GitHub Pages deployment
+  completed successfully.
+- Added the detailed Milestone 4 Phase 4 plan for authenticated administrator
+  resource listing, metadata/classification editing, immutable version
+  creation, exact-path private PDF upload and rollback, clinical review,
+  approval, publication, retirement, preview, audit feedback, and verification.
+- Added server-owned resource draft allocation and lifecycle transitions,
+  atomic classification replacement, exact-path draft cleanup, immutable
+  submitted/approved history, resource-scoped audit events, and stored PDF
+  MIME/size readiness checks.
+- Applied hosted migrations
+  `20260814074046_milestone_4_admin_resource_workflow.sql` and
+  `20260814081642_milestone_4_resource_pdf_metadata_validation.sql`, regenerated
+  database types, and expanded hosted pgTAP coverage to 143 assertions across
+  five files.
+- Replaced the authenticated administrator Resources placeholder with live,
+  responsive list/create/detail/version routes, URL-preserved filters, stable
+  metadata and taxonomy forms, guide/checklist/video/PDF draft forms, exact-path
+  private PDF upload and cleanup, review/approval/publication/retirement actions,
+  protected preview, and recent audit feedback. `/demo` remains unchanged.
+- Added four administrator resource repository tests for no-overwrite PDF upload,
+  client file validation, safe hosted-error mapping, and object-before-row draft
+  cleanup. The frontend suite now contains 43 tests across 16 files.
 
 ## Decisions implemented
 
@@ -144,6 +171,33 @@ and verified. Phase 4 administrator resource workflow is next.
 
 ## Latest verification status
 
+- Milestone 4 Phase 4 final verification on 2026-08-14: strict typecheck passed;
+  lint passed; all 43 Vitest tests across 16 files passed; production build
+  passed with 1,836 transformed modules. The existing non-blocking main-chunk
+  warning remains; PDF.js is route split.
+- Hosted `supabase test db --linked` passed all 143 assertions across five files,
+  including 34 administrator workflow assertions. Both Phase 4 migrations are
+  applied to project `zlaixhnyydxgbphgsetv`, and generated TypeScript types match
+  the hosted schema.
+- Rendered local/live-data administrator verification passed after signing in as
+  the fictional administrator: eight resources loaded, filters and version
+  history were readable, invalid create submission focused the first field,
+  current-version publication was not offered redundantly, the browser console
+  had no warnings/errors, and list/version routes had no page overflow at a
+  320-by-800 viewport. No hosted fixture resource was mutated during this check.
+- Supabase advisors report no critical schema/RLS findings. Nine intentional
+  warnings identify the authenticated `security definer` lifecycle functions;
+  these are required because direct lifecycle privileges were revoked and each
+  function has an empty search path, explicit active same-organization admin
+  checks, restricted grants, and pgTAP coverage. Leaked-password protection
+  remains disabled; performance notices are unused-index information before
+  meaningful traffic.
+
+- Post-merge deployment smoke verification on 2026-08-14 passed: the hosted
+  sign-in screen loaded, the fictional instructor account reached its assigned
+  cohorts, and Teaching Kit displayed all eight RLS-permitted live resources
+  with readable stage/topic/type filters. The verification account was signed
+  out and the browser tab was closed afterward.
 - Milestone 4 Phase 3 final frontend verification: typecheck passed; lint
   passed; 39 Vitest tests across 15 files passed; production build passed with
   1,825 transformed modules. PDF.js and its worker are route split; the existing
@@ -271,12 +325,11 @@ and verified. Phase 4 administrator resource workflow is next.
 
 ## Exact recommended next action
 
-Plan Milestone 4 Phase 4, then implement the authenticated administrator
-resource workflow: list/filter resources, edit metadata and taxonomy, create
-immutable versions, upload PDFs to exact private paths, manage clinical review,
-approve/publish/retire resources, and show audit feedback. Keep the signed-file
-viewer and `/demo` route tree unchanged, and define the upload rollback and
-orphan-cleanup strategy before implementing mutations.
+Review [`MILESTONE_4_PHASE_4_PLAN.md`](MILESTONE_4_PHASE_4_PLAN.md), then begin
+its backend-hardening step: create the scoped lifecycle/cleanup migration and
+pgTAP coverage before adding administrator frontend mutations. Keep the
+signed-file viewer and `/demo` route tree unchanged, and use only fictional
+hosted records and files.
 
 ## Proxy-validation follow-up questions
 
@@ -310,9 +363,13 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Known limitations
 
-- Production learner and instructor resource routes now use hosted fictional
-  data. Administrator resource authoring, quiz, result, analytics, and export
-  data remains local or non-functional; no real learner information is present.
+- Production learner, instructor, and administrator resource routes now use
+  hosted fictional data. Quiz, result, analytics, and export data remains local
+  or non-functional; no real learner information is present.
+- Administrator catalogue and audit reads are deliberately bounded to the most
+  recent 100 resources/events (and 500 versions). Cursor pagination, bulk
+  operations, automated review reminders, and automated orphan cleanup remain
+  deferred until real catalogue scale justifies them.
 - The demo role selector is intentionally separate from authentication and
   authorization.
 - Post-test release, quiz security, scoring, access expiry, and route visibility
@@ -344,3 +401,11 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
   `C:\Users\DR-AFIF\Documents\GitHub\bls`; use that non-OneDrive checkout for
   Git-based development and publication. Keep the OneDrive copy only until all
   unpublished work has been confirmed in GitHub.
+
+## Exact recommended next action
+
+Review the Phase 4 branch, then commit and push it, open the scoped Phase 4 pull
+request, merge after CI passes, and smoke-test administrator create/draft/review/
+publish behavior plus learner/instructor visibility on the deployed GitHub Pages
+build. After that, complete Milestone 4 Phase 5 verification/publication and plan
+Milestone 5 quizzes/results as a separate security-focused milestone.

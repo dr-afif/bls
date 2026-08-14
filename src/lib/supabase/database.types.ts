@@ -1015,6 +1015,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_resource_version: {
+        Args: { target_version_id: string }
+        Returns: undefined
+      }
       authorize_resource_pdf_access: {
         Args: {
           target_request_id: string
@@ -1030,6 +1034,33 @@ export type Database = {
           user_id: string
         }[]
       }
+      create_resource_version_draft: {
+        Args: {
+          draft_content?: Json
+          draft_guideline_source?: string
+          draft_guideline_year?: number
+          draft_summary: string
+          draft_title: string
+          draft_youtube_video_id?: string
+          target_resource_id: string
+        }
+        Returns: {
+          storage_path: string
+          version_id: string
+          version_number: number
+        }[]
+      }
+      discard_resource_version_draft: {
+        Args: { target_version_id: string }
+        Returns: undefined
+      }
+      get_resource_pdf_file_status: {
+        Args: { target_version_id: string }
+        Returns: {
+          file_state: string
+          object_path: string
+        }[]
+      }
       publish_resource_version: {
         Args: { target_resource_id: string; target_version_id: string }
         Returns: undefined
@@ -1040,6 +1071,27 @@ export type Database = {
           target_user_id: string
           target_version_id: string
         }
+        Returns: undefined
+      }
+      record_resource_version_review: {
+        Args: { target_next_review_at: string; target_version_id: string }
+        Returns: undefined
+      }
+      replace_resource_classifications: {
+        Args: {
+          target_audiences: Database["public"]["Enums"]["resource_audience"][]
+          target_resource_id: string
+          target_teaching_stage_ids: string[]
+          target_topic_ids: string[]
+        }
+        Returns: undefined
+      }
+      retire_resource: {
+        Args: { target_resource_id: string }
+        Returns: undefined
+      }
+      submit_resource_version_for_review: {
+        Args: { target_version_id: string }
         Returns: undefined
       }
     }

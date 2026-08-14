@@ -53,6 +53,21 @@ const OperationsCohortsAdminPage = lazy(() =>
 const MyCohortsPage = lazy(() =>
   import("../features/operations/pages/my-cohorts-page").then((module) => ({ default: module.MyCohortsPage })),
 );
+const ResourcesAdminPage = lazy(() =>
+  import("../features/resource-admin/pages/resources-admin-page").then((module) => ({ default: module.ResourcesAdminPage })),
+);
+const ResourceNewPage = lazy(() =>
+  import("../features/resource-admin/pages/resource-new-page").then((module) => ({ default: module.ResourceNewPage })),
+);
+const ResourceDetailPage = lazy(() =>
+  import("../features/resource-admin/pages/resource-detail-page").then((module) => ({ default: module.ResourceDetailPage })),
+);
+const ResourceVersionNewPage = lazy(() =>
+  import("../features/resource-admin/pages/resource-version-new-page").then((module) => ({ default: module.ResourceVersionNewPage })),
+);
+const ResourceVersionPage = lazy(() =>
+  import("../features/resource-admin/pages/resource-version-page").then((module) => ({ default: module.ResourceVersionPage })),
+);
 const ResourceLibraryPage = lazy(() =>
   import("../features/resources/pages/resource-library-page").then((module) => ({ default: module.ResourceLibraryPage })),
 );
@@ -231,6 +246,12 @@ export const router = createHashRouter([
               { index: true, element: <Navigate replace to="people" /> },
               { path: "people", element: deferred(<OperationsPeoplePage />) },
               { path: "cohorts", element: deferred(<OperationsCohortsAdminPage />) },
+              { path: "resources", element: deferred(<ResourcesAdminPage />) },
+              { path: "resources/new", element: deferred(<ResourceNewPage />) },
+              { path: "resources/:resourceId", element: deferred(<ResourceDetailPage />) },
+              { path: "resources/:resourceId/preview", element: deferred(<LiveResourceViewerPage adminPreview scope="instructor" />) },
+              { path: "resources/:resourceId/versions/new", element: deferred(<ResourceVersionNewPage />) },
+              { path: "resources/:resourceId/versions/:versionId", element: deferred(<ResourceVersionPage />) },
             ],
           },
         ],

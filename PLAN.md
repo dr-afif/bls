@@ -74,9 +74,13 @@ or work pauses for a user decision.
 - Phase 3 is complete: production learner Guides and instructor Teaching Kit
   use typed RLS-backed reads, URL-preserved filters, related resources, and a
   protected in-memory PDF viewer with a visible watermark and safe states.
-- Proceed to Phase 4 planning for administrator resource lifecycle,
-  classification, immutable version creation, private PDF upload, review,
-  approval, publication, retirement, and audit feedback.
+- Phase 4 implementation is complete in
+  [`docs/MILESTONE_4_PHASE_4_PLAN.md`](docs/MILESTONE_4_PHASE_4_PLAN.md), including
+  server-owned lifecycle transitions, private PDF validation and cleanup,
+  administrator routes/forms, audit feedback, protected preview, and responsive
+  verification.
+- Prepare Phase 4 for review and publication, then run the deployed Phase 5
+  verification sequence before closing Milestone 4.
 - Keep quizzes, results, analytics, and exports fictional until later milestones.
 
 ## Milestone 1 — Role-aware frontend prototype
@@ -212,8 +216,9 @@ limitation.
 
 ## Milestone 4 — Resources and teaching materials
 
-**Status:** active; Phases 1 through 3 are complete. Phase 4 administrator
-resource workflow is next.
+**Status:** active; Phases 1 through 4 are implemented and locally/hosted
+verified. Phase 4 still requires branch review, publication, and deployed smoke
+verification before Milestone 4 closes.
 
 ### Backend
 

@@ -43,7 +43,7 @@ select extensions.results_eq(
   $$select count(*) from pg_policies
     where schemaname = 'storage' and tablename = 'objects'
       and policyname like 'course_resources_%' and cmd = 'DELETE'$$,
-  array[0::bigint], 'course resource bucket has no browser delete policy'
+  array[1::bigint], 'course resource bucket has one exact-path draft delete policy'
 );
 
 insert into public.organizations (id, name, slug)
