@@ -95,30 +95,29 @@ roster, while learners read only their own membership.
 
 - `id`
 - `organization_id`
-- `title`
 - `slug`
+- `title`
 - `description`
-- `thumbnail_path`
 - `status`
-- `version`
-- `pre_test_required`
-- `resources_in_order`
-- `published_at`
 - `created_by`
 - `updated_by`
 - `created_at`
 - `updated_at`
 
+Milestone 4 Phase 1 implements one organization-scoped Adult BLS course record
+and requires every cohort to reference a course. The course is an access and
+content boundary for the physical-course companion, not a self-paced pathway.
+
 ### `course_entitlements`
 
 - `id`
+- `organization_id`
 - `user_id`
 - `course_id`
 - `cohort_id`
 - `access_type`
 - `starts_at`
 - `expires_at`
-- `duration_days`
 - `activated_at`
 - `status`
 - `granted_by`
@@ -131,7 +130,6 @@ Suggested access types:
 
 - permanent
 - fixed_window
-- duration
 
 Suggested statuses:
 
@@ -142,7 +140,7 @@ Suggested statuses:
 
 ### Effective access
 
-The database should determine effective access using:
+The implemented private database helper determines effective access using:
 
 - Account status
 - Entitlement status
@@ -150,35 +148,53 @@ The database should determine effective access using:
 - Expiry time
 - Revocation
 - Course publication state
-- Optional grace policy
+- Optional active cohort membership when the entitlement names a cohort
 
-## Course content
+The browser can read only its own entitlement, while administrators can grant,
+update, expire, or revoke entitlements inside their organization. Grant and
+revocation changes are audited.
 
-### `course_sections`
+## Resource taxonomy
+
+### `bls_topics`
 
 - `id`
-- `course_id`
-- `title`
+- `organization_id`
+- `slug`
+- `name`
 - `description`
 - `display_order`
-- `status`
+- `active`
 - `created_at`
 - `updated_at`
+
+### `teaching_stages`
+
+- `id`
+- `organization_id`
+- `slug`
+- `name`
+- `description`
+- `display_order`
+- `active`
+- `created_at`
+- `updated_at`
+
+Topics support learner-first browsing; teaching stages support instructor-first
+browsing. Referenced taxonomy records are retired rather than deleted.
+
+## Versioned resources
 
 ### `resources`
 
 - `id`
+- `organization_id`
 - `course_id`
-- `section_id`
+- `slug`
 - `title`
-- `description`
 - `resource_type`
-- `youtube_video_id`
-- `storage_path`
 - `estimated_minutes`
-- `is_required`
-- `completion_rule`
-- `display_order`
+- `featured`
 - `status`
 - `available_from`
 - `available_until`
@@ -190,64 +206,70 @@ The database should determine effective access using:
 
 Suggested resource types:
 
+- guide
+- checklist
 - youtube_video
 - pdf
-- article
-- image
-- external_link
-- interactive
+
+Resources are stable metadata records. Learners and instructors can read only
+published, currently available records that match their effective course
+access and assigned audience.
 
 ### `resource_versions`
 
 - `id`
 - `resource_id`
-- `version`
+- `version_number`
+- `resource_type`
 - `title`
-- `description`
+- `summary`
+- `content`
 - `youtube_video_id`
 - `storage_path`
 - `content_hash`
 - `guideline_source`
 - `guideline_year`
+- `reviewed_by`
+- `reviewed_at`
+- `next_review_at`
 - `status`
 - `approved_by`
 - `approved_at`
 - `created_by`
 - `created_at`
 
-### `resource_progress`
+Guide and checklist bodies are immutable structured snapshots. PDF paths and
+YouTube identifiers are version-specific locators. Approved versions and any
+version selected as current cannot be updated or deleted by browser roles.
+Publishing uses the audited `publish_resource_version` RPC and requires an
+approved version plus at least one audience and topic.
+
+### Resource classification and relations
+
+- `resource_audiences(resource_id, audience)`
+- `resource_topics(resource_id, topic_id, display_order)`
+- `resource_teaching_stages(resource_id, teaching_stage_id, display_order)`
+- `resource_relations(resource_id, related_resource_id, display_order)`
+
+Assignment triggers prevent cross-organization taxonomy or cross-course
+relations. Audience, taxonomy, and relation changes are audited.
+
+### `resource_access_events`
 
 - `id`
+- `organization_id`
 - `user_id`
 - `resource_id`
 - `resource_version_id`
-- `status`
-- `progress_percent`
-- `first_opened_at`
-- `last_opened_at`
-- `completed_at`
-- `last_position`
-- `updated_at`
-
-Suggested statuses:
-
-- not_started
-- in_progress
-- completed
-
-### `resource_events`
-
-- `id`
-- `user_id`
-- `resource_id`
-- `resource_version_id`
-- `event_type`
-- `event_at`
-- `payload`
-- `session_id`
+- `action`
+- `request_id`
+- `metadata`
+- `created_at`
 
 Suggested event types:
 
+- signed_url_authorized
+- signed_url_issued
 - opened
 - closed
 - video_played
@@ -255,7 +277,27 @@ Suggested event types:
 - video_progress
 - video_seeked
 - pdf_page_viewed
-- completed
+
+The table is append-only and browser roles have no direct insert or raw-read
+privileges. Phase 2 adds service-role-only authorization and issuance functions
+that record idempotent signed-PDF access events without persisting URLs,
+tokens, IP addresses, or unnecessary device data. Authorization validates the
+active account, role, organization, effective entitlement, optional cohort
+membership, instructor assignment, resource audience, publication window,
+current immutable PDF version, and exact Storage path before signing.
+
+### Private PDF objects
+
+The private `course-resources` bucket accepts only PDFs up to 20 MiB. Object
+names are immutable, version-specific paths:
+
+`<organization-id>/<resource-id>/<version-id>/<safe-name>.pdf`
+
+Authenticated browser roles have no object `SELECT`, `UPDATE`, or `DELETE`
+policy. An active same-organization administrator may insert only the exact
+recorded path for a draft, non-current PDF version. The deployed
+`issue-resource-access` Edge Function uses the service-only database functions
+to issue a 60-second signed URL after authorization and auditing.
 
 ## Quiz model
 

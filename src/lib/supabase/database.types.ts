@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.15"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       audit_events: {
@@ -58,6 +83,50 @@ export type Database = {
           },
           {
             foreignKeyName: "audit_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bls_topics: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+          organization_id: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name: string
+          organization_id: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          organization_id?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bls_topics_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -122,6 +191,7 @@ export type Database = {
           code: string
           contact_name: string | null
           contact_phone: string | null
+          course_id: string
           created_at: string
           created_by: string | null
           description: string | null
@@ -139,6 +209,7 @@ export type Database = {
           code: string
           contact_name?: string | null
           contact_phone?: string | null
+          course_id: string
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -156,6 +227,7 @@ export type Database = {
           code?: string
           contact_name?: string | null
           contact_phone?: string | null
+          course_id?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -171,6 +243,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "cohorts_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "cohorts_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -182,6 +261,170 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_entitlements: {
+        Row: {
+          access_type: Database["public"]["Enums"]["entitlement_access_type"]
+          activated_at: string | null
+          cohort_id: string | null
+          course_id: string
+          created_at: string
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
+          id: string
+          organization_id: string
+          revocation_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          starts_at: string | null
+          status: Database["public"]["Enums"]["entitlement_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_type: Database["public"]["Enums"]["entitlement_access_type"]
+          activated_at?: string | null
+          cohort_id?: string | null
+          course_id: string
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          organization_id: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["entitlement_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_type?: Database["public"]["Enums"]["entitlement_access_type"]
+          activated_at?: string | null
+          cohort_id?: string | null
+          course_id?: string
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          organization_id?: string
+          revocation_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["entitlement_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_entitlements_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_entitlements_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_entitlements_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_entitlements_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_entitlements_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_entitlements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          organization_id: string
+          slug: string
+          status: Database["public"]["Enums"]["course_status"]
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          organization_id: string
+          slug: string
+          status?: Database["public"]["Enums"]["course_status"]
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          organization_id?: string
+          slug?: string
+          status?: Database["public"]["Enums"]["course_status"]
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -257,6 +500,480 @@ export type Database = {
           },
         ]
       }
+      resource_access_events: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json
+          organization_id: string
+          request_id: string
+          resource_id: string
+          resource_version_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          request_id?: string
+          resource_id: string
+          resource_version_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          request_id?: string
+          resource_id?: string
+          resource_version_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_access_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_access_events_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_access_events_resource_version_id_fkey"
+            columns: ["resource_version_id"]
+            isOneToOne: false
+            referencedRelation: "resource_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_access_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resource_audiences: {
+        Row: {
+          audience: Database["public"]["Enums"]["resource_audience"]
+          created_at: string
+          created_by: string | null
+          resource_id: string
+        }
+        Insert: {
+          audience: Database["public"]["Enums"]["resource_audience"]
+          created_at?: string
+          created_by?: string | null
+          resource_id: string
+        }
+        Update: {
+          audience?: Database["public"]["Enums"]["resource_audience"]
+          created_at?: string
+          created_by?: string | null
+          resource_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_audiences_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_audiences_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resource_relations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          display_order: number
+          related_resource_id: string
+          resource_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          related_resource_id: string
+          resource_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          related_resource_id?: string
+          resource_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_relations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_relations_related_resource_id_fkey"
+            columns: ["related_resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_relations_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resource_teaching_stages: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          display_order: number
+          resource_id: string
+          teaching_stage_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          resource_id: string
+          teaching_stage_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          resource_id?: string
+          teaching_stage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_teaching_stages_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_teaching_stages_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_teaching_stages_teaching_stage_id_fkey"
+            columns: ["teaching_stage_id"]
+            isOneToOne: false
+            referencedRelation: "teaching_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resource_topics: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          display_order: number
+          resource_id: string
+          topic_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          resource_id: string
+          topic_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          resource_id?: string
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_topics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_topics_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_topics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "bls_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resource_versions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          content: Json | null
+          content_hash: string | null
+          created_at: string
+          created_by: string | null
+          guideline_source: string | null
+          guideline_year: number | null
+          id: string
+          next_review_at: string | null
+          resource_id: string
+          resource_type: Database["public"]["Enums"]["resource_type"]
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["resource_status"]
+          storage_path: string | null
+          summary: string
+          title: string
+          version_number: number
+          youtube_video_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          content?: Json | null
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          guideline_source?: string | null
+          guideline_year?: number | null
+          id?: string
+          next_review_at?: string | null
+          resource_id: string
+          resource_type: Database["public"]["Enums"]["resource_type"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["resource_status"]
+          storage_path?: string | null
+          summary: string
+          title: string
+          version_number: number
+          youtube_video_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          content?: Json | null
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          guideline_source?: string | null
+          guideline_year?: number | null
+          id?: string
+          next_review_at?: string | null
+          resource_id?: string
+          resource_type?: Database["public"]["Enums"]["resource_type"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["resource_status"]
+          storage_path?: string | null
+          summary?: string
+          title?: string
+          version_number?: number
+          youtube_video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_versions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_versions_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_versions_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resources: {
+        Row: {
+          available_from: string | null
+          available_until: string | null
+          course_id: string
+          created_at: string
+          created_by: string | null
+          current_version_id: string | null
+          estimated_minutes: number | null
+          featured: boolean
+          id: string
+          organization_id: string
+          resource_type: Database["public"]["Enums"]["resource_type"]
+          slug: string
+          status: Database["public"]["Enums"]["resource_status"]
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          available_from?: string | null
+          available_until?: string | null
+          course_id: string
+          created_at?: string
+          created_by?: string | null
+          current_version_id?: string | null
+          estimated_minutes?: number | null
+          featured?: boolean
+          id?: string
+          organization_id: string
+          resource_type: Database["public"]["Enums"]["resource_type"]
+          slug: string
+          status?: Database["public"]["Enums"]["resource_status"]
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          available_from?: string | null
+          available_until?: string | null
+          course_id?: string
+          created_at?: string
+          created_by?: string | null
+          current_version_id?: string | null
+          estimated_minutes?: number | null
+          featured?: boolean
+          id?: string
+          organization_id?: string
+          resource_type?: Database["public"]["Enums"]["resource_type"]
+          slug?: string
+          status?: Database["public"]["Enums"]["resource_status"]
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resources_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resources_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resources_current_version_id_fkey"
+            columns: ["current_version_id"]
+            isOneToOne: false
+            referencedRelation: "resource_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resources_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resources_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teaching_stages: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+          organization_id: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name: string
+          organization_id: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          organization_id?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teaching_stages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -298,7 +1015,33 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      authorize_resource_pdf_access: {
+        Args: {
+          target_request_id: string
+          target_user_id: string
+          target_version_id: string
+        }
+        Returns: {
+          expires_in_seconds: number
+          object_path: string
+          organization_id: string
+          resource_id: string
+          resource_version_id: string
+          user_id: string
+        }[]
+      }
+      publish_resource_version: {
+        Args: { target_resource_id: string; target_version_id: string }
+        Returns: undefined
+      }
+      record_resource_pdf_issuance: {
+        Args: {
+          target_request_id: string
+          target_user_id: string
+          target_version_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       account_status:
@@ -317,7 +1060,19 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "archived"
+      course_status: "draft" | "published" | "retired" | "archived"
+      entitlement_access_type: "permanent" | "fixed_window"
+      entitlement_status: "pending" | "active" | "expired" | "revoked"
       membership_status: "active" | "completed" | "removed"
+      resource_audience: "learner" | "instructor"
+      resource_status:
+        | "draft"
+        | "under_review"
+        | "approved"
+        | "published"
+        | "retired"
+        | "archived"
+      resource_type: "guide" | "checklist" | "pdf" | "youtube_video"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -443,6 +1198,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       account_status: [
@@ -463,7 +1221,20 @@ export const Constants = {
         "cancelled",
         "archived",
       ],
+      course_status: ["draft", "published", "retired", "archived"],
+      entitlement_access_type: ["permanent", "fixed_window"],
+      entitlement_status: ["pending", "active", "expired", "revoked"],
       membership_status: ["active", "completed", "removed"],
+      resource_audience: ["learner", "instructor"],
+      resource_status: [
+        "draft",
+        "under_review",
+        "approved",
+        "published",
+        "retired",
+        "archived",
+      ],
+      resource_type: ["guide", "checklist", "pdf", "youtube_video"],
     },
   },
 } as const

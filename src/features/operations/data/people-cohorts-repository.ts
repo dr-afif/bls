@@ -82,8 +82,19 @@ export async function listCohorts(client: SupabaseClient<Database>): Promise<Ope
 }
 
 export async function createCohort(client: SupabaseClient<Database>, input: CreateCohortInput) {
+  const { data: course, error: courseError } = await client
+    .from("courses")
+    .select("id")
+    .eq("organization_id", input.organizationId)
+    .eq("status", "published")
+    .order("created_at")
+    .limit(1)
+    .maybeSingle();
+  if (courseError || !course) throw new Error("COHORT_COURSE_UNAVAILABLE");
+
   const { error } = await client.from("cohorts").insert({
     organization_id: input.organizationId,
+    course_id: course.id,
     created_by: input.actorUserId,
     code: input.code.trim().toUpperCase(),
     name: input.name.trim(),

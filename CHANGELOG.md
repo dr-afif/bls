@@ -8,6 +8,27 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Added
 
+- Milestone 4 Phase 2 private `course-resources` Storage bucket, PDF-only
+  20 MiB limit, version-specific fictional PDF fixtures, and reproducible
+  bucket seeding configuration
+- JWT-protected `issue-resource-access` Edge Function with verified-user
+  authorization, 60-second signed URLs, restrictive CORS handling, safe error
+  responses, and explicit no-store headers
+- Service-only PDF authorization and issuance RPCs with complete entitlement,
+  role, organization, publication, audience, and version checks; per-user rate
+  limiting; idempotent request handling; and append-only access events
+- Forty hosted pgTAP assertions for private Storage and PDF authorization plus
+  twelve dependency-injected Edge Function tests
+- Detailed Milestone 4 Phase 2 private-Storage and authorized-PDF-access plan,
+  including current Edge Function authentication, rate-limit, idempotency,
+  audit, cache, rollback, and verification decisions
+- Milestone 4 Phase 1 course, entitlement, BLS topic, teaching-stage, resource,
+  immutable-version, audience, relation, and access-event schema
+- Organization-scoped resource RLS, effective-entitlement helpers, audited
+  publication RPC, lifecycle/classification audit triggers, and 31 new pgTAP
+  assertions for resource authorization and immutability
+- Fictional hosted Adult BLS taxonomy, two course entitlements, and eight
+  versioned published resource records for subsequent interface development
 - Hosted People and Cohorts operations with cohort scheduling, existing-user
   assignment, retained membership lifecycle states, account access changes,
   role-scoped learner/instructor reads, and append-only audit events
@@ -65,6 +86,11 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Changed
 
+- Regenerated TypeScript database types from the hosted Phase 2 schema and
+  advanced Milestone 4 to Phase 3 resource-catalog/viewer integration planning
+- Cohorts now require an organization-matching course, cohort creation resolves
+  the organization’s published course, and generated database types reflect the
+  Milestone 4 Phase 1 schema
 - Replaced authenticated People and Cohorts placeholder data with typed
   Supabase repositories while retaining local fictional resources, quizzes,
   results, analytics, exports, and the separate `/demo` route tree
@@ -119,6 +145,19 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Security
 
+- Kept protected PDFs private with no browser read, list, update, move, or
+  delete policy; only active same-organization administrators may insert the
+  exact recorded path for a draft PDF version
+- Verified hosted learner, instructor, and administrator signed-PDF access,
+  unsigned-object denial, unapproved-origin denial, non-PDF/unknown-version
+  denial, no-JWT denial, 60-second expiry configuration, and URL-free audit
+  metadata
+- Enforced learner/instructor resource audience, publication window, active
+  account, course-entitlement, cohort-assignment, and organization boundaries
+  in PostgreSQL RLS; browser roles cannot forge resource-access events
+- Made approved and historically selected resource versions immutable and
+  restricted publication to active same-organization administrators through an
+  audited function
 - Clarified that authentication, authorization, secure quiz scoring, protected
   storage, and auditability are mandatory before real user data is introduced
 - Defined private-storage requirement for PDFs

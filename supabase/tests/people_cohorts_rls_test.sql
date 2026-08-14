@@ -36,16 +36,31 @@ values
   ('31000000-0000-0000-0000-000000000003', 'admin'),
   ('31000000-0000-0000-0000-000000000004', 'admin');
 
+insert into public.courses (id, organization_id, slug, title, status)
+values
+  (
+    '51000000-0000-0000-0000-000000000001',
+    '21000000-0000-0000-0000-000000000001',
+    'adult-bls', 'Adult BLS One', 'published'
+  ),
+  (
+    '51000000-0000-0000-0000-000000000002',
+    '21000000-0000-0000-0000-000000000002',
+    'adult-bls', 'Adult BLS Two', 'published'
+  );
+
 set local role authenticated;
 set local request.jwt.claims =
   '{"sub":"31000000-0000-0000-0000-000000000003","role":"authenticated"}';
 
 select extensions.lives_ok(
   $$insert into public.cohorts (
-      id, organization_id, code, name, venue, start_at, end_at, status, created_by
+      id, organization_id, course_id, code, name, venue, start_at, end_at,
+      status, created_by
     ) values (
       '41000000-0000-0000-0000-000000000001',
       '21000000-0000-0000-0000-000000000001',
+      '51000000-0000-0000-0000-000000000001',
       'M3-001', 'Milestone Three Cohort', 'Skills Lab',
       now() + interval '1 day', now() + interval '1 day 8 hours', 'scheduled',
       '31000000-0000-0000-0000-000000000003'
@@ -61,9 +76,10 @@ select extensions.results_eq(
 
 select extensions.throws_ok(
   $$insert into public.cohorts (
-      organization_id, code, name, start_at, end_at, created_by
+      organization_id, course_id, code, name, start_at, end_at, created_by
     ) values (
-      '21000000-0000-0000-0000-000000000002', 'M3-OTHER', 'Other cohort',
+      '21000000-0000-0000-0000-000000000002',
+      '51000000-0000-0000-0000-000000000002', 'M3-OTHER', 'Other cohort',
       now(), now() + interval '1 hour',
       '31000000-0000-0000-0000-000000000003'
     )$$,
@@ -217,9 +233,10 @@ select extensions.results_eq(
 
 select extensions.throws_ok(
   $$insert into public.cohorts (
-      organization_id, code, name, start_at, end_at, created_by
+      organization_id, course_id, code, name, start_at, end_at, created_by
     ) values (
-      '21000000-0000-0000-0000-000000000001', 'M3-DENIED', 'Denied',
+      '21000000-0000-0000-0000-000000000001',
+      '51000000-0000-0000-0000-000000000001', 'M3-DENIED', 'Denied',
       now(), now() + interval '1 hour',
       '31000000-0000-0000-0000-000000000001'
     )$$,
