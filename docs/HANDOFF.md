@@ -7,19 +7,18 @@
 ## Current milestone
 
 Milestones 1 through 3 are complete. Milestone 4, Resources and Teaching
-Materials, is active. Phase 1 schema, RLS, auditing, fictional fixtures, hosted
-tests, and generated types are complete. Phase 2 private Storage and signed
-access is deployed and verified. Phase 3 production resource catalog and
-protected-viewer integration is next.
+Materials, is active. Phase 1 schema/RLS, Phase 2 private Storage/signed access,
+and Phase 3 production learner/instructor resource experiences are complete
+and verified. Phase 4 administrator resource workflow is next.
 
 ## Current repository state
 
 - React, TypeScript, Vite, Tailwind, React Router, and Vitest frontend.
 - Distinct learner, instructor, and administrator route trees and shells.
-- Fictional local data remains visible for resources, quizzes, results, and
-  analytics. Authenticated People/Cohorts uses Supabase, and the hosted resource
-  foundation is ready but is not connected to production Guides/Teaching Kit
-  routes until Phase 3.
+- Fictional local data remains visible for quizzes, results, analytics, and all
+  `/demo` routes. Authenticated People/Cohorts, learner Guides, instructor
+  Teaching Kit, structured resource viewing, and protected fictional PDFs now
+  use Supabase through typed repositories and server-enforced access.
 - Clinical Field Guide styling for learner and instructor screens.
 - Compact Operational Course Companion density for administrator screens.
 - Hosted Supabase development database with the initial identity/access schema,
@@ -113,6 +112,22 @@ protected-viewer integration is next.
 - Regenerated hosted database types and smoke-tested signed retrieval for all
   three fictional roles plus unsigned, unauthenticated, non-PDF, unknown
   version, and unapproved-origin denial cases.
+- Added a typed production resource catalog repository and TanStack Query hooks
+  that assemble the current immutable version, topics, teaching stages, and
+  related resources while failing closed on malformed structured snapshots.
+- Connected authenticated learner Guides and instructor Teaching Kit routes to
+  live RLS-scoped data with URL-preserved search and filters, accessible state
+  handling, and adaptive mobile bottom navigation.
+- Added live guide/checklist/video presentation patterns and a lazy-loaded
+  PDF.js viewer that consumes signed PDF bytes with `cache: no-store`, keeps
+  signed URLs out of the DOM and Query cache, exposes page text to assistive
+  technology, and applies a visible account/timestamp watermark.
+- Added Phase 3 catalog, protected-access, and component tests. The current
+  frontend suite contains 39 passing tests across 15 files.
+- Realigned the fictional learner entitlement with the learner's current active
+  fictional cohort after a previous smoke-test mutation had removed membership
+  from the original demonstration cohort. The targeted hosted correction was
+  recorded as `course.entitlement_updated` in the audit log.
 
 ## Decisions implemented
 
@@ -128,6 +143,24 @@ protected-viewer integration is next.
   pre-/post-test CSV.
 
 ## Latest verification status
+
+- Milestone 4 Phase 3 final frontend verification: typecheck passed; lint
+  passed; 39 Vitest tests across 15 files passed; production build passed with
+  1,825 transformed modules. PDF.js and its worker are route split; the existing
+  non-blocking main-chunk warning remains.
+- Rendered hosted-data verification passed at 375 by 812 and 1440 by 900:
+  learner Guides and instructor Teaching Kit each showed eight RLS-permitted
+  resources, filters used readable live taxonomy labels, desktop/mobile
+  navigation adapted without horizontal overflow, route focus reached main,
+  and the browser console had no warnings or errors.
+- Protected PDF verification passed from the approved local origin: the
+  one-page fictional PDF rendered from in-memory bytes with extractable screen
+  reader text and a visible user/timestamp watermark; no signed Storage URL was
+  present in the DOM; logout returned to sign-in; and the final open produced
+  exactly one `signed_url_authorized` plus one `signed_url_issued` event.
+- Hosted `supabase test db --linked` remains green with 109 assertions across
+  four files after the frontend integration. No Phase 3 database migration was
+  required.
 
 - Phase 2 migration
   `20260814011444_milestone_4_private_resource_access.sql` is applied; hosted
@@ -238,12 +271,12 @@ protected-viewer integration is next.
 
 ## Exact recommended next action
 
-Plan and implement Milestone 4 Phase 3: connect production learner Guides and
-instructor Teaching Kit routes to typed resource repositories, add accessible
-resource viewing, and invoke the deployed PDF-access function at open time.
-Keep signed URLs in memory only, preserve the current mock `/demo` route tree,
-and add browser tests proving logout/expiry/error states and protected-content
-cache exclusion. Do not add administrator upload/editing UI until Phase 4.
+Plan Milestone 4 Phase 4, then implement the authenticated administrator
+resource workflow: list/filter resources, edit metadata and taxonomy, create
+immutable versions, upload PDFs to exact private paths, manage clinical review,
+approve/publish/retire resources, and show audit feedback. Keep the signed-file
+viewer and `/demo` route tree unchanged, and define the upload rollback and
+orphan-cleanup strategy before implementing mutations.
 
 ## Proxy-validation follow-up questions
 
@@ -277,18 +310,18 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Known limitations
 
-- Resource schema and fictional fixtures now exist in hosted development, but
-  production resource routes still use local prototype data. Quiz, result,
-  analytics, and export data also remains local and fictional; no real learner
-  information is present.
+- Production learner and instructor resource routes now use hosted fictional
+  data. Administrator resource authoring, quiz, result, analytics, and export
+  data remains local or non-functional; no real learner information is present.
 - The demo role selector is intentionally separate from authentication and
   authorization.
 - Post-test release, quiz security, scoring, access expiry, and route visibility
   are not server-enforced.
-- Private resource Storage and signed access are implemented for fictional PDF
-  fixtures, but production resource repositories, watermark identity, viewer
-  wiring, post-expiry browser verification, and protected-cache inspection
-  remain Phase 3 work.
+- Private resource Storage, signed access, production resource repositories,
+  watermark identity, and PDF viewer wiring are implemented for fictional
+  fixtures. Automated clock-based post-expiry browser testing and a future
+  service-worker cache audit remain for the final hardening phase; no service
+  worker is currently registered.
 - Export buttons never generate files.
 - Analytics are illustrative and are not calculated from persisted attempts.
 - PWA offline caching and install behavior are not part of this milestone.

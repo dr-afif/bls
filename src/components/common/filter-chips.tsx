@@ -5,9 +5,11 @@ type FilterChipsProps<T extends string> = {
   options: readonly T[];
   value: T;
   onChange: (value: T) => void;
+  getLabel?: (value: T) => string;
 };
 
 export function FilterChips<T extends string>({
+  getLabel = (option) => option,
   label,
   onChange,
   options,
@@ -25,10 +27,9 @@ export function FilterChips<T extends string>({
           type="button"
           variant={option === value ? "secondary" : "outline"}
         >
-          {option}
+          {getLabel(option)}
         </Button>
       ))}
     </div>
   );
 }
-

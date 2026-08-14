@@ -1,4 +1,4 @@
-import { CalendarRange, LogOut, Users } from "lucide-react";
+import { BookOpen, CalendarRange, LogOut, Presentation, Users } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
@@ -20,16 +20,40 @@ export function OperationsShell({ role }: { role: AppRole }) {
   const mainRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const fieldRole = role === "learner" || role === "instructor";
   const links = role === "admin" || role === "super_admin"
     ? [
         { to: "/app/admin/people", label: "People", icon: Users },
         { to: "/app/admin/cohorts", label: "Cohorts", icon: CalendarRange },
       ]
-    : [{
-        to: role === "instructor" ? "/app/instructor/cohorts" : "/app/learner/cohort",
-        label: role === "instructor" ? "Cohorts" : "My course",
-        icon: CalendarRange,
-      }];
+    : role === "instructor"
+      ? [
+          { to: "/app/instructor/cohorts", label: "Cohorts", icon: CalendarRange },
+          { to: "/app/instructor/teaching-kit", label: "Teaching Kit", icon: Presentation },
+        ]
+      : [
+          { to: "/app/learner/cohort", label: "My course", icon: CalendarRange },
+          { to: "/app/learner/guides", label: "Guides", icon: BookOpen },
+        ];
+
+  const renderLinks = (mobile = false) => links.map((link) => {
+    const Icon = link.icon;
+    return (
+      <NavLink
+        className={({ isActive }) => cn(
+          mobile
+            ? "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 text-xs font-semibold"
+            : "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-semibold",
+          isActive ? "bg-primary text-primary-foreground" : "bg-muted text-foreground hover:bg-secondary active:bg-secondary",
+        )}
+        key={`${mobile ? "mobile" : "desktop"}-${link.to}`}
+        to={link.to}
+      >
+        <Icon aria-hidden="true" className={mobile ? "size-5" : "size-4"} />
+        {link.label}
+      </NavLink>
+    );
+  });
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -52,20 +76,18 @@ export function OperationsShell({ role }: { role: AppRole }) {
             <LogOut aria-hidden="true" /> Sign out
           </Button>
         </div>
-        <nav aria-label={`${roleLabels[role]} workspace`} className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 pb-3 sm:px-6 lg:px-8">
-          {links.map((link) => {
-            const Icon = link.icon;
-            return (
-              <NavLink className={({ isActive }) => cn("inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-semibold", isActive ? "bg-primary text-primary-foreground" : "bg-muted text-foreground hover:bg-secondary")} key={link.to} to={link.to}>
-                <Icon aria-hidden="true" className="size-4" /> {link.label}
-              </NavLink>
-            );
-          })}
+        <nav aria-label={`${roleLabels[role]} workspace`} className={cn("mx-auto max-w-7xl gap-2 overflow-x-auto px-4 pb-3 sm:px-6 lg:px-8", fieldRole ? "hidden sm:flex" : "flex")}>
+          {renderLinks()}
         </nav>
       </header>
-      <main className="mx-auto w-full max-w-7xl px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8" id="main-content" ref={mainRef} tabIndex={-1}>
+      <main className={cn("mx-auto w-full max-w-7xl px-4 py-6 outline-none sm:px-6 lg:px-8 lg:py-8", fieldRole && "pb-28 sm:pb-8")} id="main-content" ref={mainRef} tabIndex={-1}>
         <Outlet />
       </main>
+      {fieldRole && (
+        <nav aria-label={`${roleLabels[role]} mobile navigation`} className="safe-bottom fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t bg-card px-3 pt-2 shadow-lift sm:hidden">
+          {renderLinks(true)}
+        </nav>
+      )}
     </div>
   );
 }
