@@ -45,10 +45,20 @@ values
   ('30000000-0000-0000-0000-000000000004', 'admin'),
   ('30000000-0000-0000-0000-000000000005', 'admin');
 
-insert into public.cohorts (id, organization_id, code, name, start_at, end_at, status)
+insert into public.courses (id, organization_id, slug, title, status)
+values (
+  '50000000-0000-0000-0000-000000000001',
+  '20000000-0000-0000-0000-000000000001',
+  'adult-bls', 'Adult BLS', 'published'
+);
+
+insert into public.cohorts (
+  id, organization_id, course_id, code, name, start_at, end_at, status
+)
 values (
   '40000000-0000-0000-0000-000000000001',
   '20000000-0000-0000-0000-000000000001',
+  '50000000-0000-0000-0000-000000000001',
   'TEST-001',
   'Test Cohort', now(), now() + interval '8 hours', 'active'
 );

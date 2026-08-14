@@ -297,3 +297,35 @@ audit rules in `PRODUCTION_POLICY_DECISIONS.md`.
 The initial data model and RLS tests can use explicit authorization rules.
 Broader review, membership, release, or export behavior requires a later
 decision and corresponding migration and security tests.
+
+## ADR-016 — Authenticated Edge Function for temporary PDF access
+
+### Decision
+
+Issue protected PDF access through a Supabase Edge Function using the current
+`@supabase/server` user-auth wrapper with platform JWT verification enabled.
+The function receives a verified user JWT, delegates authorization and rate
+limiting to service-only database logic, signs only the authorized object path,
+records append-only access events, and returns a 60-second non-cacheable URL.
+
+Keep `course-resources` private. Browser roles receive no broad Storage select,
+update, delete, list, move, or copy access. Administrators may insert only the
+exact path of a matching same-organization draft PDF version.
+
+### Rationale
+
+- The static GitHub Pages frontend cannot safely hold a secret key.
+- Database-backed authorization keeps account, role, entitlement, cohort,
+  audience, availability, organization, and version checks consistent.
+- Short expiry, rate limiting, idempotency, and audit events reduce link-sharing
+  and abuse risk without claiming absolute copy prevention.
+- Current Supabase guidance separates the browser publishable key in `apikey`
+  from the signed-in user's JWT in `Authorization` and recommends the
+  `@supabase/server` wrapper for new functions.
+
+### Consequence
+
+Protected PDFs require a network connection. Signed links remain bearer
+credentials during their short lifetime and cannot prevent screenshots or a
+recipient from copying content after retrieval. The service worker and
+application caches must exclude protected responses and URLs.

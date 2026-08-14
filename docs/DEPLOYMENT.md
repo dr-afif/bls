@@ -136,15 +136,30 @@ Functions may include:
 
 Store function secrets in Supabase secret management.
 
+Milestone 4 Phase 2 deploys `issue-resource-access` with platform JWT
+verification enabled and `@supabase/server` user authentication. It returns
+only 60-second signed URLs after service-side authorization and uses
+`Cache-Control: no-store, private`. Deploy it separately with:
+
+```bash
+npx supabase functions deploy issue-resource-access --use-api
+```
+
 ## Storage
 
 Recommended buckets:
 
-- `course-pdfs` — private
+- `course-resources` — private; PDF-only, 20 MiB maximum, no browser read/list
+  policy
 - `course-images` — private or public depending on content
 - `question-media` — private
 - `certificates` — private
 - `public-branding` — public if appropriate
+
+The repository declares the fictional private-PDF fixture paths under
+`storage.buckets.course-resources`. Seed only a linked fictional development
+project with `npx supabase seed buckets --linked`; do not seed clinical or
+real-user documents from the repository.
 
 ## Domain and security headers
 

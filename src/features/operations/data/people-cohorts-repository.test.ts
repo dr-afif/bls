@@ -25,10 +25,23 @@ describe("People and Cohorts repository", () => {
 
   it("normalizes cohort input before inserting", async () => {
     const insert = vi.fn().mockResolvedValue({ error: null });
-    const client = { from: vi.fn(() => ({ insert })) } as unknown as SupabaseClient<Database>;
+    const maybeSingle = vi.fn().mockResolvedValue(result({ id: "course-1" }));
+    const courseQuery = {
+      select: vi.fn(() => courseQuery),
+      eq: vi.fn(() => courseQuery),
+      order: vi.fn(() => courseQuery),
+      limit: vi.fn(() => courseQuery),
+      maybeSingle,
+    };
+    const client = {
+      from: vi.fn((table: string) => table === "courses" ? courseQuery : { insert }),
+    } as unknown as SupabaseClient<Database>;
     await createCohort(client, {
       organizationId: "org-1", actorUserId: "admin-1", code: " bls-01 ", name: " Provider Course ", venue: " Skills Lab ", startAt: "2026-08-22T00:30:00.000Z", endAt: "2026-08-22T08:30:00.000Z",
     });
-    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ code: "BLS-01", name: "Provider Course", venue: "Skills Lab", status: "scheduled" }));
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({
+      course_id: "course-1", code: "BLS-01", name: "Provider Course",
+      venue: "Skills Lab", status: "scheduled",
+    }));
   });
 });

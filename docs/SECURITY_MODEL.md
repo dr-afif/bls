@@ -111,6 +111,19 @@ Requirements:
 - Uploaded PDFs should be scanned or validated before publication
 - Old versions should be retained or archived according to policy
 
+Milestone 4 Phase 2 implements this boundary for fictional PDFs in the private
+`course-resources` bucket. Browser roles have no object read, list, update, or
+delete policy. Administrator insert access is limited to the exact recorded
+path of a same-organization draft PDF version. A JWT-protected Edge Function
+calls service-only database authorization, signs the returned path for 60
+seconds, and records authorization and issuance events without persisting the
+URL or token. Per-user rate limiting and idempotent request IDs reduce abuse
+and retry duplication.
+
+Watermark rendering, viewer controls, protected-content cache inspection, and
+document malware scanning remain later integration and production-hardening
+requirements.
+
 ## Quiz security
 
 - Correct options excluded from learner-selectable queries

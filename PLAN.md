@@ -62,9 +62,18 @@ or work pauses for a user decision.
 
 ### Current work
 
-- Design resource metadata, immutable versions, audience/topic/stage taxonomy,
-  private Storage, and entitlement-checked short-lived access.
-- Define table and Storage RLS tests before connecting Guides and Teaching Kit.
+- Follow the phased implementation and verification sequence in
+  [`docs/MILESTONE_4_IMPLEMENTATION_PLAN.md`](docs/MILESTONE_4_IMPLEMENTATION_PLAN.md).
+- Phase 1 is complete: resource metadata, immutable versions,
+  audience/topic/stage taxonomy, course entitlements, publication controls,
+  table RLS, auditing, fictional fixtures, and hosted pgTAP tests are in place.
+- Phase 2 is complete: the private `course-resources` bucket, exact-path draft
+  PDF insert policy, service-only authorization RPCs, JWT-protected
+  `issue-resource-access` Edge Function, 60-second signed URLs, rate limiting,
+  idempotent auditing, fictional PDF fixtures, and hosted tests are deployed.
+- Proceed to Phase 3 planning for production learner Guides and instructor
+  Teaching Kit reads, filters, viewer integration, and safe signed-PDF
+  consumption. Keep administrator authoring/upload UI for Phase 4.
 - Keep quizzes, results, analytics, and exports fictional until later milestones.
 
 ## Milestone 1 — Role-aware frontend prototype
@@ -200,7 +209,8 @@ limitation.
 
 ## Milestone 4 — Resources and teaching materials
 
-**Status:** active; this is the next coding milestone.
+**Status:** active; Phases 1 and 2 are complete. Phase 3 production resource
+catalog and protected-viewer integration is next.
 
 ### Backend
 

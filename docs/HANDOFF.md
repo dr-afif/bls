@@ -2,29 +2,33 @@
 
 ## Last updated
 
-2026-08-13
+2026-08-14
 
 ## Current milestone
 
-Milestones 1 and 2 are complete. Milestone 3, People and Cohorts, is complete
-in the hosted development environment with audited administrator writes and
-role-scoped learner/instructor reads. Milestone 4, Resources and Teaching
-Materials, is next.
+Milestones 1 through 3 are complete. Milestone 4, Resources and Teaching
+Materials, is active. Phase 1 schema, RLS, auditing, fictional fixtures, hosted
+tests, and generated types are complete. Phase 2 private Storage and signed
+access is deployed and verified. Phase 3 production resource catalog and
+protected-viewer integration is next.
 
 ## Current repository state
 
 - React, TypeScript, Vite, Tailwind, React Router, and Vitest frontend.
 - Distinct learner, instructor, and administrator route trees and shells.
-- Fictional local data remains for resources, quizzes, results, and analytics;
-  authenticated People and Cohorts data now uses typed Supabase repositories.
+- Fictional local data remains visible for resources, quizzes, results, and
+  analytics. Authenticated People/Cohorts uses Supabase, and the hosted resource
+  foundation is ready but is not connected to production Guides/Teaching Kit
+  routes until Phase 3.
 - Clinical Field Guide styling for learner and instructor screens.
 - Compact Operational Course Companion density for administrator screens.
 - Hosted Supabase development database with the initial identity/access schema,
   explicit grants, RLS policies, fictional organization seed, and generated
   TypeScript types. The frontend now connects through validated public
   configuration for invite-only sign-in, recovery, session restoration, and
-  RLS-backed profile/role checks. There are no real users, protected content,
-  secure scoring, or real exports.
+  RLS-backed profile/role checks. The hosted project now also contains a
+  private fictional PDF bucket and JWT-protected signed-access function. There
+  are no real users, clinical documents, secure scoring, or real exports.
 
 ## Work completed
 
@@ -83,6 +87,32 @@ Materials, is next.
   administrator People/Cohorts management, instructor assigned-cohort roster,
   and learner physical-course details. The separate `/demo` experience remains
   unchanged.
+- Added organization-scoped courses and required cohort-to-course association,
+  effective fixed-window/permanent entitlements, BLS topics, teaching stages,
+  resource metadata, immutable versions, audiences, taxonomy assignments,
+  related resources, and append-only access-event records.
+- Added explicit browser grants, deny-by-default RLS, administrator-only
+  lifecycle writes, an audited publication RPC, version and organization
+  invariants, and resource/classification/entitlement audit triggers.
+- Loaded fictional hosted fixtures: one Adult BLS course, two active test-user
+  entitlements, six topics, four teaching stages, eight published immutable
+  resource versions, and one related-resource link.
+- Updated cohort creation to resolve the organization’s published course and
+  regenerated public-schema TypeScript types.
+- Added the private PDF-only `course-resources` bucket, exact-path
+  administrator draft insert policy, service-only authorization/issuance RPCs,
+  per-user rate limiting, idempotent audit events, and 40 hosted pgTAP
+  assertions for Storage and access boundaries.
+- Generated and visually verified two one-page fictional PDF fixtures that are
+  explicitly labelled as non-clinical development data, then uploaded them to
+  version-specific private object paths.
+- Implemented, unit-tested, and deployed JWT-protected Edge Function
+  `issue-resource-access`; it authorizes the verified user, returns a 60-second
+  signed URL with no-store headers, and fails closed if signing or audit append
+  fails.
+- Regenerated hosted database types and smoke-tested signed retrieval for all
+  three fictional roles plus unsigned, unauthenticated, non-PDF, unknown
+  version, and unapproved-origin denial cases.
 
 ## Decisions implemented
 
@@ -99,6 +129,58 @@ Materials, is next.
 
 ## Latest verification status
 
+- Phase 2 migration
+  `20260814011444_milestone_4_private_resource_access.sql` is applied; hosted
+  migration history now contains all Milestone 4 migrations through Phase 2.
+- Hosted `supabase test db --linked`: passed 109 assertions across four files
+  (15 identity/access, 23 People/Cohorts, 31 resource catalog, and 40 private
+  Storage/access assertions).
+- Private bucket inspection: `course-resources` is non-public, PDF-only, limited
+  to 20 MiB, and contains exactly the two expected fictional fixture objects.
+- Edge Function `issue-resource-access` version 2 is active with platform JWT
+  verification enabled. CORS preflight returned 204.
+- Hosted smoke checks: learner, instructor, and administrator each received a
+  60-second signed URL and retrieved the expected PDF; missing JWT, unsigned
+  public object path, non-PDF version, unknown version, and unapproved origin
+  were denied.
+- Hosted rate-limit smoke check returned ten successes followed by HTTP 429 on
+  the eleventh rapid request for the same fictional learner.
+- Audit verification found matching `signed_url_authorized` and
+  `signed_url_issued` events, with no URL/token material in metadata.
+- Final repository verification: typecheck passed; lint passed; 31 Vitest tests
+  across 12 files passed; production build passed with 1,815 transformed
+  modules and the existing non-blocking main-chunk warning.
+- Supabase security advisor has no schema/RLS errors. Its one warning is the
+  pre-existing disabled leaked-password protection setting. Performance
+  findings are unused-index informational notices expected before meaningful
+  application traffic.
+- Both fixture PDFs are one page, have extractable text, render without layout
+  defects, and visibly state that they are fictional and not clinical guidance.
+
+- Milestone 4 Phase 1 migrations through
+  `20260813083756_milestone_4_resource_authorization_audit.sql` are applied to
+  hosted project `zlaixhnyydxgbphgsetv`.
+- Hosted `supabase test db --linked`: passed 69 assertions across three files
+  (15 identity/access, 23 People/Cohorts, and 31 resource/access assertions).
+- Hosted fixture verification: one course, two entitlements, eight resources,
+  eight immutable versions, six topics, four teaching stages, and one relation.
+- Security advisor reports no schema/RLS errors. Its single warning is the
+  already documented project-level leaked-password protection setting.
+- Performance advisor reports only unused-index informational notices, expected
+  before the new resource queries receive application traffic.
+- Final Phase 1 frontend verification: typecheck passed, lint passed, all 19
+  tests across 11 files passed, and the production build passed with 1,815
+  modules transformed and the existing non-blocking main-chunk warning.
+- Deployed Milestone 3 smoke testing on 2026-08-13 passed for all three
+  fictional roles: administrator People and Cohorts loaded live data; the
+  learner saw only permitted physical-course details; the instructor saw the
+  assigned cohort and permitted roster; learner and instructor access to
+  administrator routes was denied; sign-out returned to login; and the browser
+  reported no warnings or errors.
+- The deployed smoke test intentionally performed no administrative mutation.
+  The hosted audit table contains the three fictional account-provisioning
+  events; cohort, membership, and account-status audit triggers remain covered
+  by the passing 38-assertion pgTAP suite.
 - `npm run typecheck`: passed.
 - `npm run lint`: passed.
 - `npm run test`: passed (19 tests across 11 files).
@@ -122,7 +204,8 @@ Materials, is next.
 - Rendered local UI checks passed for all three role redirects and sign-out,
   learner session restoration after reload, learner denial from the admin
   route, and browser console output.
-- Hosted security advisor: zero findings.
+- At the identity-foundation checkpoint, the hosted security advisor reported
+  zero findings; the current advisor result is recorded above.
 - Hosted performance advisor: no missing-index findings. Remaining informational
   notices identify unused indexes, which is expected before application traffic.
 - Post-test database check: zero Auth users, one fictional organization, zero
@@ -155,10 +238,12 @@ Materials, is next.
 
 ## Exact recommended next action
 
-Begin Milestone 4 by designing resource metadata and immutable resource
-versions, audience/topic/teaching-stage taxonomy, a private Storage bucket, and
-short-lived entitlement-checked access. Define Storage and table RLS tests
-before replacing the Guides or Teaching Kit mock repositories.
+Plan and implement Milestone 4 Phase 3: connect production learner Guides and
+instructor Teaching Kit routes to typed resource repositories, add accessible
+resource viewing, and invoke the deployed PDF-access function at open time.
+Keep signed URLs in memory only, preserve the current mock `/demo` route tree,
+and add browser tests proving logout/expiry/error states and protected-content
+cache exclusion. Do not add administrator upload/editing UI until Phase 4.
 
 ## Proxy-validation follow-up questions
 
@@ -192,15 +277,18 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Known limitations
 
-- Resource, quiz, result, analytics, and export data remains local and
-  fictional. Authenticated People and Cohorts use hosted fictional development
-  data; no real learner information is present.
+- Resource schema and fictional fixtures now exist in hosted development, but
+  production resource routes still use local prototype data. Quiz, result,
+  analytics, and export data also remains local and fictional; no real learner
+  information is present.
 - The demo role selector is intentionally separate from authentication and
   authorization.
 - Post-test release, quiz security, scoring, access expiry, and route visibility
   are not server-enforced.
-- Resource viewers do not provide protected storage, signed URLs, watermark
-  identity, or copy prevention.
+- Private resource Storage and signed access are implemented for fictional PDF
+  fixtures, but production resource repositories, watermark identity, viewer
+  wiring, post-expiry browser verification, and protected-cache inspection
+  remain Phase 3 work.
 - Export buttons never generate files.
 - Analytics are illustrative and are not calculated from persisted attempts.
 - PWA offline caching and install behavior are not part of this milestone.
