@@ -53,6 +53,12 @@ const OperationsCohortsAdminPage = lazy(() =>
 const MyCohortsPage = lazy(() =>
   import("../features/operations/pages/my-cohorts-page").then((module) => ({ default: module.MyCohortsPage })),
 );
+const ResourceLibraryPage = lazy(() =>
+  import("../features/resources/pages/resource-library-page").then((module) => ({ default: module.ResourceLibraryPage })),
+);
+const LiveResourceViewerPage = lazy(() =>
+  import("../features/resources/pages/resource-viewer-page").then((module) => ({ default: module.LiveResourceViewerPage })),
+);
 const LearnerHomePage = lazy(() =>
   import("../features/learner/pages/home-page").then((module) => ({
     default: module.LearnerHomePage,
@@ -186,7 +192,7 @@ export const router = createHashRouter([
         children: [{ path: "/app", element: deferred(<RoleRedirect />) }],
       },
       {
-        element: <RequireAccountAccess allowedRoles={["learner", "instructor"]} />,
+        element: <RequireAccountAccess allowedRoles={["learner"]} />,
         children: [
           {
             path: "/app/learner/*",
@@ -194,6 +200,8 @@ export const router = createHashRouter([
             children: [
               { index: true, element: <Navigate replace to="cohort" /> },
               { path: "cohort", element: deferred(<MyCohortsPage />) },
+              { path: "guides", element: deferred(<ResourceLibraryPage scope="learner" />) },
+              { path: "guides/:resourceId", element: deferred(<LiveResourceViewerPage scope="learner" />) },
             ],
           },
         ],
@@ -207,6 +215,8 @@ export const router = createHashRouter([
             children: [
               { index: true, element: <Navigate replace to="cohorts" /> },
               { path: "cohorts", element: deferred(<MyCohortsPage instructor />) },
+              { path: "teaching-kit", element: deferred(<ResourceLibraryPage scope="instructor" />) },
+              { path: "teaching-kit/:resourceId", element: deferred(<LiveResourceViewerPage scope="instructor" />) },
             ],
           },
         ],

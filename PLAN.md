@@ -71,9 +71,12 @@ or work pauses for a user decision.
   PDF insert policy, service-only authorization RPCs, JWT-protected
   `issue-resource-access` Edge Function, 60-second signed URLs, rate limiting,
   idempotent auditing, fictional PDF fixtures, and hosted tests are deployed.
-- Proceed to Phase 3 planning for production learner Guides and instructor
-  Teaching Kit reads, filters, viewer integration, and safe signed-PDF
-  consumption. Keep administrator authoring/upload UI for Phase 4.
+- Phase 3 is complete: production learner Guides and instructor Teaching Kit
+  use typed RLS-backed reads, URL-preserved filters, related resources, and a
+  protected in-memory PDF viewer with a visible watermark and safe states.
+- Proceed to Phase 4 planning for administrator resource lifecycle,
+  classification, immutable version creation, private PDF upload, review,
+  approval, publication, retirement, and audit feedback.
 - Keep quizzes, results, analytics, and exports fictional until later milestones.
 
 ## Milestone 1 — Role-aware frontend prototype
@@ -209,8 +212,8 @@ limitation.
 
 ## Milestone 4 — Resources and teaching materials
 
-**Status:** active; Phases 1 and 2 are complete. Phase 3 production resource
-catalog and protected-viewer integration is next.
+**Status:** active; Phases 1 through 3 are complete. Phase 4 administrator
+resource workflow is next.
 
 ### Backend
 

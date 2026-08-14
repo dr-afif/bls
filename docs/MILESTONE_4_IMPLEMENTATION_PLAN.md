@@ -229,6 +229,9 @@ Follow the detailed implementation and verification plan in
 
 ### Phase 3 — Read-only production experience
 
+**Status:** complete on 2026-08-14 and verified against the hosted fictional
+development project.
+
 1. Implement typed repositories and TanStack Query hooks.
 2. Connect learner Guides and instructor Teaching Kit production routes.
 3. Add the resource viewer, related resources, safe errors, and offline state.

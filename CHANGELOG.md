@@ -8,6 +8,20 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Added
 
+- Milestone 4 Phase 3 typed production resource repository and TanStack Query
+  hooks, including validated immutable guide/checklist snapshots, topic and
+  teaching-stage taxonomy, relations, and stable learner-safe failures
+- Authenticated learner Guides and instructor Teaching Kit routes with live
+  Supabase data, URL-preserved search and filters, responsive resource lists,
+  related resources, and loading, empty, offline, denied, expired, rate-limit,
+  and recoverable error states
+- Lazy-loaded PDF.js protected-document renderer that requests a signed URL
+  only when opened, immediately fetches PDF bytes with `cache: no-store`, keeps
+  the URL out of the DOM and TanStack Query, provides extractable page text for
+  assistive technology, and overlays a visible user-specific watermark
+- Eight focused Phase 3 unit/component tests covering catalog assembly,
+  malformed immutable snapshots, protected-file access and cache options,
+  offline and denial states, filtering, and readable taxonomy controls
 - Milestone 4 Phase 2 private `course-resources` Storage bucket, PDF-only
   20 MiB limit, version-specific fictional PDF fixtures, and reproducible
   bucket seeding configuration
@@ -86,6 +100,17 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Changed
 
+- Production learner and instructor workspaces now use adaptive navigation:
+  labelled bottom navigation on small screens and horizontal workspace
+  navigation at larger breakpoints, with reserved safe-area spacing and
+  44-pixel-or-larger interaction targets
+- The learner production route guard now permits only learner accounts; the
+  separate instructor route tree remains role guarded and both continue to
+  rely on database RLS for authorization
+- The fictional learner course entitlement was realigned to the learner's
+  current active fictional cohort after a prior smoke test left the original
+  demonstration membership removed; the targeted hosted correction has a
+  corresponding audit event
 - Regenerated TypeScript database types from the hosted Phase 2 schema and
   advanced Milestone 4 to Phase 3 resource-catalog/viewer integration planning
 - Cohorts now require an organization-matching course, cohort creation resolves
