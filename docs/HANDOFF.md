@@ -9,7 +9,8 @@
 Milestones 1 through 4 are complete. Phase 4.1 was merged through PR #5 at
 commit `271dd9b480ba7435145c5cbf47fdb893cb13ff03`. Milestone 5 Phase 1, the
 secure quiz foundation, is implemented and hosted-verified on branch
-`agent/milestone-5-phase-1-quiz-foundation` and is ready for publication.
+`agent/milestone-5-phase-1-quiz-foundation` and is published for review in
+draft PR #6.
 
 ## Current repository state
 
@@ -456,7 +457,7 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Review the Phase 5.1 migration/RPC boundary in its pull request. After merge
-and deployment smoke testing, implement Milestone 5 Phase 2: administrator
-quiz/question authoring and cohort post-test release UI using only fictional,
+Review the Phase 5.1 migration/RPC boundary in draft PR #6. After merge and
+deployment smoke testing, implement Milestone 5 Phase 2: administrator quiz/
+question authoring and cohort post-test release UI using only fictional,
 non-clinical content.
