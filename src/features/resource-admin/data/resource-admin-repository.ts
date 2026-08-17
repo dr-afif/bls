@@ -25,9 +25,9 @@ export async function listAdminResourceCatalog(client: Client): Promise<AdminRes
     client.from("resource_versions").select("id, resource_id, version_number, title, summary, content, youtube_video_id, storage_path, guideline_source, guideline_year, reviewed_at, next_review_at, approved_at, status, created_at").order("created_at", { ascending: false }).limit(500),
     client.from("resource_audiences").select("resource_id, audience"),
     client.from("resource_topics").select("resource_id, topic_id, display_order"),
-    client.from("bls_topics").select("id, name, display_order").eq("active", true).order("display_order"),
+    client.from("bls_topics").select("id, name, display_order, active").order("display_order").order("name"),
     client.from("resource_teaching_stages").select("resource_id, teaching_stage_id, display_order"),
-    client.from("teaching_stages").select("id, name, display_order").eq("active", true).order("display_order"),
+    client.from("teaching_stages").select("id, name, display_order, active").order("display_order").order("name"),
     client.from("courses").select("id, title, status").neq("status", "archived").order("title"),
     client.from("audit_events").select("id, actor_user_id, action, entity_id, created_at").in("entity_type", ["resource", "resource_version"]).order("created_at", { ascending: false }).limit(100),
     client.from("profiles").select("id, full_name"),
@@ -67,14 +67,14 @@ export async function listAdminResourceCatalog(client: Client): Promise<AdminRes
       .sort((left, right) => left.display_order - right.display_order)
       .flatMap((item) => {
         const topic = topicById.get(item.topic_id);
-        return topic ? [{ id: topic.id, name: topic.name }] : [];
+        return topic ? [{ active: topic.active, id: topic.id, name: topic.name }] : [];
       }),
     stages: (stageAssignments.data ?? [])
       .filter((item) => item.resource_id === resource.id)
       .sort((left, right) => left.display_order - right.display_order)
       .flatMap((item) => {
         const stage = stageById.get(item.teaching_stage_id);
-        return stage ? [{ id: stage.id, name: stage.name }] : [];
+        return stage ? [{ active: stage.active, id: stage.id, name: stage.name }] : [];
       }),
     type: resource.resource_type,
     updatedAt: resource.updated_at,
@@ -99,8 +99,8 @@ export async function listAdminResourceCatalog(client: Client): Promise<AdminRes
   return {
     courses: (courses.data ?? []).map((course) => ({ id: course.id, name: course.title })),
     resources: assembled,
-    stages: (stages.data ?? []).map((stage) => ({ id: stage.id, name: stage.name })),
-    topics: (topics.data ?? []).map((topic) => ({ id: topic.id, name: topic.name })),
+    stages: (stages.data ?? []).map((stage) => ({ active: stage.active, id: stage.id, name: stage.name })),
+    topics: (topics.data ?? []).map((topic) => ({ active: topic.active, id: topic.id, name: topic.name })),
   };
 }
 

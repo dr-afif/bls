@@ -79,8 +79,13 @@ or work pauses for a user decision.
   server-owned lifecycle transitions, private PDF validation and cleanup,
   administrator routes/forms, audit feedback, protected preview, and responsive
   verification.
-- Prepare Phase 4 for review and publication, then run the deployed Phase 5
-  verification sequence before closing Milestone 4.
+- Phase 4.1 resource taxonomy management is implemented and hosted-verified in
+  [`docs/MILESTONE_4_PHASE_4_1_TAXONOMY_PLAN.md`](docs/MILESTONE_4_PHASE_4_1_TAXONOMY_PLAN.md):
+  administrators can add, edit, order, activate, and safely deactivate BLS
+  topics and teaching stages with server-enforced publication invariants and
+  auditing.
+- Review and publish the Phase 4.1 branch, run its deployed administrator smoke
+  test, then complete the Milestone 4 Phase 5 verification sequence.
 - Keep quizzes, results, analytics, and exports fictional until later milestones.
 
 ## Milestone 1 — Role-aware frontend prototype
@@ -216,9 +221,9 @@ limitation.
 
 ## Milestone 4 — Resources and teaching materials
 
-**Status:** active; Phases 1 through 4 are implemented and locally/hosted
-verified. Phase 4 still requires branch review, publication, and deployed smoke
-verification before Milestone 4 closes.
+**Status:** active; Phases 1 through 4 and the Phase 4.1 taxonomy extension are
+implemented and locally/hosted verified. Phase 4.1 still requires branch review,
+publication, and a deployed smoke test before Milestone 4 closes.
 
 ### Backend
 

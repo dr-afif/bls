@@ -4,6 +4,7 @@ export type ResourceStatus = Enums<"resource_status">;
 export type ResourceType = Enums<"resource_type">;
 export type ResourceAudience = Enums<"resource_audience">;
 export type ResourceOption = { id: string; name: string };
+export type ResourceClassificationOption = ResourceOption & { active: boolean };
 
 export type AdminResourceVersion = {
   approvedAt: string | null;
@@ -42,10 +43,10 @@ export type AdminResource = {
   id: string;
   organizationId: string;
   slug: string;
-  stages: ResourceOption[];
+  stages: ResourceClassificationOption[];
   status: ResourceStatus;
   title: string;
-  topics: ResourceOption[];
+  topics: ResourceClassificationOption[];
   type: ResourceType;
   updatedAt: string;
   versions: AdminResourceVersion[];
@@ -63,8 +64,8 @@ export type UpdateResourceMetadataInput = {
 export type AdminResourceCatalog = {
   courses: ResourceOption[];
   resources: AdminResource[];
-  stages: ResourceOption[];
-  topics: ResourceOption[];
+  stages: ResourceClassificationOption[];
+  topics: ResourceClassificationOption[];
 };
 
 export type CreateResourceInput = {

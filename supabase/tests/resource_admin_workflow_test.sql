@@ -262,7 +262,7 @@ select extensions.throws_ok(
     (select id from public.resource_versions
      where resource_id = '67000000-0000-0000-0000-000000000002')
   )$$,
-  '23514', 'Published resources require an audience and topic',
+  '23514', 'Published resources require an audience and active topic',
   'publication requires classifications'
 );
 select extensions.lives_ok(

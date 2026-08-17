@@ -2,16 +2,18 @@
 
 ## Last updated
 
-2026-08-14
+2026-08-17
 
 ## Current milestone
 
 Milestones 1 through 3 are complete. Milestone 4, Resources and Teaching
 Materials, is active. Phase 1 schema/RLS, Phase 2 private Storage/signed access,
-Phase 3 production learner/instructor resource experiences, and Phase 4
-administrator resource authoring are complete and verified. PR #4 is merged and
-deployed; Phase 4 is implemented on branch
-`agent/milestone-4-phase-4-admin-resources` and is ready for review/publication.
+Phase 3 production learner/instructor resource experiences, Phase 4
+administrator resource authoring, and Phase 4.1 resource taxonomy management
+are implemented and verified. Phase 4.1 is on branch
+`agent/milestone-4-phase-4-admin-resources`; its migrations are applied to the
+fictional hosted project, while the code remains uncommitted pending review and
+publication.
 
 ## Current repository state
 
@@ -155,6 +157,22 @@ deployed; Phase 4 is implemented on branch
 - Added four administrator resource repository tests for no-overwrite PDF upload,
   client file validation, safe hosted-error mapping, and object-before-row draft
   cleanup. The frontend suite now contains 43 tests across 16 files.
+- Added the Phase 4.1 Resource Taxonomy route and typed repository/hooks/forms.
+  Administrators can add, rename, describe, order, activate, and deactivate BLS
+  topics and teaching stages; the page shows text-and-icon status, usage,
+  publication blockers, stable slugs, and recent audit activity.
+- Applied hosted migration
+  `20260817025736_milestone_4_resource_taxonomy_management.sql`, which removes
+  authenticated slug updates, prevents taxonomy deletion/deactivation from
+  weakening publication invariants, audits taxonomy changes, and tightens
+  classification replacement and publication around active labels.
+- Applied follow-up migration
+  `20260817032632_milestone_4_resource_taxonomy_concurrency_lock.sql`, which
+  locks affected resource rows in stable order so deactivation serializes with
+  concurrent publication and classification operations.
+- Added 21 taxonomy pgTAP assertions and four frontend taxonomy tests. The
+  complete suites now contain 164 hosted SQL/RLS assertions across six files
+  and 47 Vitest tests across 18 files.
 
 ## Decisions implemented
 
@@ -171,6 +189,25 @@ deployed; Phase 4 is implemented on branch
 
 ## Latest verification status
 
+- Milestone 4 Phase 4.1 final verification on 2026-08-17: strict typecheck and
+  lint passed; all 47 Vitest tests across 18 files passed; production build
+  passed with 1,841 transformed modules and only the existing non-blocking
+  main-chunk warning.
+- Hosted `supabase test db --linked` passed all 164 assertions across six files,
+  including all 21 taxonomy assertions. Both Phase 4.1 migrations are applied
+  to project `zlaixhnyydxgbphgsetv`, and a dry run reports the hosted migration
+  history is current. Regenerated `public,graphql_public` types match the
+  committed generated TypeScript file.
+- Rendered live-fictional-data verification passed on the administrator taxonomy
+  route: all six topics and four teaching stages loaded, blocker controls and
+  explanations matched assignments, add-form labels and generated-slug state
+  were readable, controls measured approximately 44 pixels, 320-pixel reflow
+  remained within the configured viewport, and the console had no warnings or
+  errors. No hosted taxonomy record was changed during this check.
+- Supabase advisors report no new Phase 4.1 security or performance finding.
+  Existing intentional authenticated lifecycle-function warnings, the
+  leaked-password-protection warning, and pre-traffic unused-index information
+  remain unchanged.
 - Milestone 4 Phase 4 final verification on 2026-08-14: strict typecheck passed;
   lint passed; all 43 Vitest tests across 16 files passed; production build
   passed with 1,836 transformed modules. The existing non-blocking main-chunk
@@ -370,6 +407,10 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
   recent 100 resources/events (and 500 versions). Cursor pagination, bulk
   operations, automated review reminders, and automated orphan cleanup remain
   deferred until real catalogue scale justifies them.
+- Taxonomy usage/blocker summaries are assembled from bounded administrator
+  reads of up to 500 resources and 5,000 assignments. The database invariant is
+  authoritative and still blocks unsafe deactivation if a future catalogue
+  exceeds those UI-summary bounds; pagination or aggregate RPCs are deferred.
 - The demo role selector is intentionally separate from authentication and
   authorization.
 - Post-test release, quiz security, scoring, access expiry, and route visibility
@@ -404,8 +445,8 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Review the Phase 4 branch, then commit and push it, open the scoped Phase 4 pull
-request, merge after CI passes, and smoke-test administrator create/draft/review/
-publish behavior plus learner/instructor visibility on the deployed GitHub Pages
-build. After that, complete Milestone 4 Phase 5 verification/publication and plan
-Milestone 5 quizzes/results as a separate security-focused milestone.
+Review the Phase 4.1 taxonomy page locally without mutating non-fictional data,
+then commit and push the scoped branch and open a Phase 4.1 pull request. After
+CI and merge, smoke-test add/edit/deactivate/reactivate with one disposable
+fictional label on GitHub Pages, confirm its audit trail and role denial, then
+complete Milestone 4 Phase 5 verification before planning Milestone 5.

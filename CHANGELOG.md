@@ -8,6 +8,18 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Added
 
+- Phase 4.1 administrator resource-taxonomy workspace for adding, editing,
+  ordering, activating, and safely deactivating BLS topics and teaching stages,
+  with stable slugs, usage/blocker counts, responsive full-page forms, audit
+  history, and inactive historical-assignment labels
+- Publication-safe taxonomy migrations with immutable browser-facing slugs,
+  no-delete privileges, audited taxonomy triggers, active-classification
+  validation in replacement/publication functions, database-enforced
+  deactivation blockers, and resource-row locks that serialize deactivation
+  with concurrent publication/classification changes
+- Twenty-one Phase 4.1 pgTAP assertions and four taxonomy utility/repository
+  tests; the complete suites now contain 164 SQL/RLS assertions and 47 Vitest
+  tests across 18 frontend test files
 - Authenticated administrator Resources workspace with URL-preserved search and
   lifecycle/audience/topic/teaching-stage filters, bounded live catalogue reads,
   responsive resource cards, stable metadata and classification editing,
@@ -22,8 +34,7 @@ The project uses a `Major.Minor.Patch` versioning convention.
 - Exact-path draft PDF delete policy, Storage API cleanup, no-overwrite upload,
   private-file status recovery, and MIME/non-empty/20 MiB metadata validation
 - Thirty-four Phase 4 lifecycle/Storage pgTAP assertions and four focused
-  frontend repository tests; the complete suites now contain 143 SQL/RLS
-  assertions and 43 Vitest tests
+  frontend repository tests for the administrator-resource baseline
 - Detailed Milestone 4 Phase 4 administrator-resource plan covering lifecycle
   transition hardening, exact-path private PDF upload and rollback, visible
   orphan recovery, full-page administration routes, accessible review and

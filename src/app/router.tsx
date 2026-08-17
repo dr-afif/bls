@@ -62,6 +62,9 @@ const ResourceNewPage = lazy(() =>
 const ResourceDetailPage = lazy(() =>
   import("../features/resource-admin/pages/resource-detail-page").then((module) => ({ default: module.ResourceDetailPage })),
 );
+const ResourceTaxonomyPage = lazy(() =>
+  import("../features/resource-admin/pages/resource-taxonomy-page").then((module) => ({ default: module.ResourceTaxonomyPage })),
+);
 const ResourceVersionNewPage = lazy(() =>
   import("../features/resource-admin/pages/resource-version-new-page").then((module) => ({ default: module.ResourceVersionNewPage })),
 );
@@ -248,6 +251,7 @@ export const router = createHashRouter([
               { path: "cohorts", element: deferred(<OperationsCohortsAdminPage />) },
               { path: "resources", element: deferred(<ResourcesAdminPage />) },
               { path: "resources/new", element: deferred(<ResourceNewPage />) },
+              { path: "resources/taxonomy", element: deferred(<ResourceTaxonomyPage />) },
               { path: "resources/:resourceId", element: deferred(<ResourceDetailPage />) },
               { path: "resources/:resourceId/preview", element: deferred(<LiveResourceViewerPage adminPreview scope="instructor" />) },
               { path: "resources/:resourceId/versions/new", element: deferred(<ResourceVersionNewPage />) },
