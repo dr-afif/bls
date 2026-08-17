@@ -8,6 +8,37 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Added
 
+- Phase 4.1 administrator resource-taxonomy workspace for adding, editing,
+  ordering, activating, and safely deactivating BLS topics and teaching stages,
+  with stable slugs, usage/blocker counts, responsive full-page forms, audit
+  history, and inactive historical-assignment labels
+- Publication-safe taxonomy migrations with immutable browser-facing slugs,
+  no-delete privileges, audited taxonomy triggers, active-classification
+  validation in replacement/publication functions, database-enforced
+  deactivation blockers, and resource-row locks that serialize deactivation
+  with concurrent publication/classification changes
+- Twenty-one Phase 4.1 pgTAP assertions and four taxonomy utility/repository
+  tests; the complete suites now contain 164 SQL/RLS assertions and 47 Vitest
+  tests across 18 frontend test files
+- Authenticated administrator Resources workspace with URL-preserved search and
+  lifecycle/audience/topic/teaching-stage filters, bounded live catalogue reads,
+  responsive resource cards, stable metadata and classification editing,
+  immutable version history, recent audit feedback, and protected current-
+  version preview
+- React Hook Form and Zod resource/version forms for guide, checklist, PDF, and
+  YouTube records, including visible validation, pending states, server-safe
+  errors, approximately 44-pixel controls, and mobile reflow at 320 pixels
+- Server-owned draft allocation, review submission/evidence, approval,
+  publication, retirement, classification replacement, PDF readiness, and safe
+  draft-discard functions with explicit administrator checks and grants
+- Exact-path draft PDF delete policy, Storage API cleanup, no-overwrite upload,
+  private-file status recovery, and MIME/non-empty/20 MiB metadata validation
+- Thirty-four Phase 4 lifecycle/Storage pgTAP assertions and four focused
+  frontend repository tests for the administrator-resource baseline
+- Detailed Milestone 4 Phase 4 administrator-resource plan covering lifecycle
+  transition hardening, exact-path private PDF upload and rollback, visible
+  orphan recovery, full-page administration routes, accessible review and
+  publication workflows, and the end-to-end verification matrix
 - Milestone 4 Phase 3 typed production resource repository and TanStack Query
   hooks, including validated immutable guide/checklist snapshots, topic and
   teaching-stage taxonomy, relations, and stable learner-safe failures
@@ -100,6 +131,10 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Changed
 
+- Authenticated administrator navigation now includes Resources and uses a
+  three-column compact navigation layout without page overflow at 320 pixels
+- Regenerated TypeScript database types after applying the Phase 4 lifecycle
+  schema and advanced Milestone 4 to review/publication verification
 - Production learner and instructor workspaces now use adaptive navigation:
   labelled bottom navigation on small screens and horizontal workspace
   navigation at larger breakpoints, with reserved safe-area spacing and
@@ -170,6 +205,13 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Security
 
+- Removed direct authenticated writes to resource-version allocation,
+  lifecycle actors/timestamps, resource publication pointers, and
+  classification tables; narrow functions now verify active same-organization
+  administrators and serialize parent-before-version transitions
+- Restricted browser-side private-file deletion to the exact unreferenced draft
+  path, preserved the absence of browser list/read/update policies, and required
+  valid stored PDF MIME and size metadata before review, approval, or publication
 - Kept protected PDFs private with no browser read, list, update, move, or
   delete policy; only active same-organization administrators may insert the
   exact recorded path for a draft PDF version

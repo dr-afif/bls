@@ -2,14 +2,18 @@
 
 ## Last updated
 
-2026-08-14
+2026-08-17
 
 ## Current milestone
 
 Milestones 1 through 3 are complete. Milestone 4, Resources and Teaching
 Materials, is active. Phase 1 schema/RLS, Phase 2 private Storage/signed access,
-and Phase 3 production learner/instructor resource experiences are complete
-and verified. Phase 4 administrator resource workflow is next.
+Phase 3 production learner/instructor resource experiences, Phase 4
+administrator resource authoring, and Phase 4.1 resource taxonomy management
+are implemented and verified. Phase 4.1 is on branch
+`agent/milestone-4-phase-4-admin-resources`; its migrations are applied to the
+fictional hosted project, while the code remains uncommitted pending review and
+publication.
 
 ## Current repository state
 
@@ -17,8 +21,9 @@ and verified. Phase 4 administrator resource workflow is next.
 - Distinct learner, instructor, and administrator route trees and shells.
 - Fictional local data remains visible for quizzes, results, analytics, and all
   `/demo` routes. Authenticated People/Cohorts, learner Guides, instructor
-  Teaching Kit, structured resource viewing, and protected fictional PDFs now
-  use Supabase through typed repositories and server-enforced access.
+  Teaching Kit, administrator Resources, structured resource viewing, and
+  protected fictional PDFs now use Supabase through typed repositories and
+  server-enforced access.
 - Clinical Field Guide styling for learner and instructor screens.
 - Compact Operational Course Companion density for administrator screens.
 - Hosted Supabase development database with the initial identity/access schema,
@@ -128,6 +133,46 @@ and verified. Phase 4 administrator resource workflow is next.
   fictional cohort after a previous smoke-test mutation had removed membership
   from the original demonstration cohort. The targeted hosted correction was
   recorded as `course.entitlement_updated` in the audit log.
+- Merged PR #4 into `main` at commit
+  `bb817de`, and the product owner confirmed that the GitHub Pages deployment
+  completed successfully.
+- Added the detailed Milestone 4 Phase 4 plan for authenticated administrator
+  resource listing, metadata/classification editing, immutable version
+  creation, exact-path private PDF upload and rollback, clinical review,
+  approval, publication, retirement, preview, audit feedback, and verification.
+- Added server-owned resource draft allocation and lifecycle transitions,
+  atomic classification replacement, exact-path draft cleanup, immutable
+  submitted/approved history, resource-scoped audit events, and stored PDF
+  MIME/size readiness checks.
+- Applied hosted migrations
+  `20260814074046_milestone_4_admin_resource_workflow.sql` and
+  `20260814081642_milestone_4_resource_pdf_metadata_validation.sql`, regenerated
+  database types, and expanded hosted pgTAP coverage to 143 assertions across
+  five files.
+- Replaced the authenticated administrator Resources placeholder with live,
+  responsive list/create/detail/version routes, URL-preserved filters, stable
+  metadata and taxonomy forms, guide/checklist/video/PDF draft forms, exact-path
+  private PDF upload and cleanup, review/approval/publication/retirement actions,
+  protected preview, and recent audit feedback. `/demo` remains unchanged.
+- Added four administrator resource repository tests for no-overwrite PDF upload,
+  client file validation, safe hosted-error mapping, and object-before-row draft
+  cleanup. The frontend suite now contains 43 tests across 16 files.
+- Added the Phase 4.1 Resource Taxonomy route and typed repository/hooks/forms.
+  Administrators can add, rename, describe, order, activate, and deactivate BLS
+  topics and teaching stages; the page shows text-and-icon status, usage,
+  publication blockers, stable slugs, and recent audit activity.
+- Applied hosted migration
+  `20260817025736_milestone_4_resource_taxonomy_management.sql`, which removes
+  authenticated slug updates, prevents taxonomy deletion/deactivation from
+  weakening publication invariants, audits taxonomy changes, and tightens
+  classification replacement and publication around active labels.
+- Applied follow-up migration
+  `20260817032632_milestone_4_resource_taxonomy_concurrency_lock.sql`, which
+  locks affected resource rows in stable order so deactivation serializes with
+  concurrent publication and classification operations.
+- Added 21 taxonomy pgTAP assertions and four frontend taxonomy tests. The
+  complete suites now contain 164 hosted SQL/RLS assertions across six files
+  and 47 Vitest tests across 18 files.
 
 ## Decisions implemented
 
@@ -144,6 +189,52 @@ and verified. Phase 4 administrator resource workflow is next.
 
 ## Latest verification status
 
+- Milestone 4 Phase 4.1 final verification on 2026-08-17: strict typecheck and
+  lint passed; all 47 Vitest tests across 18 files passed; production build
+  passed with 1,841 transformed modules and only the existing non-blocking
+  main-chunk warning.
+- Hosted `supabase test db --linked` passed all 164 assertions across six files,
+  including all 21 taxonomy assertions. Both Phase 4.1 migrations are applied
+  to project `zlaixhnyydxgbphgsetv`, and a dry run reports the hosted migration
+  history is current. Regenerated `public,graphql_public` types match the
+  committed generated TypeScript file.
+- Rendered live-fictional-data verification passed on the administrator taxonomy
+  route: all six topics and four teaching stages loaded, blocker controls and
+  explanations matched assignments, add-form labels and generated-slug state
+  were readable, controls measured approximately 44 pixels, 320-pixel reflow
+  remained within the configured viewport, and the console had no warnings or
+  errors. No hosted taxonomy record was changed during this check.
+- Supabase advisors report no new Phase 4.1 security or performance finding.
+  Existing intentional authenticated lifecycle-function warnings, the
+  leaked-password-protection warning, and pre-traffic unused-index information
+  remain unchanged.
+- Milestone 4 Phase 4 final verification on 2026-08-14: strict typecheck passed;
+  lint passed; all 43 Vitest tests across 16 files passed; production build
+  passed with 1,836 transformed modules. The existing non-blocking main-chunk
+  warning remains; PDF.js is route split.
+- Hosted `supabase test db --linked` passed all 143 assertions across five files,
+  including 34 administrator workflow assertions. Both Phase 4 migrations are
+  applied to project `zlaixhnyydxgbphgsetv`, and generated TypeScript types match
+  the hosted schema.
+- Rendered local/live-data administrator verification passed after signing in as
+  the fictional administrator: eight resources loaded, filters and version
+  history were readable, invalid create submission focused the first field,
+  current-version publication was not offered redundantly, the browser console
+  had no warnings/errors, and list/version routes had no page overflow at a
+  320-by-800 viewport. No hosted fixture resource was mutated during this check.
+- Supabase advisors report no critical schema/RLS findings. Nine intentional
+  warnings identify the authenticated `security definer` lifecycle functions;
+  these are required because direct lifecycle privileges were revoked and each
+  function has an empty search path, explicit active same-organization admin
+  checks, restricted grants, and pgTAP coverage. Leaked-password protection
+  remains disabled; performance notices are unused-index information before
+  meaningful traffic.
+
+- Post-merge deployment smoke verification on 2026-08-14 passed: the hosted
+  sign-in screen loaded, the fictional instructor account reached its assigned
+  cohorts, and Teaching Kit displayed all eight RLS-permitted live resources
+  with readable stage/topic/type filters. The verification account was signed
+  out and the browser tab was closed afterward.
 - Milestone 4 Phase 3 final frontend verification: typecheck passed; lint
   passed; 39 Vitest tests across 15 files passed; production build passed with
   1,825 transformed modules. PDF.js and its worker are route split; the existing
@@ -271,12 +362,11 @@ and verified. Phase 4 administrator resource workflow is next.
 
 ## Exact recommended next action
 
-Plan Milestone 4 Phase 4, then implement the authenticated administrator
-resource workflow: list/filter resources, edit metadata and taxonomy, create
-immutable versions, upload PDFs to exact private paths, manage clinical review,
-approve/publish/retire resources, and show audit feedback. Keep the signed-file
-viewer and `/demo` route tree unchanged, and define the upload rollback and
-orphan-cleanup strategy before implementing mutations.
+Review [`MILESTONE_4_PHASE_4_PLAN.md`](MILESTONE_4_PHASE_4_PLAN.md), then begin
+its backend-hardening step: create the scoped lifecycle/cleanup migration and
+pgTAP coverage before adding administrator frontend mutations. Keep the
+signed-file viewer and `/demo` route tree unchanged, and use only fictional
+hosted records and files.
 
 ## Proxy-validation follow-up questions
 
@@ -310,9 +400,17 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Known limitations
 
-- Production learner and instructor resource routes now use hosted fictional
-  data. Administrator resource authoring, quiz, result, analytics, and export
-  data remains local or non-functional; no real learner information is present.
+- Production learner, instructor, and administrator resource routes now use
+  hosted fictional data. Quiz, result, analytics, and export data remains local
+  or non-functional; no real learner information is present.
+- Administrator catalogue and audit reads are deliberately bounded to the most
+  recent 100 resources/events (and 500 versions). Cursor pagination, bulk
+  operations, automated review reminders, and automated orphan cleanup remain
+  deferred until real catalogue scale justifies them.
+- Taxonomy usage/blocker summaries are assembled from bounded administrator
+  reads of up to 500 resources and 5,000 assignments. The database invariant is
+  authoritative and still blocks unsafe deactivation if a future catalogue
+  exceeds those UI-summary bounds; pagination or aggregate RPCs are deferred.
 - The demo role selector is intentionally separate from authentication and
   authorization.
 - Post-test release, quiz security, scoring, access expiry, and route visibility
@@ -344,3 +442,11 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
   `C:\Users\DR-AFIF\Documents\GitHub\bls`; use that non-OneDrive checkout for
   Git-based development and publication. Keep the OneDrive copy only until all
   unpublished work has been confirmed in GitHub.
+
+## Exact recommended next action
+
+Review the Phase 4.1 taxonomy page locally without mutating non-fictional data,
+then commit and push the scoped branch and open a Phase 4.1 pull request. After
+CI and merge, smoke-test add/edit/deactivate/reactivate with one disposable
+fictional label on GitHub Pages, confirm its audit trail and role denial, then
+complete Milestone 4 Phase 5 verification before planning Milestone 5.

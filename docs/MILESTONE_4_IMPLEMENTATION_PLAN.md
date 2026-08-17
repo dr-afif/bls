@@ -239,12 +239,31 @@ development project.
 
 ### Phase 4 — Administrator workflow
 
+**Status:** implemented and verified on 2026-08-14. Follow
+[`MILESTONE_4_PHASE_4_PLAN.md`](MILESTONE_4_PHASE_4_PLAN.md) for lifecycle
+hardening, exact-path cleanup, UI routes, and the completed verification matrix.
+
 1. Add resource list and filters.
 2. Add metadata and taxonomy editing.
 3. Add immutable version creation and private PDF upload.
 4. Add review, approval, publication, retirement, preview, and audit feedback.
 
+### Phase 4.1 — Resource taxonomy management
+
+**Status:** implemented and hosted-verified on 2026-08-17. Follow
+[`MILESTONE_4_PHASE_4_1_TAXONOMY_PLAN.md`](MILESTONE_4_PHASE_4_1_TAXONOMY_PLAN.md)
+for the stable-slug, no-delete, publication-safe deactivation, auditing,
+administrator UI, and completed verification decisions.
+
+1. Add and edit organization-scoped BLS topics and teaching stages.
+2. Activate or deactivate labels without deleting historical assignments.
+3. Enforce active taxonomy during assignment and publication on the server.
+4. Show usage, blockers, inactive history, and audit activity to administrators.
+
 ### Phase 5 — Verification and publication
+
+**Status:** next. Phase 4.1 awaits branch review, pull-request publication, and
+deployed administrator taxonomy smoke testing.
 
 1. Run typecheck, lint, unit/component tests, production build, pgTAP, Edge
    Function tests, Storage-policy tests, and advisors.

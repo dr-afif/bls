@@ -1,4 +1,4 @@
-import { BookOpen, CalendarRange, LogOut, Presentation, Users } from "lucide-react";
+import { BookOpen, CalendarRange, Files, LogOut, Presentation, Users } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
@@ -21,10 +21,12 @@ export function OperationsShell({ role }: { role: AppRole }) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const fieldRole = role === "learner" || role === "instructor";
+  const administratorRole = role === "admin" || role === "super_admin";
   const links = role === "admin" || role === "super_admin"
     ? [
         { to: "/app/admin/people", label: "People", icon: Users },
         { to: "/app/admin/cohorts", label: "Cohorts", icon: CalendarRange },
+        { to: "/app/admin/resources", label: "Resources", icon: Files },
       ]
     : role === "instructor"
       ? [
@@ -43,7 +45,9 @@ export function OperationsShell({ role }: { role: AppRole }) {
         className={({ isActive }) => cn(
           mobile
             ? "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-2 text-xs font-semibold"
-            : "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-semibold",
+            : administratorRole
+              ? "flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-xl px-2 text-xs font-semibold sm:gap-2 sm:px-4 sm:text-sm"
+              : "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-semibold",
           isActive ? "bg-primary text-primary-foreground" : "bg-muted text-foreground hover:bg-secondary active:bg-secondary",
         )}
         key={`${mobile ? "mobile" : "desktop"}-${link.to}`}
@@ -76,7 +80,7 @@ export function OperationsShell({ role }: { role: AppRole }) {
             <LogOut aria-hidden="true" /> Sign out
           </Button>
         </div>
-        <nav aria-label={`${roleLabels[role]} workspace`} className={cn("mx-auto max-w-7xl gap-2 overflow-x-auto px-4 pb-3 sm:px-6 lg:px-8", fieldRole ? "hidden sm:flex" : "flex")}>
+        <nav aria-label={`${roleLabels[role]} workspace`} className={cn("mx-auto max-w-7xl gap-2 px-4 pb-3 sm:px-6 lg:px-8", fieldRole ? "hidden overflow-x-auto sm:flex" : "grid grid-cols-3")}>
           {renderLinks()}
         </nav>
       </header>

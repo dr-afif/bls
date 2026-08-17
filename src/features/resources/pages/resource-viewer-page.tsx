@@ -15,13 +15,14 @@ import { resourceTypeLabels } from "../model/resource-types";
 
 const validYouTubeId = /^[A-Za-z0-9_-]{11}$/;
 
-export function LiveResourceViewerPage({ scope }: { scope: ResourceScope }) {
+export function LiveResourceViewerPage({ adminPreview = false, scope }: { adminPreview?: boolean; scope: ResourceScope }) {
   const { resourceId = "" } = useParams();
   const catalog = useCourseResource(scope, resourceId);
   const [presentationMode, setPresentationMode] = useState(false);
   const [checkedItems, setCheckedItems] = useState<string[]>([]);
   const instructor = scope === "instructor";
-  const libraryPath = instructor ? "/app/instructor/teaching-kit" : "/app/learner/guides";
+  const libraryPath = adminPreview ? `/app/admin/resources/${resourceId}` : instructor ? "/app/instructor/teaching-kit" : "/app/learner/guides";
+  const backLabel = adminPreview ? "resource workspace" : instructor ? "Teaching Kit" : "Guides";
 
   useEffect(() => {
     if (!presentationMode) return undefined;
@@ -41,8 +42,8 @@ export function LiveResourceViewerPage({ scope }: { scope: ResourceScope }) {
   return (
     <div className={presentationMode ? "fixed inset-0 z-[200] overflow-y-auto bg-background p-4 sm:p-8" : "space-y-7"}>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button asChild variant="ghost"><Link to={libraryPath}><ArrowLeft aria-hidden="true" />Back to {instructor ? "Teaching Kit" : "Guides"}</Link></Button>
-        {instructor && <Button aria-pressed={presentationMode} onClick={() => setPresentationMode((value) => !value)} variant="outline">{presentationMode ? <Minimize2 aria-hidden="true" /> : <Maximize2 aria-hidden="true" />}{presentationMode ? "Exit presentation view" : "Presentation view"}</Button>}
+        <Button asChild variant="ghost"><Link to={libraryPath}><ArrowLeft aria-hidden="true" />Back to {backLabel}</Link></Button>
+        {instructor && !adminPreview && <Button aria-pressed={presentationMode} onClick={() => setPresentationMode((value) => !value)} variant="outline">{presentationMode ? <Minimize2 aria-hidden="true" /> : <Maximize2 aria-hidden="true" />}{presentationMode ? "Exit presentation view" : "Presentation view"}</Button>}
       </div>
 
       <PageHeader description={resource.summary} eyebrow={`${resource.topics.map(({ name }) => name).join(", ") || "General BLS"} · ${resourceTypeLabels[resource.type]}`} title={resource.title} />
@@ -50,7 +51,7 @@ export function LiveResourceViewerPage({ scope }: { scope: ResourceScope }) {
         <Badge variant="primary">{resourceTypeLabels[resource.type]}</Badge>
         <Badge>Version {resource.versionNumber}</Badge>
         {resource.estimatedMinutes && <Badge>{resource.estimatedMinutes} min</Badge>}
-        {instructor && resource.teachingStages.map((stage) => <Badge key={stage.id} variant="info">{stage.name}</Badge>)}
+        {(instructor || adminPreview) && resource.teachingStages.map((stage) => <Badge key={stage.id} variant="info">{stage.name}</Badge>)}
       </div>
 
       {resource.type === "guide" && resource.content?.kind === "guide" && <Card className="shadow-none"><CardHeader><CardTitle>At-a-glance guide</CardTitle></CardHeader><CardContent><ol className="divide-y">{resource.content.sections.map((section, index) => <li className="flex gap-4 py-4 first:pt-0 last:pb-0" key={`${section.heading}-${index}`}><span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{index + 1}</span><div><h2 className="font-semibold">{section.heading}</h2><p className="mt-1 text-muted-foreground">{section.body}</p></div></li>)}</ol></CardContent></Card>}
@@ -65,7 +66,7 @@ export function LiveResourceViewerPage({ scope }: { scope: ResourceScope }) {
 
       {related.length > 0 && <section aria-labelledby="related-heading"><h2 className="mb-3 text-xl font-bold" id="related-heading">Related resources</h2><div className="overflow-hidden rounded-xl border bg-card">{related.map((item) => <LiveResourceRow key={item.id} resource={item} to={`${libraryPath}/${item.id}`} />)}</div></section>}
 
-      <div className="flex items-start gap-3 rounded-xl border border-warning/25 bg-warning-soft p-4 text-warning"><ShieldAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0" /><p className="text-sm">Development data only. These fictional materials are not clinical guidance and must not be used for patient care.</p></div>
+      <div className="flex items-start gap-3 rounded-xl border border-warning/25 bg-warning-soft p-4 text-warning"><ShieldAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0" /><p className="text-sm">{adminPreview ? "Administrator preview of the current published version. " : ""}Development data only. These fictional materials are not clinical guidance and must not be used for patient care.</p></div>
     </div>
   );
 }
