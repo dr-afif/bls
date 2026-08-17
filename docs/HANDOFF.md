@@ -6,11 +6,11 @@
 
 ## Current milestone
 
-Milestones 1 through 4 are complete. Phase 4.1 was merged through PR #5 at
-commit `271dd9b480ba7435145c5cbf47fdb893cb13ff03`. Milestone 5 Phase 1, the
-secure quiz foundation, is implemented and hosted-verified on branch
-`agent/milestone-5-phase-1-quiz-foundation` and is published for review in
-draft PR #6.
+Milestones 1 through 4 are complete. Milestone 5 Phase 1 was merged through PR
+#6 and deployed from `main`. Milestone 5 Phase 2, administrator quiz/question
+authoring and cohort post-test release, is implemented and hosted-verified on
+branch `agent/milestone-5-phase-2-admin-quiz-authoring` and is ready for local
+review before publication.
 
 ## Current repository state
 
@@ -172,6 +172,19 @@ draft PR #6.
 - Added 21 taxonomy pgTAP assertions and four frontend taxonomy tests. The
   complete suites now contain 164 hosted SQL/RLS assertions across six files
   and 47 Vitest tests across 18 files.
+- Added atomic administrator-only question and quiz creation, draft replacement,
+  immutable version branching, and publication RPCs with fixed search paths,
+  explicit actor/organization checks, restricted grants, and append-only audit
+  events. Direct browser writes to the authoring tables are now revoked.
+- Added covering indexes for every assessment foreign key identified by the
+  hosted performance advisor.
+- Added the authenticated administrator Quizzes navigation entry, live quiz
+  library, searchable question bank, full-page question and quiz editors,
+  ordered published-question composition, fixed safe learner-review policy,
+  and audited cohort post-test release controls.
+- Added 29 authoring pgTAP assertions and four form-policy unit tests. The
+  complete suites now contain 231 hosted SQL/RLS assertions across eight files
+  and 54 Vitest tests across 20 files.
 
 ## Decisions implemented
 
@@ -181,13 +194,36 @@ draft PR #6.
 - The prototype includes one current cohort and historical-cohort context.
 - Instructors see learner names and pre-test completion status, never answers.
 - Teaching Kit uses teaching stage plus topic and type filters.
-- An authorized instructor or administrator will manually release the post-test
-  after the physical course; only local visual states exist here.
+- An authorized instructor or administrator manually releases the post-test
+  after the physical course. The administrator release UI is implemented;
+  instructor release UI remains for a later role-workflow pass.
 - Planned production exports are roster CSV, quiz results CSV, and combined
   pre-/post-test CSV.
 
 ## Latest verification status
 
+- Milestone 5 Phase 2 verification on 2026-08-17: migrations through
+  `20260817081111_enforce_single_assessment_draft.sql` are applied to
+  hosted project `zlaixhnyydxgbphgsetv`; a linked dry run identified only the
+  intended Phase 5.2 migrations before application, the final dry run is
+  current, and linked database lint reports no schema errors.
+- Hosted `supabase test db --linked` passes all 231 assertions across eight
+  files, including 29 new administrator-authoring authorization, atomicity,
+  publication, immutability, and audit assertions.
+- Regenerated database types compile. Strict typecheck and lint pass; all 54
+  Vitest tests across 20 files pass; the production build passes with 1,851
+  transformed modules and only the existing non-blocking main-chunk warning.
+- Rendered live-fictional-data verification passes on quiz library, question
+  bank, new-question, and new-quiz routes. At 320 and 1440 pixels, the pages
+  have no horizontal overflow; route focus reaches `main`; controls and labels
+  remain readable; validation focuses the prompt and exposes visible errors;
+  and the browser console has no warnings or errors. No hosted assessment
+  record was mutated during rendered verification.
+- The security advisor reports the existing three informational no-policy
+  notices, 23 expected authenticated `security definer` warnings for controlled
+  RPCs (including eight new authoring RPCs), and the pre-existing leaked-
+  password-protection warning. The performance advisor reports only unused-
+  index information and no unindexed foreign keys.
 - Milestone 5 Phase 1 verification on 2026-08-17: both quiz migrations are
   applied to hosted project `zlaixhnyydxgbphgsetv`; database lint reports no
   schema errors; all 202 pgTAP assertions across seven files pass, including
@@ -408,11 +444,11 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Known limitations
 
-- Production learner, instructor, and administrator resource routes use hosted
-  fictional data. The secure quiz backend and typed repository exist, but the
-  authenticated quiz/result routes still show prototype-local content;
-  analytics and exports remain illustrative or non-functional. No real learner
-  information or clinically approved quiz content is present.
+- Production learner, instructor, and administrator resource routes plus the
+  administrator quiz-authoring routes use hosted fictional data. Authenticated
+  learner quiz/result routes are not wired yet; analytics and exports remain
+  illustrative or non-functional. No real learner information or clinically
+  approved quiz content is present.
 - Administrator catalogue and audit reads are deliberately bounded to the most
   recent 100 resources/events (and 500 versions). Cursor pagination, bulk
   operations, automated review reminders, and automated orphan cleanup remain
@@ -424,9 +460,10 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 - The demo role selector is intentionally separate from authentication and
   authorization.
 - Post-test release, attempt timing/limits, frozen assignment, autosave,
-  submission, and scoring are server-enforced for the new quiz RPCs. Quiz
-  authoring, production route wiring, detailed results administration, and
-  deployed browser smoke testing remain for later Milestone 5 phases.
+  submission, scoring, and administrator authoring/publication are server-
+  enforced. Learner attempt UI, instructor release UI, detailed results
+  administration, and deployed browser smoke testing remain for later
+  Milestone 5 phases.
 - Private resource Storage, signed access, production resource repositories,
   watermark identity, and PDF viewer wiring are implemented for fictional
   fixtures. Automated clock-based post-expiry browser testing and a future
@@ -457,7 +494,8 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Review the Phase 5.1 migration/RPC boundary in draft PR #6. After merge and
-deployment smoke testing, implement Milestone 5 Phase 2: administrator quiz/
-question authoring and cohort post-test release UI using only fictional,
-non-clinical content.
+Review the Phase 5.2 administrator quiz/question authoring and cohort release
+flow locally. If accepted, commit and publish the branch as the Phase 5.2 pull
+request, merge and smoke-test GitHub Pages, then implement Phase 5.3: the
+authenticated learner quiz availability, instructions, accessible question
+flow, autosave, submission, and personal score/topic-summary result journey.

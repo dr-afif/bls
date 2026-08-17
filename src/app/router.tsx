@@ -71,6 +71,18 @@ const ResourceVersionNewPage = lazy(() =>
 const ResourceVersionPage = lazy(() =>
   import("../features/resource-admin/pages/resource-version-page").then((module) => ({ default: module.ResourceVersionPage })),
 );
+const QuizzesAdminPage = lazy(() =>
+  import("../features/quiz-admin/pages/quizzes-admin-page").then((module) => ({ default: module.QuizzesAdminPage })),
+);
+const QuestionBankPage = lazy(() =>
+  import("../features/quiz-admin/pages/question-bank-page").then((module) => ({ default: module.QuestionBankPage })),
+);
+const QuestionEditorPage = lazy(() =>
+  import("../features/quiz-admin/pages/question-editor-page").then((module) => ({ default: module.QuestionEditorPage })),
+);
+const QuizEditorPage = lazy(() =>
+  import("../features/quiz-admin/pages/quiz-editor-page").then((module) => ({ default: module.QuizEditorPage })),
+);
 const ResourceLibraryPage = lazy(() =>
   import("../features/resources/pages/resource-library-page").then((module) => ({ default: module.ResourceLibraryPage })),
 );
@@ -256,6 +268,12 @@ export const router = createHashRouter([
               { path: "resources/:resourceId/preview", element: deferred(<LiveResourceViewerPage adminPreview scope="instructor" />) },
               { path: "resources/:resourceId/versions/new", element: deferred(<ResourceVersionNewPage />) },
               { path: "resources/:resourceId/versions/:versionId", element: deferred(<ResourceVersionPage />) },
+              { path: "quizzes", element: deferred(<QuizzesAdminPage />) },
+              { path: "quizzes/new", element: deferred(<QuizEditorPage />) },
+              { path: "quizzes/:quizId", element: deferred(<QuizEditorPage />) },
+              { path: "questions", element: deferred(<QuestionBankPage />) },
+              { path: "questions/new", element: deferred(<QuestionEditorPage />) },
+              { path: "questions/:questionId", element: deferred(<QuestionEditorPage />) },
             ],
           },
         ],

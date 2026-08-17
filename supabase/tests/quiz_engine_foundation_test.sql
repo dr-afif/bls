@@ -232,8 +232,8 @@ select set_config('request.jwt.claims', jsonb_build_object(
 select extensions.throws_ok(
   $$update public.question_versions set prompt = 'Tampered'
     where id = '18300000-0000-0000-0000-000000000001'$$,
-  '23514', 'PUBLISHED_QUESTION_VERSION_IMMUTABLE',
-  'published question versions are immutable'
+  '42501', null,
+  'direct question-version updates are denied before immutability enforcement'
 );
 select extensions.throws_ok(
   $$insert into public.question_options (
@@ -241,8 +241,8 @@ select extensions.throws_ok(
     ) values (
       '18300000-0000-0000-0000-000000000001', 'Late option', 99, false
     )$$,
-  '23514', 'PUBLISHED_ASSESSMENT_CONTENT_IMMUTABLE',
-  'options cannot be added after question publication'
+  '42501', null,
+  'direct option inserts are denied before immutability enforcement'
 );
 select extensions.results_eq(
   $$select count(*) from public.audit_events where action = 'quiz.attempt_started'

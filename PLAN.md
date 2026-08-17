@@ -87,11 +87,15 @@ or work pauses for a user decision.
 - Phase 4.1 was merged through PR #5 at commit
   `271dd9b480ba7435145c5cbf47fdb893cb13ff03`; its deployed administrator smoke
   test remains part of the Milestone 4 release follow-up.
-- Milestone 5 Phase 1 is implemented and hosted-verified on the stacked branch
-  `agent/milestone-5-phase-1-quiz-foundation`; see
+- Milestone 5 Phase 1 was merged through PR #6 and deployed from `main`; see
   [`docs/MILESTONE_5_PHASE_1_QUIZ_FOUNDATION_PLAN.md`](docs/MILESTONE_5_PHASE_1_QUIZ_FOUNDATION_PLAN.md).
-- Keep quiz fixtures non-clinical and fictional. After publishing Phase 5.1,
-  build administrator authoring/release UI before the complete learner flow.
+- Milestone 5 Phase 2 administrator authoring and post-test release is
+  implemented and hosted-verified on branch
+  `agent/milestone-5-phase-2-admin-quiz-authoring`; see
+  [`docs/MILESTONE_5_PHASE_2_QUIZ_AUTHORING_PLAN.md`](docs/MILESTONE_5_PHASE_2_QUIZ_AUTHORING_PLAN.md).
+- Keep quiz fixtures non-clinical and fictional. Publish Phase 5.2, then build
+  the authenticated learner availability, attempt, autosave, submission, and
+  personal-result journey in Phase 5.3.
 
 ## Milestone 1 — Role-aware frontend prototype
 
@@ -257,10 +261,10 @@ implementation blocker.
 
 ## Milestone 5 — Pre-test, post-test, and results
 
-**Status:** active. Phase 1 secure backend foundation and typed frontend
-repository are implemented and hosted-verified; publication and deployed smoke
-testing remain. Administrator authoring/release UI and the learner journey are
-not yet implemented.
+**Status:** active. Phase 1 secure backend foundation is merged and deployed.
+Phase 2 administrator authoring and cohort post-test release are implemented
+and hosted-verified; branch publication and deployed smoke testing remain. The
+authenticated learner journey is not yet implemented.
 
 ### Backend
 

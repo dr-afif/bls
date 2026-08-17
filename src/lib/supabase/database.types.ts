@@ -1713,6 +1713,88 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_create_question_draft: {
+        Args: {
+          target_correct_option: number
+          target_course_id: string
+          target_option_texts: string[]
+          target_prompt: string
+          target_question_type: Database["public"]["Enums"]["question_type"]
+          target_reference_note: string
+          target_topic_ids: string[]
+        }
+        Returns: {
+          question_id: string
+          version_id: string
+        }[]
+      }
+      admin_create_question_version_draft: {
+        Args: { target_question_id: string }
+        Returns: {
+          version_id: string
+          version_number: number
+        }[]
+      }
+      admin_create_quiz_draft: {
+        Args: {
+          target_attempt_limit: number
+          target_course_id: string
+          target_instructions: string
+          target_passing_score_percent: number
+          target_question_version_ids: string[]
+          target_quiz_type: Database["public"]["Enums"]["quiz_type"]
+          target_randomize_options: boolean
+          target_slug: string
+          target_time_limit_minutes: number
+          target_title: string
+        }
+        Returns: {
+          quiz_id: string
+          version_id: string
+        }[]
+      }
+      admin_create_quiz_version_draft: {
+        Args: { target_quiz_id: string }
+        Returns: {
+          version_id: string
+          version_number: number
+        }[]
+      }
+      admin_publish_question_version: {
+        Args: { target_version_id: string }
+        Returns: undefined
+      }
+      admin_publish_quiz_version: {
+        Args: { target_version_id: string }
+        Returns: undefined
+      }
+      admin_replace_question_draft: {
+        Args: {
+          target_correct_option: number
+          target_option_texts: string[]
+          target_prompt: string
+          target_question_type: Database["public"]["Enums"]["question_type"]
+          target_reference_note: string
+          target_topic_ids: string[]
+          target_version_id: string
+        }
+        Returns: undefined
+      }
+      admin_replace_quiz_draft: {
+        Args: {
+          target_attempt_limit: number
+          target_available_from: string
+          target_available_until: string
+          target_instructions: string
+          target_passing_score_percent: number
+          target_question_version_ids: string[]
+          target_randomize_options: boolean
+          target_time_limit_minutes: number
+          target_title: string
+          target_version_id: string
+        }
+        Returns: undefined
+      }
       approve_resource_version: {
         Args: { target_version_id: string }
         Returns: undefined
