@@ -1,4 +1,4 @@
-import { BookOpen, CalendarRange, Files, LogOut, Presentation, Users } from "lucide-react";
+import { BookOpen, CalendarRange, Files, ListChecks, LogOut, Presentation, Users } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
@@ -27,6 +27,7 @@ export function OperationsShell({ role }: { role: AppRole }) {
         { to: "/app/admin/people", label: "People", icon: Users },
         { to: "/app/admin/cohorts", label: "Cohorts", icon: CalendarRange },
         { to: "/app/admin/resources", label: "Resources", icon: Files },
+        { to: "/app/admin/quizzes", label: "Quizzes", icon: ListChecks },
       ]
     : role === "instructor"
       ? [
@@ -80,7 +81,7 @@ export function OperationsShell({ role }: { role: AppRole }) {
             <LogOut aria-hidden="true" /> Sign out
           </Button>
         </div>
-        <nav aria-label={`${roleLabels[role]} workspace`} className={cn("mx-auto max-w-7xl gap-2 px-4 pb-3 sm:px-6 lg:px-8", fieldRole ? "hidden overflow-x-auto sm:flex" : "grid grid-cols-3")}>
+        <nav aria-label={`${roleLabels[role]} workspace`} className={cn("mx-auto max-w-7xl gap-2 px-4 pb-3 sm:px-6 lg:px-8", fieldRole ? "hidden overflow-x-auto sm:flex" : "grid grid-cols-2 sm:grid-cols-4")}>
           {renderLinks()}
         </nav>
       </header>

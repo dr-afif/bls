@@ -8,6 +8,21 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Added
 
+- Milestone 5 Phase 2 authenticated administrator quiz workspace with a live
+  quiz library, searchable question bank, full-page question and quiz draft
+  editors, ordered published-question composition, immutable version
+  publication, and cohort post-test release controls
+- Eight atomic, fixed-search-path administrator authoring RPCs with explicit
+  role/organization checks, append-only audit events, direct browser-write
+  revocation, immutable publication boundaries, and covering indexes for every
+  assessment foreign key reported by the hosted performance advisor
+- Twenty-nine quiz-authoring pgTAP assertions and four frontend form-policy
+  tests; the complete suites now contain 231 SQL/RLS assertions and 54 Vitest
+  tests across 20 frontend test files
+- Responsive rendered verification of the live fictional administrator quiz
+  routes at 320 and 1440 pixels, including visible field labels and errors,
+  first-invalid-field focus, text-and-icon statuses, 44-pixel operational
+  controls, route focus, and no horizontal overflow or console warnings
 - Milestone 5 Phase 1 secure quiz-foundation schema for immutable quiz and
   question versions, frozen attempts, safe option snapshots, server-owned
   scoring detail, cohort post-test releases, operation rate limits, and audit

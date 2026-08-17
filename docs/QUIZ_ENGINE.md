@@ -4,6 +4,9 @@
 
 - Pre-test
 - Post-test
+
+Possible later quiz types:
+
 - Practice quiz
 - Topic quiz
 - Remediation quiz
@@ -11,13 +14,13 @@
 ## Initial question types
 
 - Single-best-answer multiple choice
-- Multiple-response
 - True or false
-- Image-based multiple choice
-- Ordered sequence
 
 Possible later types:
 
+- Multiple-response
+- Image-based multiple choice
+- Ordered sequence
 - Matching
 - Drag and drop
 - Hotspot
@@ -94,10 +97,8 @@ Server-side checks:
 3. Course entitlement active
 4. Quiz published
 5. Availability window valid
-6. Prerequisites complete
-7. Attempt limit not exceeded
-8. Cooldown satisfied
-9. No conflicting active attempt
+6. Attempt limit not exceeded
+7. No conflicting active attempt
 
 The backend then:
 
@@ -163,15 +164,13 @@ Submission must:
 
 ## Review policy
 
-Configurable:
+MVP policy:
 
-- Show score only
-- Show score and topic performance
-- Show selected answers
-- Show correct answers
-- Show explanations
-- Delay review until course end
-- Never show correct answers
+- Show score, pass/fail state, and topic performance when enabled for the
+  published quiz version.
+- Never show selected answers, correct answers, or explanations to learners.
+- Instructors see assigned completion and permitted result summaries only.
+- Detailed question-level review remains administrator-only.
 
 ## Pre-test defaults
 
@@ -183,12 +182,11 @@ Configurable:
 
 ## Post-test defaults
 
-- Required resources complete
 - Configurable passing score
-- Default maximum three attempts
-- Remediation after failure
-- Answers and explanations configurable
-- Certificate eligibility after passing
+- One attempt by default; the administrator may configure up to ten
+- Manual release after the physical course by an assigned instructor or
+  administrator
+- Score, pass/fail state, and topic summary only; answers remain hidden
 
 ## Historical integrity
 
@@ -239,3 +237,7 @@ Later support point-biserial correlation or upper-lower group analysis.
 - Publish quiz
 - Clone quiz
 - View item analysis
+
+The initial production authoring interface implements create, edit-draft,
+version, publish, ordered quiz composition, and cohort release. Import, clone,
+retirement, and item analysis remain deferred.
