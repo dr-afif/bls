@@ -6,14 +6,10 @@
 
 ## Current milestone
 
-Milestones 1 through 3 are complete. Milestone 4, Resources and Teaching
-Materials, is active. Phase 1 schema/RLS, Phase 2 private Storage/signed access,
-Phase 3 production learner/instructor resource experiences, Phase 4
-administrator resource authoring, and Phase 4.1 resource taxonomy management
-are implemented and verified. Phase 4.1 is on branch
-`agent/milestone-4-phase-4-admin-resources`; its migrations are applied to the
-fictional hosted project, while the code remains uncommitted pending review and
-publication.
+Milestones 1 through 4 are complete. Phase 4.1 was merged through PR #5 at
+commit `271dd9b480ba7435145c5cbf47fdb893cb13ff03`. Milestone 5 Phase 1, the
+secure quiz foundation, is implemented and hosted-verified on branch
+`agent/milestone-5-phase-1-quiz-foundation` and is ready for publication.
 
 ## Current repository state
 
@@ -32,7 +28,9 @@ publication.
   configuration for invite-only sign-in, recovery, session restoration, and
   RLS-backed profile/role checks. The hosted project now also contains a
   private fictional PDF bucket and JWT-protected signed-access function. There
-  are no real users, clinical documents, secure scoring, or real exports.
+  are no real users, clinical documents, approved clinical quiz questions, or
+  real exports. Secure quiz attempts and scoring now exist only for fictional,
+  non-clinical fixtures and are not yet wired to the production route UI.
 
 ## Work completed
 
@@ -189,6 +187,23 @@ publication.
 
 ## Latest verification status
 
+- Milestone 5 Phase 1 verification on 2026-08-17: both quiz migrations are
+  applied to hosted project `zlaixhnyydxgbphgsetv`; database lint reports no
+  schema errors; all 202 pgTAP assertions across seven files pass, including
+  the new 38-assertion quiz authorization/scoring suite.
+- Regenerated database types compile. Strict typecheck and lint pass; all 50
+  Vitest tests across 19 files pass; the production build passes with 1,841
+  transformed modules and only the existing non-blocking main-chunk warning.
+- The security advisor reports three informational no-policy notices for
+  deliberately non-granted internal attempt snapshot/answer tables, expected
+  authenticated `security definer` warnings for explicitly controlled RPCs,
+  and the pre-existing leaked-password-protection warning. Every new RPC has a
+  fixed search path, explicit grants and actor/scope checks, and pgTAP denial
+  coverage. The performance advisor reports no warning-level issue.
+- Fictional seed reruns now preserve a learner's existing active cohort, align
+  the entitlement with it, and avoid mutating immutable published quiz child
+  records. The hosted seed contains two published fictional quizzes, four
+  published fictional questions, and no clinical guidance.
 - Milestone 4 Phase 4.1 final verification on 2026-08-17: strict typecheck and
   lint passed; all 47 Vitest tests across 18 files passed; production build
   passed with 1,841 transformed modules and only the existing non-blocking
@@ -360,14 +375,6 @@ publication.
 - Performance advisor reports only expected unused-index informational notices
   before production traffic.
 
-## Exact recommended next action
-
-Review [`MILESTONE_4_PHASE_4_PLAN.md`](MILESTONE_4_PHASE_4_PLAN.md), then begin
-its backend-hardening step: create the scoped lifecycle/cleanup migration and
-pgTAP coverage before adding administrator frontend mutations. Keep the
-signed-file viewer and `/demo` route tree unchanged, and use only fictional
-hosted records and files.
-
 ## Proxy-validation follow-up questions
 
 - Do instructors find "Teaching Kit" more intuitive than "Resources"?
@@ -400,9 +407,11 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Known limitations
 
-- Production learner, instructor, and administrator resource routes now use
-  hosted fictional data. Quiz, result, analytics, and export data remains local
-  or non-functional; no real learner information is present.
+- Production learner, instructor, and administrator resource routes use hosted
+  fictional data. The secure quiz backend and typed repository exist, but the
+  authenticated quiz/result routes still show prototype-local content;
+  analytics and exports remain illustrative or non-functional. No real learner
+  information or clinically approved quiz content is present.
 - Administrator catalogue and audit reads are deliberately bounded to the most
   recent 100 resources/events (and 500 versions). Cursor pagination, bulk
   operations, automated review reminders, and automated orphan cleanup remain
@@ -413,8 +422,10 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
   exceeds those UI-summary bounds; pagination or aggregate RPCs are deferred.
 - The demo role selector is intentionally separate from authentication and
   authorization.
-- Post-test release, quiz security, scoring, access expiry, and route visibility
-  are not server-enforced.
+- Post-test release, attempt timing/limits, frozen assignment, autosave,
+  submission, and scoring are server-enforced for the new quiz RPCs. Quiz
+  authoring, production route wiring, detailed results administration, and
+  deployed browser smoke testing remain for later Milestone 5 phases.
 - Private resource Storage, signed access, production resource repositories,
   watermark identity, and PDF viewer wiring are implemented for fictional
   fixtures. Automated clock-based post-expiry browser testing and a future
@@ -445,8 +456,7 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Review the Phase 4.1 taxonomy page locally without mutating non-fictional data,
-then commit and push the scoped branch and open a Phase 4.1 pull request. After
-CI and merge, smoke-test add/edit/deactivate/reactivate with one disposable
-fictional label on GitHub Pages, confirm its audit trail and role denial, then
-complete Milestone 4 Phase 5 verification before planning Milestone 5.
+Review the Phase 5.1 migration/RPC boundary in its pull request. After merge
+and deployment smoke testing, implement Milestone 5 Phase 2: administrator
+quiz/question authoring and cohort post-test release UI using only fictional,
+non-clinical content.

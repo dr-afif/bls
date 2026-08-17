@@ -39,6 +39,136 @@ export type Database = {
   }
   public: {
     Tables: {
+      attempt_answers: {
+        Row: {
+          attempt_question_id: string
+          saved_at: string
+          selected_attempt_option_id: string
+          submitted_at: string | null
+        }
+        Insert: {
+          attempt_question_id: string
+          saved_at?: string
+          selected_attempt_option_id: string
+          submitted_at?: string | null
+        }
+        Update: {
+          attempt_question_id?: string
+          saved_at?: string
+          selected_attempt_option_id?: string
+          submitted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempt_answers_attempt_question_id_fkey"
+            columns: ["attempt_question_id"]
+            isOneToOne: true
+            referencedRelation: "attempt_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attempt_answers_selected_attempt_option_id_fkey"
+            columns: ["selected_attempt_option_id"]
+            isOneToOne: false
+            referencedRelation: "attempt_question_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attempt_question_options: {
+        Row: {
+          attempt_question_id: string
+          display_order: number
+          id: string
+          option_text_snapshot: string
+          question_option_id: string
+        }
+        Insert: {
+          attempt_question_id: string
+          display_order: number
+          id?: string
+          option_text_snapshot: string
+          question_option_id: string
+        }
+        Update: {
+          attempt_question_id?: string
+          display_order?: number
+          id?: string
+          option_text_snapshot?: string
+          question_option_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempt_question_options_attempt_question_id_fkey"
+            columns: ["attempt_question_id"]
+            isOneToOne: false
+            referencedRelation: "attempt_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attempt_question_options_question_option_id_fkey"
+            columns: ["question_option_id"]
+            isOneToOne: false
+            referencedRelation: "question_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attempt_questions: {
+        Row: {
+          attempt_id: string
+          display_order: number
+          id: string
+          points: number
+          prompt_snapshot: string
+          question_type: Database["public"]["Enums"]["question_type"]
+          question_version_id: string
+          topic_id: string | null
+        }
+        Insert: {
+          attempt_id: string
+          display_order: number
+          id?: string
+          points: number
+          prompt_snapshot: string
+          question_type: Database["public"]["Enums"]["question_type"]
+          question_version_id: string
+          topic_id?: string | null
+        }
+        Update: {
+          attempt_id?: string
+          display_order?: number
+          id?: string
+          points?: number
+          prompt_snapshot?: string
+          question_type?: Database["public"]["Enums"]["question_type"]
+          question_version_id?: string
+          topic_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attempt_questions_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attempt_questions_question_version_id_fkey"
+            columns: ["question_version_id"]
+            isOneToOne: false
+            referencedRelation: "question_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attempt_questions_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "bls_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_events: {
         Row: {
           action: string
@@ -180,6 +310,65 @@ export type Database = {
           {
             foreignKeyName: "cohort_members_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cohort_quiz_releases: {
+        Row: {
+          cohort_id: string
+          id: string
+          organization_id: string
+          quiz_version_id: string
+          released_at: string
+          released_by: string
+          request_id: string
+        }
+        Insert: {
+          cohort_id: string
+          id?: string
+          organization_id: string
+          quiz_version_id: string
+          released_at?: string
+          released_by: string
+          request_id: string
+        }
+        Update: {
+          cohort_id?: string
+          id?: string
+          organization_id?: string
+          quiz_version_id?: string
+          released_at?: string
+          released_by?: string
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cohort_quiz_releases_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cohort_quiz_releases_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cohort_quiz_releases_quiz_version_id_fkey"
+            columns: ["quiz_version_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cohort_quiz_releases_released_by_fkey"
+            columns: ["released_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -496,6 +685,515 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_options: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_correct: boolean
+          option_text: string
+          question_version_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order: number
+          id?: string
+          is_correct?: boolean
+          option_text: string
+          question_version_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_correct?: boolean
+          option_text?: string
+          question_version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_options_question_version_id_fkey"
+            columns: ["question_version_id"]
+            isOneToOne: false
+            referencedRelation: "question_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_version_topics: {
+        Row: {
+          question_version_id: string
+          topic_id: string
+        }
+        Insert: {
+          question_version_id: string
+          topic_id: string
+        }
+        Update: {
+          question_version_id?: string
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_version_topics_question_version_id_fkey"
+            columns: ["question_version_id"]
+            isOneToOne: false
+            referencedRelation: "question_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_version_topics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "bls_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_versions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          prompt: string
+          question_id: string
+          question_type: Database["public"]["Enums"]["question_type"]
+          reference_note: string | null
+          status: Database["public"]["Enums"]["question_version_status"]
+          version_number: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          prompt: string
+          question_id: string
+          question_type: Database["public"]["Enums"]["question_type"]
+          reference_note?: string | null
+          status?: Database["public"]["Enums"]["question_version_status"]
+          version_number: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          prompt?: string
+          question_id?: string
+          question_type?: Database["public"]["Enums"]["question_type"]
+          reference_note?: string | null
+          status?: Database["public"]["Enums"]["question_version_status"]
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_versions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_versions_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questions: {
+        Row: {
+          course_id: string
+          created_at: string
+          created_by: string | null
+          current_version_id: string | null
+          id: string
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          created_by?: string | null
+          current_version_id?: string | null
+          id?: string
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          created_by?: string | null
+          current_version_id?: string | null
+          id?: string
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questions_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_current_version_fkey"
+            columns: ["current_version_id"]
+            isOneToOne: false
+            referencedRelation: "question_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_attempts: {
+        Row: {
+          attempt_number: number
+          cohort_id: string
+          course_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          learner_id: string
+          max_points: number | null
+          organization_id: string
+          passed: boolean | null
+          quiz_id: string
+          quiz_version_id: string
+          score_percent: number | null
+          score_points: number | null
+          start_request_id: string
+          started_at: string
+          status: Database["public"]["Enums"]["quiz_attempt_status"]
+          submission_request_id: string | null
+          submitted_at: string | null
+          topic_summary: Json
+        }
+        Insert: {
+          attempt_number: number
+          cohort_id: string
+          course_id: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          learner_id: string
+          max_points?: number | null
+          organization_id: string
+          passed?: boolean | null
+          quiz_id: string
+          quiz_version_id: string
+          score_percent?: number | null
+          score_points?: number | null
+          start_request_id: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["quiz_attempt_status"]
+          submission_request_id?: string | null
+          submitted_at?: string | null
+          topic_summary?: Json
+        }
+        Update: {
+          attempt_number?: number
+          cohort_id?: string
+          course_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          learner_id?: string
+          max_points?: number | null
+          organization_id?: string
+          passed?: boolean | null
+          quiz_id?: string
+          quiz_version_id?: string
+          score_percent?: number | null
+          score_points?: number | null
+          start_request_id?: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["quiz_attempt_status"]
+          submission_request_id?: string | null
+          submitted_at?: string | null
+          topic_summary?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_learner_id_fkey"
+            columns: ["learner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_attempts_quiz_version_id_fkey"
+            columns: ["quiz_version_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_version_questions: {
+        Row: {
+          display_order: number
+          points: number
+          question_version_id: string
+          quiz_version_id: string
+        }
+        Insert: {
+          display_order: number
+          points?: number
+          question_version_id: string
+          quiz_version_id: string
+        }
+        Update: {
+          display_order?: number
+          points?: number
+          question_version_id?: string
+          quiz_version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_version_questions_question_version_id_fkey"
+            columns: ["question_version_id"]
+            isOneToOne: false
+            referencedRelation: "question_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_version_questions_quiz_version_id_fkey"
+            columns: ["quiz_version_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_versions: {
+        Row: {
+          attempt_limit: number
+          available_from: string | null
+          available_until: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          instructions: string
+          passing_score_percent: number
+          published_at: string | null
+          published_by: string | null
+          quiz_id: string
+          randomize_options: boolean
+          show_score: boolean
+          show_topic_summary: boolean
+          status: Database["public"]["Enums"]["quiz_version_status"]
+          time_limit_minutes: number
+          title: string
+          version_number: number
+        }
+        Insert: {
+          attempt_limit?: number
+          available_from?: string | null
+          available_until?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instructions: string
+          passing_score_percent: number
+          published_at?: string | null
+          published_by?: string | null
+          quiz_id: string
+          randomize_options?: boolean
+          show_score?: boolean
+          show_topic_summary?: boolean
+          status?: Database["public"]["Enums"]["quiz_version_status"]
+          time_limit_minutes: number
+          title: string
+          version_number: number
+        }
+        Update: {
+          attempt_limit?: number
+          available_from?: string | null
+          available_until?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          instructions?: string
+          passing_score_percent?: number
+          published_at?: string | null
+          published_by?: string | null
+          quiz_id?: string
+          randomize_options?: boolean
+          show_score?: boolean
+          show_topic_summary?: boolean
+          status?: Database["public"]["Enums"]["quiz_version_status"]
+          time_limit_minutes?: number
+          title?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_versions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quizzes: {
+        Row: {
+          course_id: string
+          created_at: string
+          created_by: string | null
+          current_version_id: string | null
+          id: string
+          organization_id: string
+          quiz_type: Database["public"]["Enums"]["quiz_type"]
+          slug: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          created_by?: string | null
+          current_version_id?: string | null
+          id?: string
+          organization_id: string
+          quiz_type: Database["public"]["Enums"]["quiz_type"]
+          slug: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          created_by?: string | null
+          current_version_id?: string | null
+          id?: string
+          organization_id?: string
+          quiz_type?: Database["public"]["Enums"]["quiz_type"]
+          slug?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quizzes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quizzes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quizzes_current_version_fkey"
+            columns: ["current_version_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quizzes_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quizzes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1054,6 +1752,10 @@ export type Database = {
         Args: { target_version_id: string }
         Returns: undefined
       }
+      get_quiz_attempt_payload: {
+        Args: { target_attempt_id: string }
+        Returns: Json
+      }
       get_resource_pdf_file_status: {
         Args: { target_version_id: string }
         Returns: {
@@ -1061,6 +1763,7 @@ export type Database = {
           object_path: string
         }[]
       }
+      list_available_quizzes: { Args: never; Returns: Json }
       publish_resource_version: {
         Args: { target_resource_id: string; target_version_id: string }
         Returns: undefined
@@ -1077,6 +1780,14 @@ export type Database = {
         Args: { target_next_review_at: string; target_version_id: string }
         Returns: undefined
       }
+      release_cohort_post_test: {
+        Args: {
+          target_cohort_id: string
+          target_quiz_id: string
+          target_request_id: string
+        }
+        Returns: Json
+      }
       replace_resource_classifications: {
         Args: {
           target_audiences: Database["public"]["Enums"]["resource_audience"][]
@@ -1089,6 +1800,24 @@ export type Database = {
       retire_resource: {
         Args: { target_resource_id: string }
         Returns: undefined
+      }
+      save_quiz_answer: {
+        Args: {
+          target_attempt_option_id: string
+          target_attempt_question_id: string
+        }
+        Returns: Json
+      }
+      start_quiz_attempt: {
+        Args: { target_quiz_id: string; target_request_id: string }
+        Returns: Json
+      }
+      submit_quiz_attempt: {
+        Args: {
+          target_attempt_id: string
+          target_submission_request_id: string
+        }
+        Returns: Json
       }
       submit_resource_version_for_review: {
         Args: { target_version_id: string }
@@ -1116,6 +1845,15 @@ export type Database = {
       entitlement_access_type: "permanent" | "fixed_window"
       entitlement_status: "pending" | "active" | "expired" | "revoked"
       membership_status: "active" | "completed" | "removed"
+      question_type: "single_best_answer" | "true_false"
+      question_version_status: "draft" | "approved" | "published" | "retired"
+      quiz_attempt_status:
+        | "in_progress"
+        | "submitted"
+        | "timed_out"
+        | "invalidated"
+      quiz_type: "pre_test" | "post_test"
+      quiz_version_status: "draft" | "published" | "retired"
       resource_audience: "learner" | "instructor"
       resource_status:
         | "draft"
@@ -1277,6 +2015,16 @@ export const Constants = {
       entitlement_access_type: ["permanent", "fixed_window"],
       entitlement_status: ["pending", "active", "expired", "revoked"],
       membership_status: ["active", "completed", "removed"],
+      question_type: ["single_best_answer", "true_false"],
+      question_version_status: ["draft", "approved", "published", "retired"],
+      quiz_attempt_status: [
+        "in_progress",
+        "submitted",
+        "timed_out",
+        "invalidated",
+      ],
+      quiz_type: ["pre_test", "post_test"],
+      quiz_version_status: ["draft", "published", "retired"],
       resource_audience: ["learner", "instructor"],
       resource_status: [
         "draft",

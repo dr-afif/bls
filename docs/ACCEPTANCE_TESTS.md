@@ -74,7 +74,9 @@ Given a locked resource with incomplete prerequisite, when the learner requests 
 
 ### AT-QUIZ-001 — Eligibility
 
-Given incomplete required resources, when the learner starts the post-test, then the backend denies the attempt.
+Given an active entitled learner but no authorized post-test release for the
+learner's cohort, when the learner starts the post-test, then the backend
+denies the attempt without relying on resource-completion state.
 
 ### AT-QUIZ-002 — Attempt creation
 

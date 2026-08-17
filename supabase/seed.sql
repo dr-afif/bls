@@ -92,6 +92,14 @@ from (
 ) as expected_role(email, member_role)
 join auth.users member_user on member_user.email = expected_role.email
 join auth.users admin_user on admin_user.email = 'admin@bls.local'
+where expected_role.member_role <> 'learner'
+  or not exists (
+    select 1 from public.cohort_members existing_membership
+    where existing_membership.user_id = member_user.id
+      and existing_membership.member_role = 'learner'
+      and existing_membership.membership_status = 'active'
+      and existing_membership.cohort_id <> '11000000-0000-0000-0000-000000000001'
+  )
 on conflict (cohort_id, user_id) do update set
   member_role = excluded.member_role,
   membership_status = excluded.membership_status,
@@ -136,7 +144,20 @@ select
   '10000000-0000-0000-0000-000000000001',
   target_user.id,
   demo_course.id,
-  '11000000-0000-0000-0000-000000000001',
+  coalesce(
+    (
+      select membership.cohort_id
+      from public.cohort_members membership
+      join public.cohorts cohort on cohort.id = membership.cohort_id
+      where membership.user_id = target_user.id
+        and membership.membership_status = 'active'
+        and cohort.course_id = demo_course.id
+      order by (membership.cohort_id = '11000000-0000-0000-0000-000000000001') desc,
+        membership.joined_at
+      limit 1
+    ),
+    '11000000-0000-0000-0000-000000000001'
+  ),
   'fixed_window',
   '2026-08-01 00:00:00+00',
   '2027-08-31 23:59:59+00',
@@ -257,6 +278,150 @@ join public.teaching_stages stage
 join auth.users admin_user on admin_user.email = 'admin@bls.local'
 where resource.id::text like '13000000-0000-0000-0000-00000000000%'
 on conflict (resource_id, teaching_stage_id) do nothing;
+
+-- Milestone 5 quiz fixtures are deliberately fictional and non-clinical.
+insert into public.quizzes (
+  id, organization_id, course_id, slug, quiz_type, title, created_by, updated_by
+)
+select fixture.id, course.organization_id, course.id, fixture.slug,
+  fixture.quiz_type, fixture.title, admin_user.id, admin_user.id
+from (
+  values
+    ('18000000-0000-0000-0000-000000000001'::uuid, 'course-pre-test', 'pre_test'::public.quiz_type, 'Course pre-test — fictional fixture'),
+    ('18000000-0000-0000-0000-000000000002'::uuid, 'course-post-test', 'post_test'::public.quiz_type, 'Course post-test — fictional fixture')
+) fixture(id, slug, quiz_type, title)
+join public.courses course on course.slug = 'adult-bls'
+  and course.organization_id = '10000000-0000-0000-0000-000000000001'
+join auth.users admin_user on admin_user.email = 'admin@bls.local'
+on conflict (id) do nothing;
+
+insert into public.questions (
+  id, organization_id, course_id, created_by, updated_by
+)
+select fixture.id, course.organization_id, course.id, admin_user.id, admin_user.id
+from (
+  values
+    ('18200000-0000-0000-0000-000000000001'::uuid),
+    ('18200000-0000-0000-0000-000000000002'::uuid),
+    ('18200000-0000-0000-0000-000000000003'::uuid),
+    ('18200000-0000-0000-0000-000000000004'::uuid)
+) fixture(id)
+join public.courses course on course.slug = 'adult-bls'
+  and course.organization_id = '10000000-0000-0000-0000-000000000001'
+join auth.users admin_user on admin_user.email = 'admin@bls.local'
+on conflict (id) do nothing;
+
+insert into public.question_versions (
+  id, question_id, version_number, question_type, prompt, reference_note,
+  status, approved_by, approved_at, created_by
+)
+select fixture.id, fixture.question_id, 1, fixture.question_type,
+  fixture.prompt, 'Fictional interface fixture — not clinical guidance',
+  'approved', admin_user.id, '2026-08-17 00:00:00+00', admin_user.id
+from (
+  values
+    ('18300000-0000-0000-0000-000000000001'::uuid, '18200000-0000-0000-0000-000000000001'::uuid, 'single_best_answer'::public.question_type, 'Fictional item A: which labelled demonstration card should be selected?'),
+    ('18300000-0000-0000-0000-000000000002'::uuid, '18200000-0000-0000-0000-000000000002'::uuid, 'true_false'::public.question_type, 'Fictional item B: the demonstration marker is blue. Choose true or false.'),
+    ('18300000-0000-0000-0000-000000000003'::uuid, '18200000-0000-0000-0000-000000000003'::uuid, 'single_best_answer'::public.question_type, 'Fictional item C: choose the placeholder labelled option two.'),
+    ('18300000-0000-0000-0000-000000000004'::uuid, '18200000-0000-0000-0000-000000000004'::uuid, 'true_false'::public.question_type, 'Fictional item D: this statement exists only to test the assessment flow.')
+) fixture(id, question_id, question_type, prompt)
+join auth.users admin_user on admin_user.email = 'admin@bls.local'
+on conflict (id) do nothing;
+
+insert into public.question_options (
+  id, question_version_id, option_text, display_order, is_correct
+)
+select fixture.id::uuid, fixture.question_version_id::uuid, fixture.option_text,
+  fixture.display_order, fixture.is_correct
+from (values
+  ('18400000-0000-0000-0000-000000000001', '18300000-0000-0000-0000-000000000001', 'Demonstration card A', 1, true),
+  ('18400000-0000-0000-0000-000000000002', '18300000-0000-0000-0000-000000000001', 'Demonstration card B', 2, false),
+  ('18400000-0000-0000-0000-000000000003', '18300000-0000-0000-0000-000000000002', 'True', 1, true),
+  ('18400000-0000-0000-0000-000000000004', '18300000-0000-0000-0000-000000000002', 'False', 2, false),
+  ('18400000-0000-0000-0000-000000000005', '18300000-0000-0000-0000-000000000003', 'Placeholder option one', 1, false),
+  ('18400000-0000-0000-0000-000000000006', '18300000-0000-0000-0000-000000000003', 'Placeholder option two', 2, true),
+  ('18400000-0000-0000-0000-000000000007', '18300000-0000-0000-0000-000000000004', 'True', 1, true),
+  ('18400000-0000-0000-0000-000000000008', '18300000-0000-0000-0000-000000000004', 'False', 2, false)
+) fixture(id, question_version_id, option_text, display_order, is_correct)
+where not exists (select 1 from public.question_options existing where existing.id = fixture.id::uuid)
+on conflict (id) do nothing;
+
+insert into public.question_version_topics (question_version_id, topic_id)
+select fixture.question_version_id::uuid, fixture.topic_id::uuid
+from (values
+  ('18300000-0000-0000-0000-000000000001', '15000000-0000-0000-0000-000000000001'),
+  ('18300000-0000-0000-0000-000000000002', '15000000-0000-0000-0000-000000000002'),
+  ('18300000-0000-0000-0000-000000000003', '15000000-0000-0000-0000-000000000003'),
+  ('18300000-0000-0000-0000-000000000004', '15000000-0000-0000-0000-000000000004')
+) fixture(question_version_id, topic_id)
+where not exists (
+  select 1 from public.question_version_topics existing
+  where existing.question_version_id = fixture.question_version_id::uuid
+    and existing.topic_id = fixture.topic_id::uuid
+)
+on conflict do nothing;
+
+update public.questions question set current_version_id = mapping.version_id
+from (
+  values
+    ('18200000-0000-0000-0000-000000000001'::uuid, '18300000-0000-0000-0000-000000000001'::uuid),
+    ('18200000-0000-0000-0000-000000000002'::uuid, '18300000-0000-0000-0000-000000000002'::uuid),
+    ('18200000-0000-0000-0000-000000000003'::uuid, '18300000-0000-0000-0000-000000000003'::uuid),
+    ('18200000-0000-0000-0000-000000000004'::uuid, '18300000-0000-0000-0000-000000000004'::uuid)
+) mapping(question_id, version_id)
+where question.id = mapping.question_id and question.current_version_id is null;
+
+insert into public.quiz_versions (
+  id, quiz_id, version_number, title, instructions, passing_score_percent,
+  time_limit_minutes, attempt_limit, randomize_options, show_score,
+  show_topic_summary, status, created_by
+)
+select fixture.id, fixture.quiz_id, 1, fixture.title,
+  'Fictional non-clinical questions for secure-flow testing only.', 75,
+  10, 1, true, true, true, 'draft', admin_user.id
+from (
+  values
+    ('18100000-0000-0000-0000-000000000001'::uuid, '18000000-0000-0000-0000-000000000001'::uuid, 'Course pre-test — fictional fixture'),
+    ('18100000-0000-0000-0000-000000000002'::uuid, '18000000-0000-0000-0000-000000000002'::uuid, 'Course post-test — fictional fixture')
+) fixture(id, quiz_id, title)
+join auth.users admin_user on admin_user.email = 'admin@bls.local'
+on conflict (id) do nothing;
+
+insert into public.quiz_version_questions (
+  quiz_version_id, question_version_id, display_order, points
+)
+select fixture.quiz_version_id::uuid, fixture.question_version_id::uuid,
+  fixture.display_order, fixture.points
+from (values
+  ('18100000-0000-0000-0000-000000000001', '18300000-0000-0000-0000-000000000001', 1, 1),
+  ('18100000-0000-0000-0000-000000000001', '18300000-0000-0000-0000-000000000002', 2, 1),
+  ('18100000-0000-0000-0000-000000000002', '18300000-0000-0000-0000-000000000003', 1, 1),
+  ('18100000-0000-0000-0000-000000000002', '18300000-0000-0000-0000-000000000004', 2, 1)
+) fixture(quiz_version_id, question_version_id, display_order, points)
+where not exists (
+  select 1 from public.quiz_version_questions existing
+  where existing.quiz_version_id = fixture.quiz_version_id::uuid
+    and existing.question_version_id = fixture.question_version_id::uuid
+)
+on conflict do nothing;
+
+update public.question_versions set status = 'published'
+where id::text like '18300000-0000-0000-0000-00000000000%' and status = 'approved';
+
+update public.quiz_versions set status = 'published', published_by = admin_user.id,
+  published_at = '2026-08-17 00:00:00+00'
+from auth.users admin_user
+where admin_user.email = 'admin@bls.local'
+  and public.quiz_versions.id::text like '18100000-0000-0000-0000-00000000000%'
+  and public.quiz_versions.status = 'draft';
+
+update public.quizzes quiz set current_version_id = mapping.version_id
+from (
+  values
+    ('18000000-0000-0000-0000-000000000001'::uuid, '18100000-0000-0000-0000-000000000001'::uuid),
+    ('18000000-0000-0000-0000-000000000002'::uuid, '18100000-0000-0000-0000-000000000002'::uuid)
+) mapping(quiz_id, version_id)
+where quiz.id = mapping.quiz_id and quiz.current_version_id is null;
 
 update public.resources resource
 set current_version_id = version.id,
