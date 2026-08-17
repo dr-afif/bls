@@ -84,9 +84,14 @@ or work pauses for a user decision.
   administrators can add, edit, order, activate, and safely deactivate BLS
   topics and teaching stages with server-enforced publication invariants and
   auditing.
-- Review and publish the Phase 4.1 branch, run its deployed administrator smoke
-  test, then complete the Milestone 4 Phase 5 verification sequence.
-- Keep quizzes, results, analytics, and exports fictional until later milestones.
+- Phase 4.1 was merged through PR #5 at commit
+  `271dd9b480ba7435145c5cbf47fdb893cb13ff03`; its deployed administrator smoke
+  test remains part of the Milestone 4 release follow-up.
+- Milestone 5 Phase 1 is implemented and hosted-verified on the stacked branch
+  `agent/milestone-5-phase-1-quiz-foundation`; see
+  [`docs/MILESTONE_5_PHASE_1_QUIZ_FOUNDATION_PLAN.md`](docs/MILESTONE_5_PHASE_1_QUIZ_FOUNDATION_PLAN.md).
+- Keep quiz fixtures non-clinical and fictional. After publishing Phase 5.1,
+  build administrator authoring/release UI before the complete learner flow.
 
 ## Milestone 1 — Role-aware frontend prototype
 
@@ -221,9 +226,9 @@ limitation.
 
 ## Milestone 4 — Resources and teaching materials
 
-**Status:** active; Phases 1 through 4 and the Phase 4.1 taxonomy extension are
-implemented and locally/hosted verified. Phase 4.1 still requires branch review,
-publication, and a deployed smoke test before Milestone 4 closes.
+**Status:** complete. Phase 4.1 was merged through PR #5; the deployed
+administrator smoke test remains a release follow-up rather than an
+implementation blocker.
 
 ### Backend
 
@@ -251,6 +256,11 @@ publication, and a deployed smoke test before Milestone 4 closes.
 - Resource organization does not imply an LMS pathway.
 
 ## Milestone 5 — Pre-test, post-test, and results
+
+**Status:** active. Phase 1 secure backend foundation and typed frontend
+repository are implemented and hosted-verified; publication and deployed smoke
+testing remain. Administrator authoring/release UI and the learner journey are
+not yet implemented.
 
 ### Backend
 

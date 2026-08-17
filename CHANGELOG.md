@@ -8,6 +8,20 @@ The project uses a `Major.Minor.Patch` versioning convention.
 
 ### Added
 
+- Milestone 5 Phase 1 secure quiz-foundation schema for immutable quiz and
+  question versions, frozen attempts, safe option snapshots, server-owned
+  scoring detail, cohort post-test releases, operation rate limits, and audit
+  events
+- Controlled quiz availability, attempt start/payload, autosave, idempotent
+  submission, and post-test release functions that keep answer keys and
+  per-answer correctness outside learner-accessible responses
+- Thirty-eight quiz-foundation pgTAP assertions plus three typed payload
+  validation tests; the complete suites now contain 202 SQL/RLS assertions and
+  50 Vitest tests across 19 frontend test files
+- Detailed Phase 5.1 implementation plan and corrected quiz eligibility policy
+  that deliberately excludes LMS-style resource-completion prerequisites
+- Idempotent fictional seed behavior that preserves an already-active learner
+  cohort and aligns the learner's course entitlement with that cohort on rerun
 - Phase 4.1 administrator resource-taxonomy workspace for adding, editing,
   ordering, activating, and safely deactivating BLS topics and teaching stages,
   with stable slugs, usage/blocker counts, responsive full-page forms, audit

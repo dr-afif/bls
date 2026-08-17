@@ -57,9 +57,13 @@ Possible later types:
 - Show score
 - Show answers
 - Show explanations
-- Required resource completion
+- Active account, effective course entitlement, and active learner cohort
+- Manual post-test release by an assigned instructor or administrator
 - Availability dates
 - Publication state
+
+Resource viewing or completion is not a quiz prerequisite. The product does
+not use module-completion pathways; it supports a physical course.
 
 ## Attempt lifecycle
 
