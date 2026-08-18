@@ -1834,6 +1834,18 @@ export type Database = {
         Args: { target_version_id: string }
         Returns: undefined
       }
+      get_admin_cohort_aggregate_comparison: {
+        Args: { target_cohort_id: string }
+        Returns: Json
+      }
+      get_admin_cohort_learner_comparison: {
+        Args: { target_cohort_id: string }
+        Returns: Json
+      }
+      get_admin_cohort_topic_comparison: {
+        Args: { target_cohort_id: string }
+        Returns: Json
+      }
       get_admin_quiz_attempt_detail: {
         Args: { target_attempt_id: string }
         Returns: Json
