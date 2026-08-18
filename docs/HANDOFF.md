@@ -2,14 +2,15 @@
 
 ## Last updated
 
-2026-08-17
+2026-08-18
 
 ## Current milestone
 
-Milestones 1 through 4 are complete. Milestone 5 Phase 1 was merged through PR
-#6 and deployed from `main`. Milestone 5 Phase 2, administrator quiz/question
-authoring and cohort post-test release, was merged through PR #7 and deployed
-from `main`.
+- Milestone 5 (Phases 5.1, 5.2, 5.3, and 5.4) — COMPLETE.
+  - Phase 5.1: Secure quiz engine foundation, attempts, autosave, server timing, scoring, audit logging.
+  - Phase 5.2: Administrator quiz authoring, question bank, and immutable publication.
+  - Phase 5.3: Learner quiz journey, timer, autosave, submission, and learner-safe results.
+  - Phase 5.4: Instructor assessment readiness, post-test release, and administrator results/details.
 
 ## Current repository state
 
@@ -201,6 +202,10 @@ from `main`.
 
 ## Latest verification status
 
+- Milestone 5 Phase 4 (Instructor Assessment Readiness & Staff Results) on 2026-08-18: migration `20260818100000_milestone_5_staff_results.sql` was applied to the schema and successfully passed all pgTAP tests.
+- Regenerated database types compile. Strict typecheck and lint pass; all 55 Vitest tests pass.
+- The security advisor reports the expected authenticated `security definer` warnings for the new staff RPCs.
+- The administrator attempt detail successfully reconstructs attempts from frozen snapshots, protecting historical integrity.
 - Milestone 5 Phase 2 verification on 2026-08-17: migrations through
   `20260817081111_enforce_single_assessment_draft.sql` are applied to
   hosted project `zlaixhnyydxgbphgsetv`; a linked dry run identified only the
@@ -496,6 +501,4 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Implement Phase 5.3: the authenticated learner quiz availability, instructions,
-accessible question flow, autosave, idempotent submission, and personal
-score/topic-summary result journey.
+Owner/operator commit and push of Milestone 5 to `main` to trigger the GitHub Pages deployment workflow, followed by beginning Milestone 6 planning (Analytics, exports, and final hardening).

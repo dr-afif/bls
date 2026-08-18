@@ -114,6 +114,21 @@ const LearnerProfilePage = lazy(() =>
     default: module.LearnerProfilePage,
   })),
 );
+const LearnerQuizzesPage = lazy(() =>
+  import("../features/quiz/pages/learner-quizzes-page").then((module) => ({
+    default: module.LearnerQuizzesPage,
+  })),
+);
+const LearnerAttemptPage = lazy(() =>
+  import("../features/quiz/pages/learner-attempt-page").then((module) => ({
+    default: module.LearnerAttemptPage,
+  })),
+);
+const LearnerResultPage = lazy(() =>
+  import("../features/quiz/pages/learner-result-page").then((module) => ({
+    default: module.LearnerResultPage,
+  })),
+);
 const InstructorHomePage = lazy(() =>
   import("../features/instructor/pages/home-page").then((module) => ({
     default: module.InstructorHomePage,
@@ -162,6 +177,11 @@ const AdminQuizzesPage = lazy(() =>
 const AdminResultsPage = lazy(() =>
   import("../features/admin/pages/results-page").then((module) => ({
     default: module.AdminResultsPage,
+  })),
+);
+const AdminResultDetailPage = lazy(() =>
+  import("../features/admin/pages/result-detail-page").then((module) => ({
+    default: module.AdminResultDetailPage,
   })),
 );
 const AdminSettingsPage = lazy(() =>
@@ -232,6 +252,9 @@ export const router = createHashRouter([
               { path: "cohort", element: deferred(<MyCohortsPage />) },
               { path: "guides", element: deferred(<ResourceLibraryPage scope="learner" />) },
               { path: "guides/:resourceId", element: deferred(<LiveResourceViewerPage scope="learner" />) },
+              { path: "quiz", element: deferred(<LearnerQuizzesPage />) },
+              { path: "quiz/:quizId/attempt/:attemptId", element: deferred(<LearnerAttemptPage />) },
+              { path: "quiz/:quizId/result", element: deferred(<LearnerResultPage />) },
             ],
           },
         ],
@@ -274,6 +297,8 @@ export const router = createHashRouter([
               { path: "questions", element: deferred(<QuestionBankPage />) },
               { path: "questions/new", element: deferred(<QuestionEditorPage />) },
               { path: "questions/:questionId", element: deferred(<QuestionEditorPage />) },
+              { path: "results", element: deferred(<AdminResultsPage />) },
+              { path: "results/:attemptId", element: deferred(<AdminResultDetailPage />) },
             ],
           },
         ],

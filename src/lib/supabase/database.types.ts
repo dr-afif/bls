@@ -1834,6 +1834,14 @@ export type Database = {
         Args: { target_version_id: string }
         Returns: undefined
       }
+      get_admin_quiz_attempt_detail: {
+        Args: { target_attempt_id: string }
+        Returns: Json
+      }
+      get_instructor_cohort_assessment_readiness: {
+        Args: { target_cohort_id: string }
+        Returns: Json
+      }
       get_quiz_attempt_payload: {
         Args: { target_attempt_id: string }
         Returns: Json
@@ -1844,6 +1852,10 @@ export type Database = {
           file_state: string
           object_path: string
         }[]
+      }
+      list_admin_quiz_results: {
+        Args: { target_cohort_id: string }
+        Returns: Json
       }
       list_available_quizzes: { Args: never; Returns: Json }
       publish_resource_version: {

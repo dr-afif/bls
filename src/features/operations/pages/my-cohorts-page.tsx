@@ -3,6 +3,7 @@ import { CalendarClock, MapPin, Phone, Users } from "lucide-react";
 import { PageHeader } from "../../../components/common/page-header";
 import { Badge } from "../../../components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
+import { InstructorCohortReadiness } from "../components/instructor-cohort-readiness";
 import { OperationState } from "../components/operation-state";
 import { useCohorts } from "../hooks/use-operations";
 
@@ -28,7 +29,7 @@ export function MyCohortsPage({ instructor = false }: { instructor?: boolean }) 
                 {instructor && <div className="flex gap-3"><Users aria-hidden="true" className="size-5 text-primary" /><div><dt className="text-muted-foreground">Permitted roster</dt><dd className="font-semibold">{learnerCount} {learnerCount === 1 ? "learner" : "learners"}</dd></div></div>}
               </dl>
               {cohort.preparationNotes && <div className="rounded-xl bg-primary-soft p-4"><h2 className="font-semibold text-primary">Preparation</h2><p className="mt-1 text-sm text-primary">{cohort.preparationNotes}</p></div>}
-              {instructor && <div><h2 className="font-semibold">Assigned people</h2><ul className="mt-2 grid gap-2 sm:grid-cols-2">{cohort.members.map((member) => <li className="rounded-lg border px-3 py-2 text-sm" key={member.userId}>{member.fullName} · {member.memberRole}</li>)}</ul></div>}
+              {instructor && <InstructorCohortReadiness cohortId={cohort.id} />}
             </CardContent>
           </Card>
           );
