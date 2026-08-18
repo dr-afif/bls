@@ -8,9 +8,8 @@
 
 Milestones 1 through 4 are complete. Milestone 5 Phase 1 was merged through PR
 #6 and deployed from `main`. Milestone 5 Phase 2, administrator quiz/question
-authoring and cohort post-test release, is implemented and hosted-verified on
-branch `agent/milestone-5-phase-2-admin-quiz-authoring` and is ready for local
-review before publication.
+authoring and cohort post-test release, was merged through PR #7 and deployed
+from `main`.
 
 ## Current repository state
 
@@ -224,6 +223,10 @@ review before publication.
   RPCs (including eight new authoring RPCs), and the pre-existing leaked-
   password-protection warning. The performance advisor reports only unused-
   index information and no unindexed foreign keys.
+- Post-merge deployment smoke verification for Milestone 5 Phase 2 on 2026-08-18 passed:
+  the deployed GitHub Pages application loaded, Quizzes and Questions administrator
+  routes were accessible, and an existing question and quiz could be inspected
+  with responsive behaviour and no console errors.
 - Milestone 5 Phase 1 verification on 2026-08-17: both quiz migrations are
   applied to hosted project `zlaixhnyydxgbphgsetv`; database lint reports no
   schema errors; all 202 pgTAP assertions across seven files pass, including
@@ -461,9 +464,8 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
   authorization.
 - Post-test release, attempt timing/limits, frozen assignment, autosave,
   submission, scoring, and administrator authoring/publication are server-
-  enforced. Learner attempt UI, instructor release UI, detailed results
-  administration, and deployed browser smoke testing remain for later
-  Milestone 5 phases.
+  enforced. Learner attempt UI, instructor release UI, and detailed results
+  administration remain for later Milestone 5 phases.
 - Private resource Storage, signed access, production resource repositories,
   watermark identity, and PDF viewer wiring are implemented for fictional
   fixtures. Automated clock-based post-expiry browser testing and a future
@@ -494,8 +496,6 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Review the Phase 5.2 administrator quiz/question authoring and cohort release
-flow locally. If accepted, commit and publish the branch as the Phase 5.2 pull
-request, merge and smoke-test GitHub Pages, then implement Phase 5.3: the
-authenticated learner quiz availability, instructions, accessible question
-flow, autosave, submission, and personal score/topic-summary result journey.
+Implement Phase 5.3: the authenticated learner quiz availability, instructions,
+accessible question flow, autosave, idempotent submission, and personal
+score/topic-summary result journey.
