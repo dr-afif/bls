@@ -104,12 +104,20 @@
   regenerated public-schema TypeScript types.
 - Added the private PDF-only `course-resources` bucket, exact-path
   administrator draft insert policy, service-only authorization/issuance RPCs,
-  per-user rate limiting, idempotent audit events, and 40 hosted pgTAP
-  assertions for Storage and access boundaries.
-- Generated and visually verified two one-page fictional PDF fixtures that are
-  explicitly labelled as non-clinical development data, then uploaded them to
-  version-specific private object paths.
-- Implemented, unit-tested, and deployed JWT-protected Edge Function
+  per-user rate limiting, idempotent audit events, and 40
+
+## Current state
+
+Milestone 6 Phase 6.2 (Administrator Cohort Analytics UI) has been successfully implemented and verified. All automated and manual testing confirm that the server-owned analytics RPCs correctly power the UI without client-side recalculation, handling edge cases robustly.
+We are now ready for Milestone 6 Phase 6.3 or other directives as defined by the overall product direction.
+
+## Last implemented
+- Developed `AdminCohortAnalyticsPage` featuring summary metrics, score comparisons, topic comparisons, and learner comparison tables.
+- Implemented `ResultsNavigation` to toggle between Operations and Analytics.
+- Added comprehensive Vitest behavioural test coverage for the Analytics space.
+- Persisted cohort selection across tab navigation using searchParams.
+
+deployed JWT-protected Edge Function
   `issue-resource-access`; it authorizes the verified user, returns a 60-second
   signed URL with no-store headers, and fails closed if signing or audit append
   fails.

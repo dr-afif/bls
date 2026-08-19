@@ -24,8 +24,11 @@ insert into authoring_test_state values
   ('learner', (select id from auth.users where email = 'learner@bls.local')),
   ('instructor', (select id from auth.users where email = 'instructor@bls.local')),
   ('admin', (select id from auth.users where email = 'admin@bls.local')),
-  ('course', (select id from public.courses where slug = 'adult-bls' limit 1)),
+  ('course', gen_random_uuid()),
   ('topic', (select id from public.bls_topics where active order by display_order limit 1));
+
+insert into public.courses (id, slug, title, organization_id) values
+  ((select value from authoring_test_state where name = 'course'), 'authoring-course', 'Authoring Course', (select id from public.organizations limit 1));
 
 set local role anon;
 select extensions.throws_ok(

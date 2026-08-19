@@ -1,22 +1,23 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { PageHeader } from "../../../components/common/page-header";
 import { StatePanel } from "../../../components/common/state-panel";
 import { Button } from "../../../components/ui/button";
 import { useCohorts } from "../../operations/hooks/use-operations";
 import { useAdminQuizResults } from "../../quiz-admin/hooks/use-quiz-staff";
+import { ResultsNavigation } from "../components/results-navigation";
 
 export function AdminResultsPage() {
   const cohorts = useCohorts();
-  const [selectedCohortId, setSelectedCohortId] = useState<string>("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedCohortId = searchParams.get("cohort") || "";
 
   const results = useAdminQuizResults(selectedCohortId);
 
   if (cohorts.isPending) return <StatePanel kind="loading" />;
   if (cohorts.isError) return <StatePanel kind="error" />;
 
-  const activeCohorts = cohorts.data?.filter(c => c.status !== "completed") ?? [];
+  const activeCohorts = cohorts.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -26,12 +27,21 @@ export function AdminResultsPage() {
         title="Results"
       />
 
+      <ResultsNavigation />
+
       <div className="flex gap-4 items-center">
         <label className="text-sm font-semibold" htmlFor="cohort-select">Select cohort:</label>
         <select
           className="rounded-md border p-2 text-sm"
           id="cohort-select"
-          onChange={(e) => setSelectedCohortId(e.target.value)}
+          onChange={(e) => {
+            const val = e.target.value;
+            if (val) {
+              setSearchParams({ cohort: val });
+            } else {
+              setSearchParams({});
+            }
+          }}
           value={selectedCohortId}
         >
           <option value="">-- Choose a cohort --</option>

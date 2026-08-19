@@ -15,13 +15,15 @@ Create the secure server-owned reporting layer that later Milestone 6 phases wil
 When summarizing data for pre-test vs. post-test comparisons, the backend will identify the **authoritative attempt** for a learner for a given quiz (pre or post) by selecting the most recently submitted attempt:
 
 ```sql
-SELECT DISTINCT ON (learner_id, quiz_id) *
+SELECT DISTINCT ON (learner_id) *
 FROM public.quiz_attempts
 WHERE cohort_id = target_cohort_id
   AND quiz_id = target_quiz_id
   AND status = 'submitted'
-ORDER BY learner_id, quiz_id, submitted_at DESC
+ORDER BY learner_id, submitted_at DESC, id DESC
 ```
+
+To strictly enforce a stable quiz identity, a unique index `quizzes_org_course_type_key` is established to guarantee one canonical pre-test and post-test per course per organization.
 
 ## 2. Proposed RPC Contracts
 
@@ -49,19 +51,22 @@ type LearnerComparison = {
 
 ### 2.2 Cohort Aggregate Comparison
 **RPC**: `public.get_admin_cohort_aggregate_comparison(target_cohort_id uuid)`
-**Purpose**: Returns the overall cohort averages for pre-test, post-test, and overall learning gain.
+**Purpose**: Returns the overall cohort averages for pre-test, post-test, and overall learning gain. Missing values (e.g., from incomplete tests) are ignored in averages and medians.
 
 ```typescript
 type CohortAggregateComparison = {
+  totalLearners: number;
+  pairedResultCount: number;
   preTest: {
     averageScorePercent: number | null;
+    medianScorePercent: number | null;
     completionCount: number;
-    totalLearners: number;
   };
   postTest: {
     averageScorePercent: number | null;
+    medianScorePercent: number | null;
     completionCount: number;
-    totalLearners: number;
+    passedCount: number;
   };
   averageLearningGain: number | null;
 };
@@ -69,21 +74,23 @@ type CohortAggregateComparison = {
 
 ### 2.3 Cohort Topic-Level Comparison
 **RPC**: `public.get_admin_cohort_topic_comparison(target_cohort_id uuid)`
-**Purpose**: Returns aggregate performance by topic, allowing administrators to identify specific areas of improvement.
+**Purpose**: Returns aggregate response-weighted topic accuracy by topic, allowing administrators to identify specific areas of improvement.
 
 ```typescript
 type TopicComparison = {
   topicId: string;
   topicName: string;
   preTest: {
-    correctCount: number;
-    totalQuestions: number;
-    averagePercent: number | null;
+    submittedLearnerCount: number;
+    scoredResponseCount: number;
+    correctResponseCount: number;
+    percentage: number | null;
   };
   postTest: {
-    correctCount: number;
-    totalQuestions: number;
-    averagePercent: number | null;
+    submittedLearnerCount: number;
+    scoredResponseCount: number;
+    correctResponseCount: number;
+    percentage: number | null;
   };
   learningGain: number | null;
 }[];
