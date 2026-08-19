@@ -57,6 +57,39 @@ export const TopicComparisonSchema = z.object({
 });
 export type TopicComparison = z.infer<typeof TopicComparisonSchema>;
 
+export const ItemOptionAnalysisSchema = z.object({
+  questionOptionId: z.string(),
+  optionText: z.string(),
+  displayOrder: z.number(),
+  selectedCount: z.number(),
+  selectionPercent: z.number().nullable(),
+  isCorrect: z.boolean(),
+});
+export type ItemOptionAnalysis = z.infer<typeof ItemOptionAnalysisSchema>;
+
+export const ItemAnalysisSchema = z.object({
+  questionId: z.string(),
+  questionVersionId: z.string(),
+  questionVersionNumber: z.number(),
+  prompt: z.string(),
+  topicId: z.string().nullable(),
+  topicName: z.string().nullable(),
+  responseCount: z.number(),
+  correctResponseCount: z.number(),
+  correctResponseRate: z.number().nullable(),
+  options: z.array(ItemOptionAnalysisSchema),
+});
+export type ItemAnalysis = z.infer<typeof ItemAnalysisSchema>;
+
+export const CohortItemAnalysisSchema = z.object({
+  cohortId: z.string(),
+  quizId: z.string(),
+  quizType: z.enum(["pre_test", "post_test"]),
+  analyzedLearnerCount: z.number(),
+  items: z.array(ItemAnalysisSchema),
+});
+export type CohortItemAnalysis = z.infer<typeof CohortItemAnalysisSchema>;
+
 export const quizAnalyticsRepository = {
   async getCohortLearnerComparison(
     client: SupabaseClient<Database>,
@@ -89,5 +122,18 @@ export const quizAnalyticsRepository = {
     });
     if (error) throw error;
     return z.array(TopicComparisonSchema).parse(data);
+  },
+
+  async getCohortItemAnalysis(
+    client: SupabaseClient<Database>,
+    cohortId: string,
+    quizType: "pre_test" | "post_test"
+  ): Promise<CohortItemAnalysis> {
+    const { data, error } = await client.rpc("get_admin_cohort_item_analysis", {
+      target_cohort_id: cohortId,
+      target_quiz_type: quizType,
+    });
+    if (error) throw error;
+    return CohortItemAnalysisSchema.parse(data);
   },
 };

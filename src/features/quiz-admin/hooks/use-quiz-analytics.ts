@@ -40,3 +40,16 @@ export function useCohortTopicComparison(cohortId: string | null) {
     enabled: !!cohortId,
   });
 }
+
+export function useCohortItemAnalysis(cohortId: string | null, quizType: "pre_test" | "post_test") {
+  const { client } = useAuth();
+
+  return useQuery({
+    queryKey: ["cohort-item-analysis", cohortId, quizType],
+    queryFn: () => {
+      if (!cohortId) throw new Error("Cohort ID is required");
+      return quizAnalyticsRepository.getCohortItemAnalysis(client!, cohortId, quizType);
+    },
+    enabled: !!cohortId && !!quizType,
+  });
+}

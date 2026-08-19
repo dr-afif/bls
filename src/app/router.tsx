@@ -184,6 +184,11 @@ const AdminCohortAnalyticsPage = lazy(() =>
     default: module.AdminCohortAnalyticsPage,
   })),
 );
+const AdminItemAnalysisPage = lazy(() =>
+  import("../features/quiz-admin/pages/item-analysis-page").then((module) => ({
+    default: module.AdminItemAnalysisPage,
+  })),
+);
 const AdminResultDetailPage = lazy(() =>
   import("../features/admin/pages/result-detail-page").then((module) => ({
     default: module.AdminResultDetailPage,
@@ -304,6 +309,7 @@ export const router = createHashRouter([
               { path: "questions/:questionId", element: deferred(<QuestionEditorPage />) },
               { path: "results", element: deferred(<AdminResultsPage />) },
               { path: "results/analytics", element: deferred(<AdminCohortAnalyticsPage />) },
+              { path: "results/items", element: deferred(<AdminItemAnalysisPage />) },
               { path: "results/:attemptId", element: deferred(<AdminResultDetailPage />) },
             ],
           },

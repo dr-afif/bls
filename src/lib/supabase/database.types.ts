@@ -1838,6 +1838,13 @@ export type Database = {
         Args: { target_cohort_id: string }
         Returns: Json
       }
+      get_admin_cohort_item_analysis: {
+        Args: {
+          target_cohort_id: string
+          target_quiz_type: Database["public"]["Enums"]["quiz_type"]
+        }
+        Returns: Json
+      }
       get_admin_cohort_learner_comparison: {
         Args: { target_cohort_id: string }
         Returns: Json

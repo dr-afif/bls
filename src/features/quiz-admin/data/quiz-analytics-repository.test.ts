@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { LearnerComparisonSchema, CohortAggregateComparisonSchema, TopicComparisonSchema } from "./quiz-analytics-repository";
+import { LearnerComparisonSchema, CohortAggregateComparisonSchema, TopicComparisonSchema, CohortItemAnalysisSchema } from "./quiz-analytics-repository";
 
 describe("Quiz Analytics Zod Schemas", () => {
   it("parses a valid learner comparison", () => {
@@ -147,5 +147,49 @@ describe("Quiz Analytics Zod Schemas", () => {
       topicName: "Airway"
     };
     expect(() => TopicComparisonSchema.parse(data)).toThrow();
+  });
+
+  it("parses a valid cohort item analysis", () => {
+    const data = {
+      cohortId: "40000000-0000-0000-0000-000000000001",
+      quizId: "40000000-0000-0000-0000-000000000002",
+      quizType: "pre_test",
+      analyzedLearnerCount: 1,
+      items: [
+        {
+          questionId: "40000000-0000-0000-0000-000000000003",
+          questionVersionId: "40000000-0000-0000-0000-000000000004",
+          questionVersionNumber: 1,
+          prompt: "What is the prompt?",
+          topicId: "40000000-0000-0000-0000-000000000005",
+          topicName: "Airway",
+          responseCount: 1,
+          correctResponseCount: 1,
+          correctResponseRate: 100,
+          options: [
+            {
+              questionOptionId: "40000000-0000-0000-0000-000000000006",
+              optionText: "Correct option",
+              displayOrder: 1,
+              selectedCount: 1,
+              selectionPercent: 100,
+              isCorrect: true
+            }
+          ]
+        }
+      ]
+    };
+    expect(() => CohortItemAnalysisSchema.parse(data)).not.toThrow();
+  });
+
+  it("fails on malformed cohort item analysis", () => {
+    const data = {
+      cohortId: "40000000-0000-0000-0000-000000000001",
+      quizId: "40000000-0000-0000-0000-000000000002",
+      quizType: "invalid_type",
+      analyzedLearnerCount: 1,
+      items: []
+    };
+    expect(() => CohortItemAnalysisSchema.parse(data)).toThrow();
   });
 });
