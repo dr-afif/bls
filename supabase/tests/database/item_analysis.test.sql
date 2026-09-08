@@ -211,58 +211,62 @@ select extensions.is(
   (select jsonb_array_length(payload->'items') from ia_results), 2, '2 distinct item versions found'
 );
 
+create temp table ia_items as
+  select item
+  from ia_results, jsonb_array_elements(payload->'items') as item;
+
 -- Check QV1 item stats (2 responses, both correct)
 select extensions.is(
-  (select (payload->'items'->0->>'responseCount')::integer from ia_results), 2, 'QV1 responseCount = 2'
+  (select (item->>'responseCount')::integer from ia_items where item->>'questionVersionId' = (select value::text from item_analysis_test_state where name = 'qv1')), 2, 'QV1 responseCount = 2'
 );
 select extensions.is(
-  (select (payload->'items'->0->>'correctResponseCount')::integer from ia_results), 2, 'QV1 correctResponseCount = 2'
+  (select (item->>'correctResponseCount')::integer from ia_items where item->>'questionVersionId' = (select value::text from item_analysis_test_state where name = 'qv1')), 2, 'QV1 correctResponseCount = 2'
 );
 select extensions.is(
-  (select (payload->'items'->0->>'correctResponseRate')::numeric from ia_results), 100.00, 'QV1 correctResponseRate = 100%'
+  (select (item->>'correctResponseRate')::numeric from ia_items where item->>'questionVersionId' = (select value::text from item_analysis_test_state where name = 'qv1')), 100.00, 'QV1 correctResponseRate = 100%'
 );
 
 -- Check QV1 option 1 (Option A) stats (selected twice)
 select extensions.is(
-  (select (payload->'items'->0->'options'->0->>'selectedCount')::integer from ia_results), 2, 'QV1 Option A selected count = 2'
+  (select (item->'options'->0->>'selectedCount')::integer from ia_items where item->>'questionVersionId' = (select value::text from item_analysis_test_state where name = 'qv1')), 2, 'QV1 Option A selected count = 2'
 );
 select extensions.is(
-  (select (payload->'items'->0->'options'->0->>'selectionPercent')::numeric from ia_results), 100.00, 'QV1 Option A selection percent = 100%'
+  (select (item->'options'->0->>'selectionPercent')::numeric from ia_items where item->>'questionVersionId' = (select value::text from item_analysis_test_state where name = 'qv1')), 100.00, 'QV1 Option A selection percent = 100%'
 );
 select extensions.is(
-  (select (payload->'items'->0->'options'->0->>'isCorrect')::boolean from ia_results), true, 'QV1 Option A is correct flag true'
+  (select (item->'options'->0->>'isCorrect')::boolean from ia_items where item->>'questionVersionId' = (select value::text from item_analysis_test_state where name = 'qv1')), true, 'QV1 Option A is correct flag true'
 );
 
 -- Check QV1 option 2 (Option B) stats (selected zero)
 select extensions.is(
-  (select (payload->'items'->0->'options'->1->>'selectedCount')::integer from ia_results), 0, 'QV1 Option B selected count = 0'
+  (select (item->'options'->1->>'selectedCount')::integer from ia_items where item->>'questionVersionId' = (select value::text from item_analysis_test_state where name = 'qv1')), 0, 'QV1 Option B selected count = 0'
 );
 select extensions.is(
-  (select (payload->'items'->0->'options'->1->>'selectionPercent')::numeric from ia_results), 0.00, 'QV1 Option B selection percent = 0%'
+  (select (item->'options'->1->>'selectionPercent')::numeric from ia_items where item->>'questionVersionId' = (select value::text from item_analysis_test_state where name = 'qv1')), 0.00, 'QV1 Option B selection percent = 0%'
 );
 
 -- Check QV2 item stats (2 responses, 1 correct)
 select extensions.is(
-  (select (payload->'items'->1->>'responseCount')::integer from ia_results), 2, 'QV2 responseCount = 2'
+  (select (item->>'responseCount')::integer from ia_items where item->>'questionVersionId' = (select value::text from item_analysis_test_state where name = 'qv2')), 2, 'QV2 responseCount = 2'
 );
 select extensions.is(
-  (select (payload->'items'->1->>'correctResponseCount')::integer from ia_results), 1, 'QV2 correctResponseCount = 1'
+  (select (item->>'correctResponseCount')::integer from ia_items where item->>'questionVersionId' = (select value::text from item_analysis_test_state where name = 'qv2')), 1, 'QV2 correctResponseCount = 1'
 );
 select extensions.is(
-  (select (payload->'items'->1->>'correctResponseRate')::numeric from ia_results), 50.00, 'QV2 correctResponseRate = 50%'
+  (select (item->>'correctResponseRate')::numeric from ia_items where item->>'questionVersionId' = (select value::text from item_analysis_test_state where name = 'qv2')), 50.00, 'QV2 correctResponseRate = 50%'
 );
 select extensions.is(
-  (select (payload->'items'->1->>'questionVersionId') from ia_results),
+  (select (item->>'questionVersionId') from ia_items where item->>'questionVersionId' = (select value::text from item_analysis_test_state where name = 'qv2')),
   (select value::text from item_analysis_test_state where name = 'qv2'),
   'QV2 version separated from QV1'
 );
 
 -- Option distractor correctness checks
 select extensions.is(
-  (select (payload->'items'->1->'options'->0->>'isCorrect')::boolean from ia_results), false, 'QV2 Option A is marked incorrect distractor'
+  (select (item->'options'->0->>'isCorrect')::boolean from ia_items where item->>'questionVersionId' = (select value::text from item_analysis_test_state where name = 'qv2')), false, 'QV2 Option A is marked incorrect distractor'
 );
 select extensions.is(
-  (select (payload->'items'->1->'options'->1->>'isCorrect')::boolean from ia_results), true, 'QV2 Option B is marked correct'
+  (select (item->'options'->1->>'isCorrect')::boolean from ia_items where item->>'questionVersionId' = (select value::text from item_analysis_test_state where name = 'qv2')), true, 'QV2 Option B is marked correct'
 );
 
 -- Privacy assertions

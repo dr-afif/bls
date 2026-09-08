@@ -11,6 +11,10 @@
   - Phase 5.2: Administrator quiz authoring, question bank, and immutable publication.
   - Phase 5.3: Learner quiz journey, timer, autosave, submission, and learner-safe results.
   - Phase 5.4: Instructor assessment readiness, post-test release, and administrator results/details.
+- Milestone 6 (Phases 6.1, 6.2, 6.3) — ACTIVE.
+  - Phase 6.1: Secure Reporting Foundation — COMPLETE.
+  - Phase 6.2: Administrator Cohort Analytics UI — COMPLETE.
+  - Phase 6.3: Secure Question & Item Analysis — COMPLETE.
 
 ## Current repository state
 
@@ -108,12 +112,14 @@
 
 ## Current state
 
-Milestone 6 Phase 6.2 (Administrator Cohort Analytics UI) has been successfully implemented and verified. All automated and manual testing confirm that the server-owned analytics RPCs correctly power the UI without client-side recalculation, handling edge cases robustly.
-We are now ready for Milestone 6 Phase 6.3 or other directives as defined by the overall product direction.
+Milestone 6 Phase 6.3 (Secure Question & Item Analysis) has been successfully implemented and verified. All automated and manual testing confirm that the server-owned item analytics RPC correctly aggregates historical submitted attempts. The UI uses these safe aggregates without client-side recalculation.
+We are now ready for Milestone 6 Phase 6.4 (if any) or other directives as defined by the overall product direction.
 
 ## Last implemented
-- Developed `AdminCohortAnalyticsPage` featuring summary metrics, score comparisons, topic comparisons, and learner comparison tables.
-- Implemented `ResultsNavigation` to toggle between Operations and Analytics.
+- Fixed a flaky UUID sort-ordering assumption in `item_analysis.test.sql` to make it order-independent.
+- Implemented `get_admin_cohort_item_analysis` RPC for secure question-level assessment analysis.
+- Created `ItemAnalysisTable` and related hooks to display item-level and distractor-level stats for cohorts.
+- Expanded pgTAP coverage to 292 assertions across 11 files, ensuring question-version separation and accurate aggregates.
 - Added comprehensive Vitest behavioural test coverage for the Analytics space.
 - Persisted cohort selection across tab navigation using searchParams.
 
@@ -210,9 +216,13 @@ deployed JWT-protected Edge Function
 
 ## Latest verification status
 
-- Milestone 5 Phase 4 (Instructor Assessment Readiness & Staff Results) on 2026-08-18: migration `20260818100000_milestone_5_staff_results.sql` was applied to the schema and successfully passed all pgTAP tests.
-- Regenerated database types compile. Strict typecheck and lint pass; all 55 Vitest tests pass.
+- Milestone 6 Phase 6.3 (Secure Question & Item Analysis) on 2026-08-19: migration `20260819120000_milestone_6_item_analysis.sql` was applied to the schema.
+- Hosted `supabase test db --linked` passes all 292 assertions across 11 files, including 25 new item-analysis assertions. A flaky ordering assumption was successfully corrected without altering production logic.
+- Regenerated database types compile. Strict typecheck and lint pass; 74 Vitest tests pass across 23 files; `git diff --check` passes.
+- Database lint (`npx supabase db lint --linked`) reports no schema errors (only expected `pgtap`/`extensions` warnings).
 - The security advisor reports the expected authenticated `security definer` warnings for the new staff RPCs.
+- The performance advisor reports no missing indexes for the assessment/analytics queries.
+- Milestone 5 Phase 4 (Instructor Assessment Readiness & Staff Results) on 2026-08-18: migration `20260818100000_milestone_5_staff_results.sql` was applied to the schema and successfully passed all pgTAP tests.
 - The administrator attempt detail successfully reconstructs attempts from frozen snapshots, protecting historical integrity.
 - Milestone 5 Phase 2 verification on 2026-08-17: migrations through
   `20260817081111_enforce_single_assessment_draft.sql` are applied to
@@ -509,4 +519,4 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Owner/operator commit and push of Milestone 5 to `main` to trigger the GitHub Pages deployment workflow, followed by beginning Milestone 6 planning (Analytics, exports, and final hardening).
+Owner/operator commit and push of Milestone 6 Phase 6.3 to `main` to trigger the GitHub Pages deployment workflow, followed by beginning Milestone 6 Phase 6.4 (or final exports/hardening).

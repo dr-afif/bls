@@ -96,6 +96,7 @@ or work pauses for a user decision.
 - Keep quiz fixtures non-clinical and fictional. Publish Phase 5.2, then build
   the authenticated learner availability, attempt, autosave, submission, and
   personal-result journey in Phase 5.3.
+- Milestone 6 Phase 6.1 (Secure Reporting Foundation), Phase 6.2 (Administrator Cohort Analytics UI), and Phase 6.3 (Secure Question & Item Analysis) are implemented and verified.
 
 ## Milestone 1 — Role-aware frontend prototype
 
