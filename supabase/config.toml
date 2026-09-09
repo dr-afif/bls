@@ -253,10 +253,10 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Custom email template for PKCE/HashRouter compatible invitation flow
+[auth.email.template.invite]
+subject = "You have been invited to BLS Course Companion"
+content_path = "./supabase/templates/invite.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
@@ -433,3 +433,9 @@ entrypoint = "./functions/issue-resource-access/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/issue-resource-access/*.html" ]
+
+[functions.admin-invite-user]
+enabled = true
+verify_jwt = true
+import_map = "./functions/admin-invite-user/deno.json"
+entrypoint = "./functions/admin-invite-user/index.ts"

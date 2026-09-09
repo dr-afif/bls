@@ -4,12 +4,14 @@ import { useAuth } from "../../auth/context/auth-context";
 import {
   assignCohortMember,
   createCohort,
+  inviteUser,
   listCohorts,
   listPeople,
   updateAccountStatus,
   updateCohortStatus,
   updateMembershipStatus,
 } from "../data/people-cohorts-repository";
+
 
 function useRequiredClient() {
   const { client, state } = useAuth();
@@ -79,6 +81,13 @@ export function useOperationsMutations() {
       mutationFn: ({ accountStatus, targetUserId }: { accountStatus: Parameters<typeof updateAccountStatus>[2]; targetUserId: string }) => {
         if (!client) throw new Error("AUTHENTICATION_REQUIRED");
         return updateAccountStatus(client, targetUserId, accountStatus);
+      },
+      onSuccess: invalidate,
+    }),
+    inviteUser: useMutation({
+      mutationFn: (input: Parameters<typeof inviteUser>[1]) => {
+        if (!client) throw new Error("AUTHENTICATION_REQUIRED");
+        return inviteUser(client, input);
       },
       onSuccess: invalidate,
     }),

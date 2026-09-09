@@ -1917,6 +1917,19 @@ export type Database = {
         }
         Returns: Json
       }
+      provision_invited_user: {
+        Args: {
+          access_ends_at?: string | null
+          access_mode?: string
+          access_starts_at?: string | null
+          actor_user_id: string
+          full_name: string
+          target_organization_id: string
+          target_role: Database["public"]["Enums"]["app_role"]
+          target_user_id: string
+        }
+        Returns: Json
+      }
       replace_resource_classifications: {
         Args: {
           target_audiences: Database["public"]["Enums"]["resource_audience"][]

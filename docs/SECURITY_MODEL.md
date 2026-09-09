@@ -124,6 +124,39 @@ Watermark rendering, viewer controls, protected-content cache inspection, and
 document malware scanning remain later integration and production-hardening
 requirements.
 
+## User provisioning and account lifecycle security
+
+Milestone 6 Phase 6.5.2B1 / B1.5 / B1.6 establishes the server-side administrator provisioning boundary:
+
+- **Isolated Service-Role Operations**: All Supabase Auth Admin actions and privileged database writes are strictly isolated within the trusted `admin-invite-user` Edge Function runtime. The browser client receives only the public publishable key and standard user JWT.
+- **Fail-Closed Caller Authorization**: The Edge Function independently parses caller claims from the platform JWT, verifies active account status, and confirms administrative privilege (`admin` or `super_admin`) within the organization. Non-admin users and cross-organization requests fail closed.
+- **Role Escalation Protection**: Organization administrators may only provision `learner` or `instructor` accounts. Administrative role creation (`admin` or `super_admin`) is blocked server-side.
+- **Strictly Create-Only Provisioning & Target Takeover Prevention (Phase 6.5.2B1.6)**:
+  - Exclusive row locking: `provision_invited_user` locks the target profile using `SELECT ... FOR UPDATE` before applying mutations.
+  - Target invariant enforcement: requires `organization_id IS NULL`, `account_status = 'pending_verification'`, and 0 existing assigned roles in `public.user_roles`.
+  - Established users, existing organization members, and active, suspended, or expired accounts are rejected with error `42501` to prevent target user takeover.
+  - Elimination of destructive role replacement: `DELETE FROM public.user_roles` is removed. Provisioning proves zero roles exist and inserts exactly one permitted initial role.
+  - Concurrency safety: competing concurrent provisioning attempts on the same profile are serialized by the row lock; the second caller encounters the mutated state, fails invariant checks, and aborts cleanly.
+- **Transactional Database Provisioning**: Database operations (organization assignment, profile naming, role assignment, and audit event recording) occur inside a single PostgreSQL transaction via `public.provision_invited_user`, callable exclusively by `service_role`.
+- **Course Entitlement Separation**: Course entitlements require a specific `course_id` and are not created during generic user invitation. Course/cohort assignment remains a distinct administrative workflow.
+- **Account Status Lifecycle & Email Confirmation Trigger**:
+  1. Invited users initialize as `pending_verification`.
+  2. When the user accepts the invitation link, GoTrue updates `auth.users.email_confirmed_at`.
+  3. The `on_auth_user_confirmed` trigger automatically transitions organization-assigned profiles from `pending_verification` to `active`.
+  4. On first login, `RequireAccountAccess` verifies `active` status and admits the user.
+- **Safe Compensation & Rollback**: If the single transactional provisioning RPC fails, the database automatically rolls back all mutations, and the Edge Function attempts compensating deletion of the newly created Auth user via `auth.admin.deleteUser`. If compensation deletion fails, the function returns `PROVISIONING_ROLLBACK_FAILED` and logs diagnostic error details without exposing secrets. Pre-existing accounts (`USER_ALREADY_EXISTS`) are never deleted.
+- **Append-Only Auditing**: Every successful invitation creates an immutable event in `public.audit_events` with actor user ID, target user ID, organization ID, and role/access metadata, with zero disclosure of secrets, passwords, or invite tokens.
+- **Targeted Window-Focus Hardening**: The frontend `useAccountAccess` query specifies `refetchOnWindowFocus: "always"`. Returning to a background tab immediately checks account status and roles against PostgreSQL RLS, promptly reflecting suspensions or revocations without relying on client-side state alone.
+- **PKCE-Compatible TokenHash Invitation Acceptance (Phases 6.5.2B1.7 & B1.8)**:
+  - Default GoTrue invitation redirects append session credentials in an implicit fragment (`#access_token=...`), incompatible with React Router HashRouter and rejected by PKCE-configured GoTrue clients (`AuthPKCEGrantCodeExchangeError`).
+  - Invitations use a TokenHash contract: `{{ .RedirectTo }}#/auth/callback?token_hash={{ .TokenHash }}&type=invite`.
+  - The Edge Function passes trusted base URL `${normalizedBase}/` (derived from required runtime variable `SITE_URL`) as `redirectTo` to `inviteUserByEmail`, which GoTrue passes to the template as `{{ .RedirectTo }}` (distinct from project-level `{{ .SiteURL }}`).
+  - Fragment placement ensures the one-time token hash is never sent to GitHub Pages web servers in HTTP requests.
+  - Strict type guard: `AuthCallbackPage` mandates `type === "invite"` before invoking `supabase.auth.verifyOtp`; arbitrary or unexpected OTP types fail closed without executing verification.
+  - History & address-bar hygiene: Immediately upon verification or terminal failure, `cleanTokenFromUrl()` purges `token_hash` and `type` from the URL via `history.replaceState`, ensuring tokens are never retained in browser history or exposed to analytics/logging.
+  - Mechanism isolation: Password recovery retains standard PKCE callback processing (`?code=...#/auth/callback`), kept strictly isolated from the TokenHash invitation pathway.
+  - Password setup authorization guard: `/auth/reset-password` is guarded by both `RequireAuthentication` (route guard) and `ResetPasswordPage` component state checks (`state.status === "signed_in"` required; signed-out visitors redirect to `/auth/login` and submit button remains disabled).
+
 ## Quiz security
 
 - Correct options excluded from learner-selectable queries

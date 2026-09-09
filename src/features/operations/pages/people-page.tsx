@@ -1,4 +1,4 @@
-import { CheckCircle2, Search, ShieldAlert } from "lucide-react";
+import { CheckCircle2, Search, ShieldAlert, UserPlus } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { PageHeader } from "../../../components/common/page-header";
@@ -7,6 +7,8 @@ import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Input } from "../../../components/ui/input";
 import { useAuth } from "../../auth/context/auth-context";
+import { useAccountAccess } from "../../auth/hooks/use-account-access";
+import { InviteUserDialog } from "../components/invite-user-dialog";
 import { OperationState } from "../components/operation-state";
 import { useOperationsMutations, usePeople } from "../hooks/use-operations";
 
@@ -15,9 +17,15 @@ const roleLabel = { admin: "Administrator", instructor: "Instructor", learner: "
 export function OperationsPeoplePage() {
   const people = usePeople();
   const { state } = useAuth();
+  const access = useAccountAccess();
   const { updateStatus } = useOperationsMutations();
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState("");
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+
+  const isAdmin = access.data?.roles.some((role) => role === "admin" || role === "super_admin") ?? false;
+  const organizationId = access.data?.profile?.organizationId;
+
   const filtered = useMemo(() => (people.data ?? []).filter((person) => {
     const search = query.trim().toLowerCase();
     return !search || `${person.fullName} ${person.staffId ?? ""} ${person.profession ?? ""} ${person.department ?? ""}`.toLowerCase().includes(search);
@@ -27,7 +35,26 @@ export function OperationsPeoplePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader description="Manage existing fictional profiles and account access. Creating or deleting Auth users remains a trusted-operation boundary." eyebrow="Live development workspace" title="People" />
+      <PageHeader
+        action={
+          isAdmin ? (
+            <Button onClick={() => setShowInviteDialog(true)}>
+              <UserPlus aria-hidden="true" />
+              Invite user
+            </Button>
+          ) : undefined
+        }
+        description="Manage existing fictional profiles and account access. Creating or deleting Auth users remains a trusted-operation boundary."
+        eyebrow="Live development workspace"
+        title="People"
+      />
+      <InviteUserDialog
+        isOpen={showInviteDialog}
+        onClose={() => setShowInviteDialog(false)}
+        onSuccess={(user) => setNotice(`Invitation sent to ${user.email} (${user.fullName}).`)}
+        organizationId={organizationId}
+      />
+
       <div className="rounded-xl border border-info/25 bg-info-soft p-4 text-sm text-info">
         Email addresses are intentionally excluded: browser clients cannot list Supabase Auth users.
       </div>

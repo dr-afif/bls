@@ -44,4 +44,67 @@ describe("People and Cohorts repository", () => {
       venue: "Skills Lab", status: "scheduled",
     }));
   });
+
+  it("invokes admin-invite-user function and returns invited user result", async () => {
+    const invoke = vi.fn().mockResolvedValue({
+      data: {
+        success: true,
+        user: {
+          id: "new-user-1",
+          email: "learner@example.com",
+          fullName: "New Learner",
+          role: "learner",
+          organizationId: "org-1",
+        },
+      },
+      error: null,
+    });
+    const client = { functions: { invoke } } as unknown as SupabaseClient<Database>;
+
+    const result = await (await import("./people-cohorts-repository")).inviteUser(client, {
+      email: "learner@example.com",
+      fullName: "New Learner",
+      role: "learner",
+      accessMode: "unlimited",
+      organizationId: "org-1",
+    });
+
+    expect(result).toEqual({
+      id: "new-user-1",
+      email: "learner@example.com",
+      fullName: "New Learner",
+      role: "learner",
+      organizationId: "org-1",
+    });
+    expect(invoke).toHaveBeenCalledWith("admin-invite-user", {
+      body: {
+        email: "learner@example.com",
+        fullName: "New Learner",
+        role: "learner",
+        accessMode: "unlimited",
+        organizationId: "org-1",
+      },
+    });
+  });
+
+  it("extracts structured error code from failed invite response", async () => {
+    const errorResponse = new Response(JSON.stringify({ code: "USER_ALREADY_EXISTS" }), {
+      status: 409,
+      headers: { "Content-Type": "application/json" },
+    });
+    const invoke = vi.fn().mockResolvedValue({
+      data: null,
+      error: { context: errorResponse },
+    });
+    const client = { functions: { invoke } } as unknown as SupabaseClient<Database>;
+
+    await expect(
+      (await import("./people-cohorts-repository")).inviteUser(client, {
+        email: "existing@example.com",
+        fullName: "Existing",
+        role: "learner",
+        accessMode: "unlimited",
+      }),
+    ).rejects.toThrow("USER_ALREADY_EXISTS");
+  });
 });

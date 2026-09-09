@@ -1,4 +1,4 @@
-import type { AuthError, SupabaseClient } from "@supabase/supabase-js";
+import type { AuthError, Session, SupabaseClient } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
@@ -16,6 +16,11 @@ import type { AuthState } from "../model/auth-types";
 
 type AuthResult = { error: AuthError | null };
 
+export type VerifyOtpResult = {
+  error: AuthError | null;
+  session: Session | null;
+};
+
 type AuthContextValue = {
   client: SupabaseClient<Database> | null;
   state: AuthState;
@@ -23,6 +28,7 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
   updatePassword: (password: string) => Promise<AuthResult>;
+  verifyOtp: (params: { token_hash: string; type: "invite" }) => Promise<VerifyOtpResult>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -101,6 +107,18 @@ export function AuthProvider({
     [client],
   );
 
+  const verifyOtp = useCallback(
+    async ({ token_hash, type }: { token_hash: string; type: "invite" }): Promise<VerifyOtpResult> => {
+      if (!client) return { error: null, session: null };
+      const { data, error } = await client.auth.verifyOtp({
+        token_hash,
+        type,
+      });
+      return { error, session: data?.session ?? null };
+    },
+    [client],
+  );
+
   const value = useMemo(
     () => ({
       client,
@@ -109,8 +127,9 @@ export function AuthProvider({
       signOut,
       state,
       updatePassword,
+      verifyOtp,
     }),
-    [client, requestPasswordReset, signIn, signOut, state, updatePassword],
+    [client, requestPasswordReset, signIn, signOut, state, updatePassword, verifyOtp],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

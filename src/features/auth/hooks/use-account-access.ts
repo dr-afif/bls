@@ -14,5 +14,6 @@ export function useAccountAccess() {
       return getAccountAccess(client, userId);
     },
     queryKey: ["account-access", userId],
+    refetchOnWindowFocus: "always",
   });
 }

@@ -147,3 +147,57 @@ export async function updateAccountStatus(
   const { error } = await client.from("profiles").update({ account_status: accountStatus }).eq("id", userId);
   if (error) throw new Error("ACCOUNT_STATUS_UPDATE_FAILED");
 }
+
+export type InviteUserInput = {
+  email: string;
+  fullName: string;
+  role: "learner" | "instructor";
+  accessMode: "unlimited" | "limited";
+  startsAt?: string | null;
+  expiresAt?: string | null;
+  organizationId?: string | null;
+};
+
+export type InvitedUserResult = {
+  id: string;
+  email: string;
+  fullName: string;
+  role: "learner" | "instructor";
+  organizationId: string;
+};
+
+export async function inviteUser(
+  client: SupabaseClient<Database>,
+  input: InviteUserInput,
+): Promise<InvitedUserResult> {
+  const { data, error } = await client.functions.invoke("admin-invite-user", {
+    body: input,
+  });
+
+  if (error) {
+    const context = typeof error === "object" && error !== null && "context" in error
+      ? (error as { context?: unknown }).context
+      : null;
+    if (context instanceof Response) {
+      try {
+        const body = await context.clone().json();
+        if (body?.code) throw new Error(body.code);
+      } catch (parseErr) {
+        if (parseErr instanceof Error && parseErr.message !== "INVITATION_FAILED") {
+          throw parseErr;
+        }
+        if (context.status === 409) throw new Error("USER_ALREADY_EXISTS");
+        if (context.status === 403) throw new Error("FORBIDDEN");
+        if (context.status === 401) throw new Error("AUTHENTICATION_REQUIRED");
+        if (context.status === 400) throw new Error("INVALID_REQUEST");
+      }
+    }
+    throw new Error("INVITATION_FAILED");
+  }
+
+  if (!data?.success || !data?.user) {
+    throw new Error("INVITATION_FAILED");
+  }
+
+  return data.user as InvitedUserResult;
+}

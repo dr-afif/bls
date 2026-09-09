@@ -18,9 +18,15 @@
   - Phase 6.4: Audited CSV Exports — COMPLETE.
   - Phase 6.5.1: Production Readiness Audit & Hardening Plan — COMPLETE.
   - Phase 6.5.2A: Production Identity & Safe PWA Shell — COMPLETE.
-  - Phase 6.5.2B: User Invitation & Account Lifecycle — NEXT.
+    - Phase 6.5.2B1: Secure User Provisioning & Access-State Hardening (Local Implementation) — COMPLETE.
+    - Phase 6.5.2B1.5: Provisioning Transaction & Identity-Lifecycle Hardening — COMPLETE (local-only; linked verification pending).
+    - Phase 6.5.2B1.6: Pre-Deployment Provisioning Safety Corrections — COMPLETE (local-only; linked verification pending).
+    - Phase 6.5.2B1.7: PKCE-Compatible Invitation Acceptance — COMPLETE (local-only; linked verification pending).
+    - Phase 6.5.2B1.8: Invitation Template Redirect Contract Correction — COMPLETE (local-only; linked verification pending).
+    - Phase 6.5.2B2A: Hosted Provisioning Infrastructure Deployment & Verification — NEXT.
   - Phase 6.5.2C: Clinical Data Protection & Security Controls — PENDING.
   - Phase 6.5.2D: Backup, Telemetry, CI/CD & Operations — PENDING.
+
 
 ## Current repository state
 
@@ -45,11 +51,109 @@
 
 ## Work completed
 
+- Implemented Milestone 6 Phase 6.5.2B1.8: Invitation Template Redirect Contract Correction (Local Implementation):
+  - Corrected email template application base variable:
+    * In `supabase/templates/invite.html`, updated the Accept Invitation link from `{{ .SiteURL }}` to `{{ .RedirectTo }}`:
+      `<a class="button" href="{{ .RedirectTo }}#/auth/callback?token_hash={{ .TokenHash }}&type=invite">Accept Invitation</a>`.
+    * Solved variable separation: Supabase GoTrue sets `{{ .SiteURL }}` to the project's configured default site URL, while `{{ .RedirectTo }}` reflects the exact `redirectTo` parameter passed to `inviteUserByEmail`.
+    * Linked Edge Function contract: `admin-invite-user` passes `redirectTo = "${normalizedBase}/"` (derived from mandatory `SITE_URL`); using `{{ .RedirectTo }}` ensures that the explicit `SITE_URL` runtime environment variable strictly governs the invitation destination URL.
+  - Recorded hosted B2A prerequisite:
+    * Before sending remote invitations, the hosted Supabase Auth Redirect URL allowlist must explicitly permit the exact production base URL passed as `redirectTo` (`https://dr-afif.github.io/bls/`).
+  - Updated template tests in `src/features/auth/templates/invite-template.test.ts`:
+    * Added assertions proving the template uses `{{ .RedirectTo }}`, does not use `{{ .SiteURL }}` for the destination, preserves `{{ .TokenHash }}`, `type=invite`, and fragment-based `/auth/callback`.
+    * Suite expanded to 8 tests passing.
+
+- Implemented Milestone 6 Phase 6.5.2B1.7: PKCE-Compatible Invitation Acceptance (Local Implementation):
+  - Solved GoTrue invitation redirect limitation: Supabase `auth.admin.inviteUserByEmail()` is not
+    PKCE-capable and by default redirects with an implicit fragment (`#access_token=...`), which conflicts
+    with React Router HashRouter (`/#/auth/callback#access_token=...`) and is rejected by PKCE-configured clients.
+  - Implemented TokenHash + `verifyOtp({ token_hash, type: "invite" })` client-side acceptance flow:
+    * Created repository-owned email template `supabase/templates/invite.html` using `{{ .TokenHash }}`,
+      `type=invite`, and canonical SPA fragment destination `{{ .RedirectTo }}#/auth/callback?token_hash={{ .TokenHash }}&type=invite`.
+    * Configured local `supabase/config.toml` under `[auth.email.template.invite]`.
+    * Documented that the hosted Supabase Auth "Invite User" template must match this template before Phase 6.5.2B2B invitations.
+  - Updated Edge Function `admin-invite-user`:
+    * Replaced redirect path with trusted application base URL `${normalizedBase}/` (`SITE_URL`).
+    * Preserved Option A fail-closed behavior when `SITE_URL` is absent.
+  - Updated `AuthCallbackPage`:
+    * Added dedicated TokenHash invitation branch executing `supabase.auth.verifyOtp({ token_hash, type: "invite" })`.
+    * Enforced strict type checking (`type === "invite"`); arbitrary/unexpected types fail closed without calling `verifyOtp`.
+    * Sanitized URL and history via `window.history.replaceState` immediately upon verification or terminal failure.
+    * Preserved existing PKCE password-recovery flow (`?code=...#/auth/callback`) untouched.
+    * Confirmed session establishment and routed successfully verified invites to `/auth/reset-password` (`replace: true`).
+    * Reconfirmed defense-in-depth: `/auth/reset-password` is protected by `RequireAuthentication` route guard and `ResetPasswordPage` component state checks.
+  - Added deterministic test coverage:
+    * Created `src/features/auth/templates/invite-template.test.ts` (7 static validation tests).
+    * Created `src/features/auth/pages/auth-callback-page.test.tsx` (11 comprehensive callback tests).
+    * Updated `supabase/functions/admin-invite-user/handler.test.ts` (29 handler tests passing).
+
+- Implemented Milestone 6 Phase 6.5.2B1.6: Pre-Deployment Provisioning Safety Corrections (Local Implementation):
+  - Corrected target-user takeover vulnerability in `public.provision_invited_user`:
+    * Added exclusive row locking with `SELECT ... FOR UPDATE` on `public.profiles`.
+    * Enforced strictly unprovisioned target invariants: requires `organization_id IS NULL`,
+      `account_status = 'pending_verification'`, and 0 existing assigned roles in `public.user_roles`.
+    * Rejected established users, existing organization members, and non-pending accounts with error `42501`.
+    * Removed destructive role replacement: eliminated `DELETE FROM public.user_roles`. Provisioning
+      proves zero roles exist and inserts exactly one allowed initial role (`learner` | `instructor`).
+    * Preserved concurrency safety: competing concurrent calls on the same target are serialized by
+      the profile row lock, and the second invocation fails invariant checks without mutating.
+  - Corrected invitation redirect route:
+    * Removed direct non-hash route `/auth/reset-password` from `admin-invite-user` Edge Function.
+    * Replaced with canonical SPA hash callback contract: `${siteUrl.replace(/\/+$/, "")}/#/auth/callback`.
+    * Adopted Option A for `SITE_URL` configuration: explicit environment variable required; missing
+      or empty `SITE_URL` fails closed with 500 `CONFIGURATION_ERROR`.
+  - Expanded pgTAP test suite in `supabase/tests/user_provisioning_transaction_test.sql`:
+    * Added 16 new assertions covering established user rejection, existing role rejection (learner,
+      instructor, admin, super_admin), active/suspended/expired status rejection, state preservation
+      under failed takeover, and concurrency serialization (expanded to 30/30 assertions passing locally).
+  - Added Edge Function tests covering redirect construction, Option A `SITE_URL` enforcement,
+    and takeover compensation isolation, expanding frontend/Edge suite to 31 files and 170/170 tests passing.
+
+- Implemented Milestone 6 Phase 6.5.2B1.5: Provisioning Transaction & Identity-Lifecycle Hardening (Local Implementation):
+  - Resolved course entitlement ambiguity: confirmed `public.course_entitlements.course_id`
+    is mandatory (`NOT NULL`) and course-specific. Decided generic user invitation provisions
+    identity, tenancy, and role, while course/cohort entitlements remain a separate administrative workflow.
+  - Established and closed the account status lifecycle: created `on_auth_user_confirmed` trigger
+    on `auth.users` to automatically transition provisioned profiles from `pending_verification`
+    to `active` upon email verification.
+  - Created forward-only local migration `20260820090000_milestone_6_user_provisioning_transaction.sql`
+    introducing transactional RPC `public.provision_invited_user`, executing profile, role, and audit
+    updates in a single transaction callable exclusively by `service_role` with fixed `search_path = ''`.
+  - Refactored `admin-invite-user` Edge Function to execute exactly one transactional RPC call,
+    with compensating `auth.admin.deleteUser` on newly created Auth users if provisioning fails,
+    and distinct `PROVISIONING_ROLLBACK_FAILED` handling if compensation deletion itself fails.
+  - Verified `verify_jwt = true` in `supabase/config.toml` alongside function-level claims validation.
+  - Added 14 isolated pgTAP assertions in `supabase/tests/user_provisioning_transaction_test.sql`
+    (permissions, provisioning, role validation, rollback, and lifecycle transitions), all passing locally.
+  - Added Vitest tests for transactional provisioning, compensation rollback failure, and post-invite
+    lifecycle access gates, bringing frontend/Edge test total to 31 files and 163 tests passing.
+- Implemented Milestone 6 Phase 6.5.2B1: Secure User Provisioning & Access-State Hardening.
+  - Designed and built trusted Supabase Edge Function `admin-invite-user` with
+    platform JWT authentication, independent caller claim extraction, active-status
+    verification, and organization boundary validation.
+  - Enforced strict role-escalation boundary: only `learner` and `instructor` roles
+    can be invited; `admin` and `super_admin` invitations are rejected server-side.
+  - Implemented access mode handling (`unlimited` vs `limited` window) with future
+    expiry validation and optional start date.
+  - Added partial-failure compensation: newly invited Auth users are deleted if
+    subsequent database profile/role provisioning fails, while pre-existing accounts
+    are preserved.
+  - Recorded append-only `user.invited` audit events in `public.audit_events` without
+    exposing secrets, tokens, or credentials.
+  - Hardened security-sensitive access query in `useAccountAccess` with targeted
+    `refetchOnWindowFocus: "always"` to immediately detect suspensions and revocations
+    on tab focus, preserving global `refetchOnWindowFocus: false` for all other queries.
+  - Integrated accessible `InviteUserDialog` into `/app/admin/people` with role-scoped
+    visibility, duplicate submission prevention, disabled pending states, and mapped errors.
+  - Added comprehensive unit and component tests (21 Edge Function handler tests,
+    8 dialog tests, 4 page tests, 2 access-refetch tests), expanding the suite to
+    31 test files and 161 tests passing.
 - Implemented Milestone 6 Phase 6.5.2A: Production Identity & Safe PWA Shell,
   including canonical "BLS Course Companion" branding, standards-compliant Web
   App Manifest, branded SVG/PNG icons (192, 512, maskable), mobile
   `viewport-fit=cover`, and conservative `bls-shell-v1` service worker strictly
   excluding authenticated Supabase/API data from Cache Storage.
+
 - Removed the former dashboard, sequential course, lesson, progress, completion
   gate, and continue-learning patterns.
 - Added learner Home, Guides, resource viewer, Quiz, result summary, and Profile.
@@ -547,4 +651,4 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Proceed to Milestone 6 Phase 6.5.2B: User Invitation & Account Lifecycle (secure administrator user invitation form, tokenized registration flow, and account status management).
+Proceed to Milestone 6 Phase 6.5.2B2A: Hosted Provisioning Infrastructure Deployment & Verification (deploying the amended migration `20260820090000_milestone_6_user_provisioning_transaction.sql`, deploying the hardened `admin-invite-user` Edge Function, configuring remote secrets, and verifying hosted authorization without creating or inviting users).
