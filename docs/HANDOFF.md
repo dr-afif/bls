@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-08-18
+2026-09-09
 
 ## Current milestone
 
@@ -11,12 +11,16 @@
   - Phase 5.2: Administrator quiz authoring, question bank, and immutable publication.
   - Phase 5.3: Learner quiz journey, timer, autosave, submission, and learner-safe results.
   - Phase 5.4: Instructor assessment readiness, post-test release, and administrator results/details.
-- Milestone 6 (Phases 6.1, 6.2, 6.3, 6.4) — ACTIVE.
+- Milestone 6 (Phases 6.1, 6.2, 6.3, 6.4, 6.5) — ACTIVE.
   - Phase 6.1: Secure Reporting Foundation — COMPLETE.
   - Phase 6.2: Administrator Cohort Analytics UI — COMPLETE.
   - Phase 6.3: Secure Question & Item Analysis — COMPLETE.
   - Phase 6.4: Audited CSV Exports — COMPLETE.
-  - Phase 6.5: Production Hardening — PENDING.
+  - Phase 6.5.1: Production Readiness Audit & Hardening Plan — COMPLETE.
+  - Phase 6.5.2A: Production Identity & Safe PWA Shell — COMPLETE.
+  - Phase 6.5.2B: User Invitation & Account Lifecycle — NEXT.
+  - Phase 6.5.2C: Clinical Data Protection & Security Controls — PENDING.
+  - Phase 6.5.2D: Backup, Telemetry, CI/CD & Operations — PENDING.
 
 ## Current repository state
 
@@ -41,6 +45,11 @@
 
 ## Work completed
 
+- Implemented Milestone 6 Phase 6.5.2A: Production Identity & Safe PWA Shell,
+  including canonical "BLS Course Companion" branding, standards-compliant Web
+  App Manifest, branded SVG/PNG icons (192, 512, maskable), mobile
+  `viewport-fit=cover`, and conservative `bls-shell-v1` service worker strictly
+  excluding authenticated Supabase/API data from Cache Storage.
 - Removed the former dashboard, sequential course, lesson, progress, completion
   gate, and continue-learning patterns.
 - Added learner Home, Guides, resource viewer, Quiz, result summary, and Profile.
@@ -510,12 +519,12 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
   administration remain for later Milestone 5 phases.
 - Private resource Storage, signed access, production resource repositories,
   watermark identity, and PDF viewer wiring are implemented for fictional
-  fixtures. Automated clock-based post-expiry browser testing and a future
-  service-worker cache audit remain for the final hardening phase; no service
-  worker is currently registered.
+  fixtures. Service-worker Cache Storage was audited directly in Phase 6.5.2A,
+  confirming zero Supabase/API dynamic data caching.
 - Production CSV exports (Cohort Roster, Assessment Results, and Pre/Post Comparison) are fully implemented, verified via unit/component/pgTAP suites, audited, and verified in-browser across mobile, tablet, and desktop viewports.
 - Analytics are illustrative and are not calculated from persisted attempts.
-- PWA offline caching and install behavior are not part of this milestone.
+- Phase 6.5.2A installable PWA baseline and conservative application-shell caching
+  are complete; authenticated data remains online-only and fail-closed.
 - The local Docker-based Supabase stack remains unavailable, so database
   verification currently uses the hosted fictional development project.
 - The installed UI/UX skill package references a missing design-system
@@ -538,4 +547,4 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Review the completed Milestone 6 Phase 6.4 work on `main`, commit and push to trigger GitHub Pages deployment, followed by planning and executing Milestone 6 Phase 6.5 (Production Hardening).
+Proceed to Milestone 6 Phase 6.5.2B: User Invitation & Account Lifecycle (secure administrator user invitation form, tokenized registration flow, and account status management).

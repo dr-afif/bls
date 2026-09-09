@@ -94,18 +94,19 @@ Options:
 Most reliable:
 
 ```text
-https://example.github.io/bls-learning/#/app/dashboard
+https://example.github.io/bls/#/
 ```
 
-### Browser routing
+The application uses `createHashRouter` which works out of the box with GitHub Pages subpaths.
 
-Requires:
+### PWA and Service Worker Deployment under GitHub Pages
 
-- Correct Vite `base`
-- Generated `404.html`
-- Redirect and route-restoration logic
-
-Use a custom domain where practical for a cleaner production experience.
+When building with `GITHUB_PAGES=true`:
+- Vite sets `base: "/bls/"`
+- `manifest.webmanifest` uses relative URLs (`start_url: "./"`, `scope: "./"`), resolving cleanly to `https://<org>.github.io/bls/`
+- Service worker is registered at `/bls/sw.js` with scope `/bls/`
+- Static assets and icons (`icon-192.png`, `icon-512.png`, `icon-maskable.png`, `favicon.svg`) resolve under `/bls/`
+- Navigation network-first caching allows the offline shell to load while strictly blocking any dynamic or Supabase API responses from cache.
 
 ## Supabase deployment
 

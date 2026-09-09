@@ -19,7 +19,7 @@ export function AppLogo({ className, compact = false }: AppLogoProps) {
       {!compact && (
         <span className="leading-tight">
           <span className="block text-base font-bold tracking-tight">
-            BLS Learning
+            BLS Course Companion
           </span>
           <span className="block text-xs font-medium text-muted-foreground">
             Physical-course companion

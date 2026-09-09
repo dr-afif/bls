@@ -1,6 +1,5 @@
 import {
   Database,
-  FlaskConical,
   KeyRound,
   ShieldCheck,
 } from "lucide-react";
@@ -14,19 +13,19 @@ const settingsAreas = [
     icon: KeyRound,
     title: "Authentication and roles",
     description:
-      "Future production controls for learner, instructor and administrator access.",
+      "Operational controls for learner, instructor and administrator access.",
   },
   {
     icon: Database,
     title: "Data and retention",
     description:
-      "Future persistence, retention and export configuration for real records.",
+      "Persistence, retention and export configuration for operational records.",
   },
   {
     icon: ShieldCheck,
     title: "Quiz and review policy",
     description:
-      "Future controls for secure release, answer review and explanations.",
+      "Controls for secure post-test release, answer review and score verification.",
   },
 ];
 
@@ -34,7 +33,7 @@ export function AdminSettingsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        description="Production configuration placeholders with explicit frontend-only boundaries."
+        description="System environment and operational controls for BLS Course Companion."
         eyebrow="Administration"
         title="Settings"
       />
@@ -57,24 +56,26 @@ export function AdminSettingsPage() {
                 <p className="text-sm text-muted-foreground">
                   {area.description}
                 </p>
-                <Badge className="mt-4">Deferred to production MVP</Badge>
+                <Badge className="mt-4">Upcoming controls</Badge>
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      <Card className="border-warning/25 bg-warning-soft shadow-none">
+      <Card className="border-border bg-card shadow-none">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-warning">
-            <FlaskConical aria-hidden="true" className="size-5" />
-            Frontend prototype settings
+          <CardTitle className="flex items-center gap-2 text-foreground">
+            <ShieldCheck aria-hidden="true" className="size-5 text-primary" />
+            System Environment & Status
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-warning">
+        <CardContent className="text-muted-foreground">
           <p className="text-sm">
-            No settings are persisted. Supabase, authentication, RLS, protected
-            storage and secure scoring are intentionally absent.
+            Core authentication, row-level security, role-based authorization,
+            and audited reporting are actively enforced. Granular administrative
+            policy configuration and retention preferences will be available in
+            upcoming releases.
           </p>
         </CardContent>
       </Card>

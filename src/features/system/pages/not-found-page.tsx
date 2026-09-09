@@ -10,12 +10,12 @@ export function NotFoundPage() {
       <AppLogo className="mb-6 justify-center" />
       <StatePanel
         as="h1"
-        description="The requested prototype screen does not exist."
+        description="The requested page does not exist."
         kind="empty"
         title="Page not found"
       >
         <Button asChild className="mt-5">
-          <Link to="/">Return to role selection</Link>
+          <Link to="/">Return to home</Link>
         </Button>
       </StatePanel>
     </main>

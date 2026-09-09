@@ -4,48 +4,56 @@
 
 Provide an installable app-like experience while preserving the security of protected learning content.
 
-## Installability
+## Installability (Phase 6.5.2A Verified)
 
-Include:
+Implemented via `public/manifest.webmanifest` and `index.html`:
 
-- Web app manifest
-- 192 by 192 icon
-- 512 by 512 icon
-- Maskable icon
-- Application name
-- Short name
-- Theme colour
-- Background colour
-- Standalone display mode
-- Start URL
-- HTTPS
-- Service worker
+- Application name: `BLS Course Companion`
+- Short name: `BLS Companion`
+- Description: `Physical-course companion for Basic Life Support training.`
+- Icons:
+  - `favicon.svg` (SVG mark with HeartPulse emblem)
+  - `icon-192.png` (192×192 PNG)
+  - `icon-512.png` (512×512 PNG)
+  - `icon-maskable.png` (512×512 PNG maskable icon with safe zone)
+- Theme colour: `#174f7a` (matching brand primary)
+- Background colour: `#faf8f5` (warm background token)
+- Display mode: `standalone`
+- Orientation: natural device orientation across phone, tablet, and desktop (unconstrained)
+- Relative `start_url` (`./`) and `scope` (`./`) ensuring seamless resolution at both local dev root (`/`) and GitHub Pages (`/bls/`)
+- Mobile viewport: `width=device-width, initial-scale=1.0, viewport-fit=cover` enabling iOS safe-area handling.
 
-## Application-shell caching
+## Application-shell caching (Phase 6.5.2A)
 
-May cache:
+Managed by `public/sw.js` with policy logic in `src/pwa/pwa-policy.ts`.
 
-- HTML entry point
-- JavaScript bundles
-- CSS
-- Icons
-- Safe fonts
-- Static branding
-- Offline page
+Cache name: `bls-shell-v1`
 
-## Protected content
+Eligible for cache (static assets only):
 
-Do not cache:
+- HTML entry shell (`index.html`)
+- JavaScript bundles (hashed `/assets/*.js`)
+- CSS bundles (hashed `/assets/*.css`)
+- Manifest (`manifest.webmanifest`)
+- Icons and favicons (`favicon.svg`, `icon-192.png`, `icon-512.png`, `icon-maskable.png`)
+- Web fonts and static branding assets
 
-- PDFs
-- YouTube media
-- Signed resource URLs
-- Quiz answer keys
-- Future assessment questions
-- Admin reports
-- User exports
-- Sensitive profile data
-- Private certificates unless explicitly designed
+## Protected dynamic content (Strictly Network-Only, Never Cached)
+
+The fundamental privacy rule is: **Never cache authenticated Supabase application data.**
+
+The service worker strictly excludes the following from Cache Storage and passes them directly to the network:
+
+- All Supabase endpoints (`*.supabase.co`, `*.supabase.in`)
+- REST API queries (`/rest/v1/*`)
+- Database RPC invocations (`/rpc/*`, `/rest/v1/rpc/*`)
+- Authentication endpoints (`/auth/v1/*`)
+- Storage API and signed PDF URLs (`/storage/v1/*`)
+- Supabase Edge Functions (`/functions/v1/*`)
+- Any request with sensitive query tokens (`token=`, `apikey=`, `signature=`, `auth=`)
+- Active quiz attempts and submitted learner answers
+- Learner scoring, results, and item analysis
+- Administrative reports and CSV exports
 
 ## Offline states
 
