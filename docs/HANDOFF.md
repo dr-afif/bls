@@ -19,11 +19,12 @@
   - Phase 6.5.1: Production Readiness Audit & Hardening Plan — COMPLETE.
   - Phase 6.5.2A: Production Identity & Safe PWA Shell — COMPLETE.
     - Phase 6.5.2B1: Secure User Provisioning & Access-State Hardening (Local Implementation) — COMPLETE.
-    - Phase 6.5.2B1.5: Provisioning Transaction & Identity-Lifecycle Hardening — COMPLETE (local-only; linked verification pending).
-    - Phase 6.5.2B1.6: Pre-Deployment Provisioning Safety Corrections — COMPLETE (local-only; linked verification pending).
-    - Phase 6.5.2B1.7: PKCE-Compatible Invitation Acceptance — COMPLETE (local-only; linked verification pending).
-    - Phase 6.5.2B1.8: Invitation Template Redirect Contract Correction — COMPLETE (local-only; linked verification pending).
-    - Phase 6.5.2B2A: Hosted Provisioning Infrastructure Deployment & Verification — NEXT.
+    - Phase 6.5.2B1.5: Provisioning Transaction & Identity-Lifecycle Hardening — COMPLETE.
+    - Phase 6.5.2B1.6: Pre-Deployment Provisioning Safety Corrections — COMPLETE.
+    - Phase 6.5.2B1.7: PKCE-Compatible Invitation Acceptance — COMPLETE.
+    - Phase 6.5.2B1.8: Invitation Template Redirect Contract Correction — COMPLETE.
+    - Phase 6.5.2B2A: Hosted Provisioning Infrastructure Deployment & Verification — COMPLETE.
+    - Phase 6.5.2B2B: Controlled Live Invitation Verification — NEXT.
   - Phase 6.5.2C: Clinical Data Protection & Security Controls — PENDING.
   - Phase 6.5.2D: Backup, Telemetry, CI/CD & Operations — PENDING.
 
@@ -50,6 +51,25 @@
   non-clinical fixtures and are not yet wired to the production route UI.
 
 ## Work completed
+
+- Implemented Milestone 6 Phase 6.5.2B2A: Hosted Provisioning Infrastructure Deployment & Verification:
+  - Deployed database migration `20260820090000_milestone_6_user_provisioning_transaction.sql` cleanly to the linked Supabase project; verified 28/28 migrations aligned remotely.
+  - Regenerated `src/lib/supabase/database.types.ts` from the linked schema, placing `provision_invited_user` in its authoritative position with exact types.
+  - Executed isolated linked pgTAP test `supabase/tests/user_provisioning_transaction_test.sql`: passed all 30/30 assertions remotely.
+  - Executed full linked database pgTAP regression suite: passed all 358/358 assertions across 13 test files (100% green).
+  - Verified remote function security attributes: `provision_invited_user` and `private.handle_auth_user_confirmed` both have fixed empty search paths (`search_path=""`), are `SECURITY DEFINER`, and have execute permissions strictly granted to `service_role` (denied to `anon` and `authenticated`).
+  - Audited hosted URL configuration via `supabase config diff`: verified that hosted `Site URL` is already set to `https://dr-afif.github.io/bls/` and hosted `additional_redirect_urls` contains `https://dr-afif.github.io/bls/**`, `http://localhost:5173/**`, and `http://127.0.0.1:5173/**`.
+  - Deployed Edge Function `admin-invite-user` with JWT verification preserved (`verify_jwt = true`); confirmed function status ACTIVE (version 1).
+  - Verified non-mutating authorization boundaries:
+    * Anonymous POST to `admin-invite-user` rejected at JWT edge gateway with 401 `UNAUTHORIZED_NO_AUTH_HEADER`.
+    * Invalid JWT rejected at gateway with 401 `UNAUTHORIZED_INVALID_JWT_FORMAT`.
+    * Anonymous PostgREST execution of `provision_invited_user` rejected with 401 / error code `42501` (`permission denied for function provision_invited_user`).
+    * Confirmed `auth.users` count remained unchanged at exactly 4 (zero accounts created or deleted).
+  - Verified all local frontend regression baselines: 33 Vitest test files (189/189 tests passing), TypeScript typecheck clean (0 errors), ESLint clean (0 errors), and production build successful.
+  - Identified remaining manual Dashboard actions before Phase 6.5.2B2B controlled invitations:
+    1. Set Edge Function runtime secret `SITE_URL=https://dr-afif.github.io/bls/` in Supabase Dashboard (Project Settings → Edge Functions → Secrets).
+    2. Paste repository template `supabase/templates/invite.html` into hosted Supabase Auth "Invite user" email template (Authentication → Email Templates).
+    3. Enable "Check for leaked passwords" in Authentication → Password settings.
 
 - Implemented Milestone 6 Phase 6.5.2B1.8: Invitation Template Redirect Contract Correction (Local Implementation):
   - Corrected email template application base variable:
@@ -651,4 +671,4 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Proceed to Milestone 6 Phase 6.5.2B2A: Hosted Provisioning Infrastructure Deployment & Verification (deploying the amended migration `20260820090000_milestone_6_user_provisioning_transaction.sql`, deploying the hardened `admin-invite-user` Edge Function, configuring remote secrets, and verifying hosted authorization without creating or inviting users).
+Perform manual Dashboard configuration prerequisites (set Edge Function secret `SITE_URL=https://dr-afif.github.io/bls/`, paste repository template `supabase/templates/invite.html` into hosted Invite user email template, and enable leaked-password protection), then proceed to Phase 6.5.2B2B: Controlled Live Invitation Verification.

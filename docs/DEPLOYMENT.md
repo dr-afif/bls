@@ -146,6 +146,18 @@ only 60-second signed URLs after service-side authorization and uses
 npx supabase functions deploy issue-resource-access --use-api
 ```
 
+Milestone 6 Phase 6.5.2B2A deploys `admin-invite-user` with platform JWT
+verification (`verify_jwt = true`). It securely validates administrator authorization,
+invites users via TokenHash to `SITE_URL`, transactionally provisions profile/role/audit
+via service-role RPC `provision_invited_user`, and compensates failed invitations via
+`auth.admin.deleteUser`. Requires runtime secret `SITE_URL=https://dr-afif.github.io/bls/`.
+Deploy with:
+
+```bash
+npx supabase functions deploy admin-invite-user
+```
+
+
 ## Storage
 
 Recommended buckets:

@@ -1893,6 +1893,19 @@ export type Database = {
         Returns: Json
       }
       list_available_quizzes: { Args: never; Returns: Json }
+      provision_invited_user: {
+        Args: {
+          access_ends_at?: string
+          access_mode?: string
+          access_starts_at?: string
+          actor_user_id: string
+          full_name: string
+          target_organization_id: string
+          target_role: Database["public"]["Enums"]["app_role"]
+          target_user_id: string
+        }
+        Returns: Json
+      }
       publish_resource_version: {
         Args: { target_resource_id: string; target_version_id: string }
         Returns: undefined
@@ -1914,19 +1927,6 @@ export type Database = {
           target_cohort_id: string
           target_quiz_id: string
           target_request_id: string
-        }
-        Returns: Json
-      }
-      provision_invited_user: {
-        Args: {
-          access_ends_at?: string | null
-          access_mode?: string
-          access_starts_at?: string | null
-          actor_user_id: string
-          full_name: string
-          target_organization_id: string
-          target_role: Database["public"]["Enums"]["app_role"]
-          target_user_id: string
         }
         Returns: Json
       }

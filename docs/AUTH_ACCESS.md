@@ -236,12 +236,11 @@ The frontend and local backend currently provide:
      email, configured locally in `supabase/config.toml` under `[auth.email.template.invite]`.
      It builds the destination link using `{{ .RedirectTo }}` (the value passed to `inviteUserByEmail`),
      ensuring that the Edge Function's environment-controlled base URL governs the invite link.
-     *Prerequisites for Phase 6.5.2B2A*:
-     - **Hosted Email Template**: Before sending remote invitations in B2B, the hosted Supabase
-       Auth "Invite User" email template must be configured to match this repository template.
-     - **Hosted Redirect URL Allowlist**: The hosted Supabase Auth Redirect URL allowlist must explicitly
-       permit the exact production base URL passed as `redirectTo`, expected:
-       `https://dr-afif.github.io/bls/`. Do not assume it is already allowed; verify explicitly during B2A.
+     *Prerequisites and Verification Status (Phase 6.5.2B2A)*:
+     - **Hosted Site URL & Redirect URL Allowlist**: Confirmed remotely aligned. Hosted Site URL is `https://dr-afif.github.io/bls/`, and Redirect URLs include `https://dr-afif.github.io/bls/**`, `http://localhost:5173/**`, and `http://127.0.0.1:5173/**`.
+     - **Hosted Email Template**: Requires manual update in Supabase Dashboard (Authentication → Email Templates → Invite user) to match `supabase/templates/invite.html` using action URL `{{ .RedirectTo }}#/auth/callback?token_hash={{ .TokenHash }}&type=invite` before Phase 6.5.2B2B invitations.
+     - **Edge Function SITE_URL**: Requires manual configuration in Supabase Dashboard (Project Settings → Edge Functions → Secrets) setting `SITE_URL=https://dr-afif.github.io/bls/`.
+     - **Leaked-Password Protection**: Requires manual enablement in Supabase Dashboard (Authentication → Password → Check for leaked passwords).
   4. Base URL redirect contract: `admin-invite-user` passes `redirectTo = `${normalizedBase}/`` derived
      from required runtime environment variable `SITE_URL`. GoTrue exposes this passed argument to the
      email template via `{{ .RedirectTo }}` (distinct from the project-level `{{ .SiteURL }}` setting).
@@ -260,4 +259,12 @@ The frontend and local backend currently provide:
 - Safe partial-failure compensation: newly created Auth users are deleted via `auth.admin.deleteUser`
   if the provisioning RPC fails. If compensation fails, `PROVISIONING_ROLLBACK_FAILED` is returned.
   Existing users (`USER_ALREADY_EXISTS`) are never deleted.
-- Note: Phase 6.5.2B1.8 is local-only; hosted function deployment, linked migration verification, hosted redirect allowlist verification, and hosted email template update remain pending in Phase 6.5.2B2A.
+- Hosted Infrastructure Deployment & Verification (Phase 6.5.2B2A):
+  - Database Migration: 20260820090000 applied cleanly to linked Supabase project; 28/28 migrations aligned.
+  - Linked pgTAP Regression: 13 files and 358 assertions passing remotely (100% green).
+  - Isolated pgTAP: 30/30 assertions passing for `user_provisioning_transaction_test.sql`.
+  - Database Types: Regenerated `src/lib/supabase/database.types.ts` from linked schema.
+  - Edge Function: `admin-invite-user` deployed remotely with `verify_jwt: true` (version 1, ACTIVE).
+  - Security Attributes: Anonymous requests rejected at JWT gateway (HTTP 401 `UNAUTHORIZED_NO_AUTH_HEADER`); direct PostgREST calls to `provision_invited_user` rejected with HTTP 401 / 42501 for anon and authenticated.
+  - Auth User Isolation: Remote `auth.users` count verified unchanged at 4.
+  - Status: Phase 6.5.2B2A infrastructure complete; Phase 6.5.2B2B controlled live invitation pending.
