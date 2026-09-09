@@ -11,10 +11,12 @@
   - Phase 5.2: Administrator quiz authoring, question bank, and immutable publication.
   - Phase 5.3: Learner quiz journey, timer, autosave, submission, and learner-safe results.
   - Phase 5.4: Instructor assessment readiness, post-test release, and administrator results/details.
-- Milestone 6 (Phases 6.1, 6.2, 6.3) — ACTIVE.
+- Milestone 6 (Phases 6.1, 6.2, 6.3, 6.4) — ACTIVE.
   - Phase 6.1: Secure Reporting Foundation — COMPLETE.
   - Phase 6.2: Administrator Cohort Analytics UI — COMPLETE.
   - Phase 6.3: Secure Question & Item Analysis — COMPLETE.
+  - Phase 6.4: Audited CSV Exports — COMPLETE.
+  - Phase 6.5: Production Hardening — PENDING.
 
 ## Current repository state
 
@@ -216,6 +218,23 @@ deployed JWT-protected Edge Function
 
 ## Latest verification status
 
+- Milestone 6 Phase 6.4 (Audited CSV Exports) on 2026-08-19:
+  - Applied forward-only corrective migration `20260819133000_milestone_6_csv_exports_corrections.sql` to hosted project `zlaixhnyydxgbphgsetv` (27 migrations total, remote and local fully aligned).
+  - All 328 assertions across 12 pgTAP test files PASS on linked Supabase, including 36 assertions in `supabase/tests/database/exports.test.sql`.
+  - Database lint (`npx supabase db lint --linked`) reports 0 schema errors.
+  - Security definer export functions audited: narrow search path `''`, non-admin execution revoked, explicit admin same-org authorization checks.
+  - Deterministic tie-breaking `qa.id DESC` enforced across all authoritative attempt queries.
+  - Strict typecheck and lint pass; 112 Vitest tests pass across 26 files; production build succeeds cleanly; `git diff --check` passes.
+  - Learner email contract: `learnerEmail` removed entirely from export contracts, schemas, and CSV columns because `public.profiles` does not contain email and no existing admin path exposes `auth.users.email`.
+  - Ephemeral CSV generation verified: RFC-4180 compliance, formula injection defense (`=`, `+`, `-`, `@` neutralization even with leading whitespace), numeric preservation (`-12.5` remains numeric), zero-row headers, and traversal-safe filenames.
+  - Audit logging: all 3 export functions write to `public.audit_events` with actor, entity ID, organization ID, export type, row count, and request ID without sensitive PII or answers in metadata.
+  - Browser verification (Chrome DevTools MCP) complete:
+    - Mobile (320x800), tablet (768x1024), and desktop (1440x900) verified with zero horizontal overflow, stacking cards, responsive column grids, and >=44x44px touch targets.
+    - Local navigation between Results tabs and high-contrast visible focus rings verified.
+    - Actual CSV downloads triggered and inspected: Cohort Roster (4 columns, no email), Pre-Test Results (10 columns, unsubmitted learners non-fabricated), Post-Test Results (10 columns), and Pre/Post Comparison (11 columns, null learning gains for unpaired learners).
+    - Network RPC payloads inspected: zero private or sensitive fields returned (no emails, answers, option IDs, answer keys, or explanations).
+    - Browser console inspected: zero React warnings, zero unhandled runtime errors, and zero failed RPC calls.
+  - Static security/performance review completed; formal advisor execution deferred to Phase 6.5.
 - Milestone 6 Phase 6.3 (Secure Question & Item Analysis) on 2026-08-19: migration `20260819120000_milestone_6_item_analysis.sql` was applied to the schema.
 - Hosted `supabase test db --linked` passes all 292 assertions across 11 files, including 25 new item-analysis assertions. A flaky ordering assumption was successfully corrected without altering production logic.
 - Regenerated database types compile. Strict typecheck and lint pass; 74 Vitest tests pass across 23 files; `git diff --check` passes.
@@ -494,7 +513,7 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
   fixtures. Automated clock-based post-expiry browser testing and a future
   service-worker cache audit remain for the final hardening phase; no service
   worker is currently registered.
-- Export buttons never generate files.
+- Production CSV exports (Cohort Roster, Assessment Results, and Pre/Post Comparison) are fully implemented, verified via unit/component/pgTAP suites, audited, and verified in-browser across mobile, tablet, and desktop viewports.
 - Analytics are illustrative and are not calculated from persisted attempts.
 - PWA offline caching and install behavior are not part of this milestone.
 - The local Docker-based Supabase stack remains unavailable, so database
@@ -519,4 +538,4 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Owner/operator commit and push of Milestone 6 Phase 6.3 to `main` to trigger the GitHub Pages deployment workflow, followed by beginning Milestone 6 Phase 6.4 (or final exports/hardening).
+Review the completed Milestone 6 Phase 6.4 work on `main`, commit and push to trigger GitHub Pages deployment, followed by planning and executing Milestone 6 Phase 6.5 (Production Hardening).

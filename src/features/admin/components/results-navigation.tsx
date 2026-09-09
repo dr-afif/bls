@@ -40,6 +40,18 @@ export function ResultsNavigation() {
       >
         Item Analysis
       </NavLink>
+      <NavLink
+        to="/app/admin/results/exports"
+        className={({ isActive }) =>
+          `pb-3 text-sm font-medium transition-colors ${
+            isActive
+              ? "border-b-2 border-primary text-foreground"
+              : "border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+          }`
+        }
+      >
+        Exports
+      </NavLink>
     </div>
   );
 }

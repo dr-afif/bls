@@ -296,6 +296,13 @@ authenticated learner journey is not yet implemented.
 
 ## Milestone 6 — Analytics, exports, and hardening
 
+**Status:** active.
+- Phase 6.1 (Reporting & Analytics Foundation) — COMPLETE.
+- Phase 6.2 (Administrator Cohort Analytics UI) — COMPLETE.
+- Phase 6.3 (Secure Question & Item Analysis) — COMPLETE.
+- Phase 6.4 (Audited CSV Exports) — COMPLETE.
+- Phase 6.5 (Production Hardening) — PENDING.
+
 ### Product
 
 - Cohort pre-/post-test comparison
