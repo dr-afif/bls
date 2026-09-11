@@ -25,8 +25,8 @@
     - Phase 6.5.2B1.8: Invitation Template Redirect Contract Correction — COMPLETE.
     - Phase 6.5.2B2A: Hosted Provisioning Infrastructure Deployment & Verification — COMPLETE.
     - Phase 6.5.2B2B: Controlled Live Invitation Verification — COMPLETE.
-  - Phase 6.5.2C: Clinical Data Protection & Security Controls — NEXT.
-  - Phase 6.5.2D: Backup, Telemetry, CI/CD & Operations — PENDING.
+  - Phase 6.5.2C: CI / Dependency / Release Hygiene — COMPLETE.
+  - Phase 6.5.2D: Final Production Verification — NEXT.
 
 
 ## Current repository state
@@ -51,6 +51,30 @@
   non-clinical fixtures and are not yet wired to the production route UI.
 
 ## Work completed
+
+- Implemented Milestone 6 Phase 6.5.2C: CI / Dependency / Release Hygiene — COMPLETE:
+  - Automated CI Pipeline Established (`.github/workflows/ci.yml`):
+    * Configured pull-request and main push validation with least privilege (`contents: read`).
+    * Frontend job executes clean install (`npm ci`), TypeScript typecheck (`tsc -b --pretty false`), ESLint (`eslint .`), Vitest suite (`npm run test -- --run` — 33 files / 189 tests), and production build (`npm run build`).
+    * Ephemeral database CI job starts a fresh local Supabase instance (`supabase start` pinned to CLI 2.117.0), cleanly executing all 28 repository migrations in chronological order from scratch, applies fictional seed fixtures, lints schema (`supabase db lint --local --schema public`), and executes the complete 13-file pgTAP regression suite (358 assertions) with clean container teardown.
+    * Decoupled CI from production secrets: ordinary frontend and database CI requires zero Supabase service-role keys or production project connections.
+    * Added concurrency cancellation (`cancel-in-progress: true`) for superseded PR runs.
+  - Hardened GitHub Pages Deployment Workflow (`.github/workflows/deploy-pages.yml`):
+    * Scoped triggers exclusively to `push: [main]` and `workflow_dispatch`, eliminating PR redundancy and preventing PRs without repository variables from failing or canceling active Pages deployments.
+  - Dependency & Reproducibility Audit:
+    * Executed `npm outdated` and `npm audit`; classified all findings across runtime vs dev, reachability, and severity.
+    * Verified `fast-uri` (high) is transitive via `ajv` in `@hookform/resolvers`, unreached as forms use `zod`.
+    * Verified `js-yaml` (high) and `@vitest/mocker` (moderate) are development-only tooling dependencies (`eslint` and `vitest`) with zero runtime exposure.
+    * Verified `react-router` (moderate) SSR hydration constructor injection is unreached (app is client-side SPA) and open-redirect is mitigated by `createHashRouter` internal route matching.
+    * Added `"engines": { "node": ">=22.0.0", "npm": ">=10.0.0" }` to `package.json` to enforce reproducible toolchain standards.
+    * Verified `npm ci` succeeds cleanly and builds reproducibly without requiring breaking framework migrations.
+  - Operational & Release Hygiene Hardening (`docs/DEPLOYMENT.md`):
+    * Established two-tiered Production Release Verification Checklist distinguishing automated CI gates from manual hosted verification checks.
+    * Documented mandatory TokenHash template contract drift protection (`{{ .RedirectTo }}#/auth/callback?token_hash={{ .TokenHash }}&type=invite`) and documented why restoring default `{{ .ConfirmationURL }}` is fatal to hash-based routing.
+    * Documented Gmail SMTP operational envelope, platform-custodian secrets boundaries, and future transactional provider decoupling.
+    * Documented retention of controlled test account `m***@upm.edu.my` as a non-privileged `learner` regression probe.
+  - Roadmap & Documentation Reconciliation:
+    * Reconciled wording drift in `PLAN.md` and `docs/HANDOFF.md`, establishing canonical roadmap naming: Phase 6.5.2C is CI / Dependency / Release Hygiene and Phase 6.5.2D is Final Production Verification.
 
 - Implemented Milestone 6 Phase 6.5.2B2B: Controlled Live Invitation Verification — COMPLETE:
   - Verified full production invitation and account lifecycle on live GitHub Pages deployment (`https://dr-afif.github.io/bls/`) against linked Supabase project `zlaixhnyydxgbphgsetv`.
@@ -669,14 +693,15 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 - Analytics are illustrative and are not calculated from persisted attempts.
 - Phase 6.5.2A installable PWA baseline and conservative application-shell caching
   are complete; authenticated data remains online-only and fail-closed.
-- The local Docker-based Supabase stack remains unavailable, so database
-  verification currently uses the hosted fictional development project.
+- On Windows development hosts, local Docker Supabase port binding can conflict with Hyper-V dynamic TCP port exclusions (54265-54364), whereas GitHub Actions CI runs local Supabase ephemerally on Linux runners without port conflicts. Hosted linked verification (`supabase test db --linked`) remains available for manual development checks.
 - The installed UI/UX skill package references a missing design-system
   generator, so its documented design and accessibility rules were applied
   directly.
-- `npm audit` reports two moderate React Router 6 advisories. The remaining
-  supported fix is a breaking React Router 7 migration; the current app is
-  client-side only and constrains post-login redirects to internal paths.
+- `npm audit` reports 6 vulnerabilities across 4 areas:
+  * `react-router` (2 moderate advisories): SSR hydration constructor injection (not reachable; app is client-side SPA) and open-redirect via backslash in Link/useNavigate (mitigated by strict internal routing under `createHashRouter`). Full resolution requires React Router v7 migration deferred to post-launch.
+  * `fast-uri` (2 high advisories): transitive via `ajv` in `@hookform/resolvers`, unreached because form validation in this application uses `zod` via `@hookform/resolvers/zod`.
+  * `js-yaml` (1 high advisory): dev-only subdependency of `eslint`, zero runtime impact.
+  * `@vitest/mocker` (1 moderate advisory): dev-only subdependency of `vitest`, zero runtime impact.
 - The shared test password is intentionally temporary and weak. Replace it with
   unique generated passwords before any broader testing and never reuse these
   accounts for real learner information.
@@ -691,4 +716,4 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Proceed to Milestone 6 Phase 6.5.2C: Clinical Data Protection & Security Controls.
+Proceed to Milestone 6 Phase 6.5.2D: Final Production Verification.
