@@ -264,7 +264,15 @@ The frontend and local backend currently provide:
   - Linked pgTAP Regression: 13 files and 358 assertions passing remotely (100% green).
   - Isolated pgTAP: 30/30 assertions passing for `user_provisioning_transaction_test.sql`.
   - Database Types: Regenerated `src/lib/supabase/database.types.ts` from linked schema.
-  - Edge Function: `admin-invite-user` deployed remotely with `verify_jwt: true` (version 1, ACTIVE).
+  - Edge Function: `admin-invite-user` deployed remotely with `verify_jwt: true` (version 2, ACTIVE).
   - Security Attributes: Anonymous requests rejected at JWT gateway (HTTP 401 `UNAUTHORIZED_NO_AUTH_HEADER`); direct PostgREST calls to `provision_invited_user` rejected with HTTP 401 / 42501 for anon and authenticated.
-  - Auth User Isolation: Remote `auth.users` count verified unchanged at 4.
-  - Status: Phase 6.5.2B2A infrastructure complete; Phase 6.5.2B2B controlled live invitation pending.
+- Production Invitation Verification (Phase 6.5.2B2B) — COMPLETE:
+  - Custom SMTP: Enabled using dedicated production Gmail infrastructure (`smtp.gmail.com:465`, sender `BLS Course Companion`).
+  - Hosted Template: Configured with `{{ .RedirectTo }}#/auth/callback?token_hash={{ .TokenHash }}&type=invite`. The default `.ConfirmationURL` flow must not be restored.
+  - Invitation Callback: Verified `#/auth/callback?token_hash=...&type=invite` accepts the invitation without exposing `#access_token=...` or `refresh_token=...` in the browser URL.
+  - Account Lifecycle: Account successfully transitioned from `pending_verification` to `active` upon TokenHash OTP verification.
+  - Initial Password Setup: Authenticated participant successfully established strong password via `/auth/reset-password`.
+  - Authentication Journey: Full lifecycle verified: invitation acceptance -> password setup -> authenticated shell -> logout -> email/password login -> authenticated shell.
+  - Role & Course Scope: Verified account holds strictly the `learner` role. Generic administrator invitations do not automatically grant course entitlements or cohort memberships; course/cohort access remains independently governed.
+  - Incident Containment: An initial test with an unconfigured default template resulted in an implicit token redirect; access was immediately neutralized by suspending the profile, revoking all sessions, performing clean deletion via Auth Admin API preserving historical audit events, and cleanly re-inviting with custom SMTP and TokenHash template.
+  - Test Account State: Controlled test account (`m***@upm.edu.my`) is retained in `active` state with verified learner authorization.

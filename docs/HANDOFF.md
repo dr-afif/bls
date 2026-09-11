@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-09-09
+2026-09-11
 
 ## Current milestone
 
@@ -24,8 +24,8 @@
     - Phase 6.5.2B1.7: PKCE-Compatible Invitation Acceptance — COMPLETE.
     - Phase 6.5.2B1.8: Invitation Template Redirect Contract Correction — COMPLETE.
     - Phase 6.5.2B2A: Hosted Provisioning Infrastructure Deployment & Verification — COMPLETE.
-    - Phase 6.5.2B2B: Controlled Live Invitation Verification — NEXT.
-  - Phase 6.5.2C: Clinical Data Protection & Security Controls — PENDING.
+    - Phase 6.5.2B2B: Controlled Live Invitation Verification — COMPLETE.
+  - Phase 6.5.2C: Clinical Data Protection & Security Controls — NEXT.
   - Phase 6.5.2D: Backup, Telemetry, CI/CD & Operations — PENDING.
 
 
@@ -51,6 +51,26 @@
   non-clinical fixtures and are not yet wired to the production route UI.
 
 ## Work completed
+
+- Implemented Milestone 6 Phase 6.5.2B2B: Controlled Live Invitation Verification — COMPLETE:
+  - Verified full production invitation and account lifecycle on live GitHub Pages deployment (`https://dr-afif.github.io/bls/`) against linked Supabase project `zlaixhnyydxgbphgsetv`.
+  - Configured custom production SMTP using dedicated Gmail infrastructure (`smtp.gmail.com:465`, SSL, sender name `BLS Course Companion`).
+  - Corrected and saved hosted Supabase Auth "Invite User" email template to use TokenHash destination:
+    `<a class="button" href="{{ .RedirectTo }}#/auth/callback?token_hash={{ .TokenHash }}&type=invite">Accept Invitation</a>`.
+    Documented critical invariant: default Supabase `{{ .ConfirmationURL }}` must never be restored, as it triggers server-side implicit `#access_token=...` hash redirects incompatible with HashRouter and exposing tokens in browser history.
+  - Incident containment & reconciliation: an initial controlled test with the default template exposed an implicit hash redirect; access was immediately neutralized (profile updated to `suspended`, all sessions and refresh tokens deleted). Analyzed foreign-key cascade semantics and safely deleted the test user via `auth.admin.deleteUser` preserving historical audit logs (`auth.user.invited` and `profile.account_status_changed`).
+  - Clean re-test execution:
+    1. Sent single controlled invitation via production People administrator UI to `m***@upm.edu.my` with role `learner` and `unlimited` access.
+    2. Edge Function `admin-invite-user` responded with HTTP 200 without exposing service-role keys or invitation tokens.
+    3. Invitation email arrived promptly via custom Gmail SMTP with aligned subject and sender identity.
+    4. Recipient clicked Accept Invitation; browser navigated to `#/auth/callback?token_hash=...&type=invite`.
+    5. `AuthCallbackPage` validated `type=invite`, executed `supabase.auth.verifyOtp`, scrubbed `token_hash` from URL history via `replaceState`, and redirected to `/auth/reset-password`.
+    6. Participant established strong password satisfying hosted password policy.
+    7. Account status automatically transitioned from `pending_verification` to `active` via database trigger.
+    8. Authenticated learner shell loaded successfully with learner navigation only.
+    9. Explicitly verified logout and subsequent email/password login through `/auth/login`.
+    10. Role isolation verified: account holds strictly `learner` role; zero course entitlements and zero cohort memberships granted automatically; administrative routes (`/app/admin/people`, etc.) remain denied.
+  - Controlled test account (`m***@upm.edu.my`) is retained in `active` status for inspection.
 
 - Implemented Milestone 6 Phase 6.5.2B2A: Hosted Provisioning Infrastructure Deployment & Verification:
   - Deployed database migration `20260820090000_milestone_6_user_provisioning_transaction.sql` cleanly to the linked Supabase project; verified 28/28 migrations aligned remotely.
@@ -671,4 +691,4 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Perform manual Dashboard configuration prerequisites (set Edge Function secret `SITE_URL=https://dr-afif.github.io/bls/`, paste repository template `supabase/templates/invite.html` into hosted Invite user email template, and enable leaked-password protection), then proceed to Phase 6.5.2B2B: Controlled Live Invitation Verification.
+Proceed to Milestone 6 Phase 6.5.2C: Clinical Data Protection & Security Controls.

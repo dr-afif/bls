@@ -157,6 +157,15 @@ Deploy with:
 npx supabase functions deploy admin-invite-user
 ```
 
+### Auth email delivery and templates
+
+Phase 6.5.2B2B verifies custom email delivery and template contracts:
+
+- **Custom SMTP**: Enabled using dedicated production Gmail infrastructure (`smtp.gmail.com`, port `465`, SSL, sender name `BLS Course Companion`).
+- **Invite User Template**: Configured in Supabase Dashboard (Authentication → Email Templates → Invite user) using repository source `supabase/templates/invite.html`.
+  - Subject: `You have been invited to BLS Course Companion`
+  - Action link: `<a class="button" href="{{ .RedirectTo }}#/auth/callback?token_hash={{ .TokenHash }}&type=invite">Accept Invitation</a>`
+- **Critical Architecture Rule**: The default Supabase `{{ .ConfirmationURL }}` flow must **never** be restored. Calling `{{ .ConfirmationURL }}` triggers GoTrue server verification that returns an implicit `#access_token=...&refresh_token=...` hash redirect, which breaks React Router `createHashRouter` and exposes tokens in browser history. The TokenHash `verifyOtp` client-side acceptance flow is mandatory.
 
 ## Storage
 

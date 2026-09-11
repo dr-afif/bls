@@ -304,15 +304,15 @@ authenticated learner journey is not yet implemented.
 - Phase 6.5 (Production Hardening & Launch Readiness) — IN PROGRESS:
   - Phase 6.5.1 (Production Readiness Audit & Plan) — COMPLETE.
   - Phase 6.5.2A (Production Identity & Safe PWA Shell) — COMPLETE.
-  - Phase 6.5.2B (User Invitation & Account Lifecycle) — IN PROGRESS:
+  - Phase 6.5.2B (User Invitation & Account Lifecycle) — COMPLETE:
     - Phase 6.5.2B1 (Secure User Provisioning & Access-State Hardening — Local Implementation) — COMPLETE.
     - Phase 6.5.2B1.5 (Provisioning Transaction & Identity-Lifecycle Hardening) — COMPLETE.
     - Phase 6.5.2B1.6 (Pre-Deployment Provisioning Safety Corrections) — COMPLETE.
     - Phase 6.5.2B1.7 (PKCE-Compatible Invitation Acceptance) — COMPLETE.
     - Phase 6.5.2B1.8 (Invitation Template Redirect Contract Correction) — COMPLETE.
     - Phase 6.5.2B2A (Hosted Provisioning Infrastructure Deployment & Verification) — COMPLETE.
-    - Phase 6.5.2B2B (Controlled Live Invitation Verification) — PENDING.
-  - Phase 6.5.2C (Clinical Data Protection & Security Controls) — PENDING.
+    - Phase 6.5.2B2B (Controlled Live Invitation Verification) — COMPLETE.
+  - Phase 6.5.2C (Clinical Data Protection & Security Controls) — NEXT.
   - Phase 6.5.2D (Backup, Telemetry, CI/CD & Operations) — PENDING.
 
 
