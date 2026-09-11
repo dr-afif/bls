@@ -314,6 +314,7 @@ authenticated learner journey is not yet implemented.
     - Phase 6.5.2B2B (Controlled Live Invitation Verification) — COMPLETE.
   - Phase 6.5.2C (CI / Dependency / Release Hygiene) — COMPLETE:
     - Phase 6.5.2C1 (CI Supply-Chain & Deployment-Gate Correction) — COMPLETE.
+    - Phase 6.5.2C2 (Close Manual Deployment CI Bypass) — COMPLETE.
   - Phase 6.5.2D (Final Production Verification) — NEXT.
 
 

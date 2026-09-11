@@ -27,6 +27,7 @@
     - Phase 6.5.2B2B: Controlled Live Invitation Verification — COMPLETE.
   - Phase 6.5.2C: CI / Dependency / Release Hygiene — COMPLETE:
     - Phase 6.5.2C1: CI Supply-Chain & Deployment-Gate Correction — COMPLETE.
+    - Phase 6.5.2C2: Close Manual Deployment CI Bypass — COMPLETE.
   - Phase 6.5.2D: Final Production Verification — NEXT.
 
 
@@ -52,6 +53,16 @@
   non-clinical fixtures and are not yet wired to the production route UI.
 
 ## Work completed
+
+- Implemented Milestone 6 Phase 6.5.2C2: Close Manual Deployment CI Bypass — COMPLETE:
+  - Eliminated Production CI Bypass Loophole (`.github/workflows/deploy-pages.yml`):
+    * Removed `workflow_dispatch` trigger entirely from `deploy-pages.yml`.
+    * Simplified job gating in both `build` and `deploy` jobs to strictly `if: ${{ github.event.workflow_run.conclusion == 'success' }}`.
+    * Enforced exact tested SHA checkout without fallback: `ref: ${{ github.event.workflow_run.head_sha }}`.
+    * Guaranteed release invariant: production deployment can ONLY occur from a successful `CI` run on `main` testing the exact commit SHA being deployed (`CI tests commit X -> CI succeeds -> deploy workflow receives head_sha X -> checkout X -> build X -> deploy X`).
+    * Disabled manual UI actions deployment: eliminated possibility of unverified manual production deployments bypassing CI.
+  - Deployment Architecture & Documentation Alignment:
+    * Updated `docs/DEPLOYMENT.md`, `PLAN.md`, and `docs/HANDOFF.md` to reflect that manual deployment is intentionally disabled and zero CI bypasses exist.
 
 - Implemented Milestone 6 Phase 6.5.2C1: CI Supply-Chain & Deployment-Gate Correction — COMPLETE:
   - Technical CI Deployment Gate (`.github/workflows/deploy-pages.yml`):

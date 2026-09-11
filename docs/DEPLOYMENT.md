@@ -74,9 +74,10 @@ Runs on pull requests and pushes to `main`:
 
 Production deployment is technically gated by workflow dependencies rather than process alone:
 
-- **Trigger**: Runs exclusively via `workflow_run` on successful completion of `CI` on `main` (or manual `workflow_dispatch`).
-- **Exact-Commit Deployment**: Uses `ref: ${{ github.event.workflow_run.head_sha || github.sha }}` to ensure the exact tested commit that passed CI is checked out, built, and deployed.
-- **Fail-Closed Release Gate**: If `CI` fails on `main`, the `deploy-pages.yml` build and deploy jobs are skipped (`if: github.event.workflow_run.conclusion == 'success'`).
+- **Trigger**: Runs exclusively via `workflow_run` on completion of `CI` on `main`. Manual production deployment (`workflow_dispatch`) is intentionally disabled to eliminate any possibility of bypassing required CI.
+- **Exact-Commit Deployment**: Uses `ref: ${{ github.event.workflow_run.head_sha }}` without fallback to ensure that only the exact commit SHA that was tested and passed CI is checked out, built, and deployed to production.
+- **Fail-Closed Release Gate**: If `CI` fails, is cancelled, or is skipped on `main`, the `deploy-pages.yml` build and deploy jobs are not executed (`if: github.event.workflow_run.conclusion == 'success'`).
+- **Zero CI Bypass**: Production deployment has NO manual or direct CI bypass. Every production release strictly originates from a verified successful CI `workflow_run`.
 - **Access Boundary**: PR runs never trigger Pages deployment. Deployment credentials (`pages: write`, `id-token: write`) are strictly isolated to the deployment job.
 - **Action Supply-Chain Policy**: All actions (both GitHub-owned and third-party) are pinned to immutable full commit SHAs with inline release tag comments.
 
