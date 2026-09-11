@@ -7,6 +7,29 @@ values (
 )
 on conflict (id) do nothing;
 
+-- Fictional authentication fixtures for local development and CI
+insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data)
+values
+  ('10100000-0000-0000-0000-000000000001', 'admin@bls.local', now(), '{"full_name":"Demonstration Admin"}'),
+  ('10100000-0000-0000-0000-000000000002', 'instructor@bls.local', now(), '{"full_name":"Demonstration Instructor"}'),
+  ('10100000-0000-0000-0000-000000000003', 'learner@bls.local', now(), '{"full_name":"Demonstration Learner"}')
+on conflict (id) do nothing;
+
+update public.profiles
+set organization_id = '10000000-0000-0000-0000-000000000001', account_status = 'active'
+where id in (
+  '10100000-0000-0000-0000-000000000001',
+  '10100000-0000-0000-0000-000000000002',
+  '10100000-0000-0000-0000-000000000003'
+);
+
+insert into public.user_roles (user_id, role)
+values
+  ('10100000-0000-0000-0000-000000000001', 'admin'),
+  ('10100000-0000-0000-0000-000000000002', 'instructor'),
+  ('10100000-0000-0000-0000-000000000003', 'learner')
+on conflict (user_id, role) do nothing;
+
 insert into public.courses (
   id, organization_id, slug, title, description, status
 )

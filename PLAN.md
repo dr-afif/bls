@@ -312,7 +312,8 @@ authenticated learner journey is not yet implemented.
     - Phase 6.5.2B1.8 (Invitation Template Redirect Contract Correction) — COMPLETE.
     - Phase 6.5.2B2A (Hosted Provisioning Infrastructure Deployment & Verification) — COMPLETE.
     - Phase 6.5.2B2B (Controlled Live Invitation Verification) — COMPLETE.
-  - Phase 6.5.2C (CI / Dependency / Release Hygiene) — COMPLETE.
+  - Phase 6.5.2C (CI / Dependency / Release Hygiene) — COMPLETE:
+    - Phase 6.5.2C1 (CI Supply-Chain & Deployment-Gate Correction) — COMPLETE.
   - Phase 6.5.2D (Final Production Verification) — NEXT.
 
 

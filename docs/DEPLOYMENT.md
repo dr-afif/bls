@@ -61,29 +61,24 @@ VITE_SUPABASE_PUBLISHABLE_KEY
 The workflow fails closed when either public value is missing. GitHub Pages
 uses the `/bls/` Vite base path and hash-based application routes.
 
-Recommended workflows:
+### Continuous integration (`.github/workflows/ci.yml`)
 
-### Continuous integration
+Runs on pull requests and pushes to `main`:
 
-Runs on pull requests:
+- Environment: Clean Ubuntu runner, Node.js 22 LTS, unprivileged (`contents: read`).
+- Frontend checks: `npm ci`, `npm run typecheck`, `npm run lint`, `npm run test -- --run` (189 tests across 33 files), and `npm run build`.
+- Database checks: Ephemeral local Supabase startup via `supabase start` (executing all 28 migrations from zero and seeding test fixtures), `supabase db lint --local --schema public`, and `supabase test db` (full 13-file / 358-assertion pgTAP suite).
+- Isolation: Decoupled from production Supabase; requires no service-role secrets.
 
-- Install dependencies
-- Typecheck
-- Lint
-- Unit tests
-- Component tests
-- Production build
-- Selected end-to-end smoke tests
+### GitHub Pages deployment (`.github/workflows/deploy-pages.yml`)
 
-### GitHub Pages deployment
+Production deployment is technically gated by workflow dependencies rather than process alone:
 
-Runs on protected main-branch changes after CI success:
-
-- Build application
-- Set correct Vite base path
-- Generate SPA fallback if using browser routing
-- Upload Pages artifact
-- Deploy
+- **Trigger**: Runs exclusively via `workflow_run` on successful completion of `CI` on `main` (or manual `workflow_dispatch`).
+- **Exact-Commit Deployment**: Uses `ref: ${{ github.event.workflow_run.head_sha || github.sha }}` to ensure the exact tested commit that passed CI is checked out, built, and deployed.
+- **Fail-Closed Release Gate**: If `CI` fails on `main`, the `deploy-pages.yml` build and deploy jobs are skipped (`if: github.event.workflow_run.conclusion == 'success'`).
+- **Access Boundary**: PR runs never trigger Pages deployment. Deployment credentials (`pages: write`, `id-token: write`) are strictly isolated to the deployment job.
+- **Action Supply-Chain Policy**: All actions (both GitHub-owned and third-party) are pinned to immutable full commit SHAs with inline release tag comments.
 
 ## GitHub Pages routing
 

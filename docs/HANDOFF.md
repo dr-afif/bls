@@ -25,7 +25,8 @@
     - Phase 6.5.2B1.8: Invitation Template Redirect Contract Correction — COMPLETE.
     - Phase 6.5.2B2A: Hosted Provisioning Infrastructure Deployment & Verification — COMPLETE.
     - Phase 6.5.2B2B: Controlled Live Invitation Verification — COMPLETE.
-  - Phase 6.5.2C: CI / Dependency / Release Hygiene — COMPLETE.
+  - Phase 6.5.2C: CI / Dependency / Release Hygiene — COMPLETE:
+    - Phase 6.5.2C1: CI Supply-Chain & Deployment-Gate Correction — COMPLETE.
   - Phase 6.5.2D: Final Production Verification — NEXT.
 
 
@@ -51,6 +52,20 @@
   non-clinical fixtures and are not yet wired to the production route UI.
 
 ## Work completed
+
+- Implemented Milestone 6 Phase 6.5.2C1: CI Supply-Chain & Deployment-Gate Correction — COMPLETE:
+  - Technical CI Deployment Gate (`.github/workflows/deploy-pages.yml`):
+    * Eliminated independent concurrent deployment race on `push: [main]`.
+    * Retargeted trigger to `workflow_run: workflows: ["CI"], branches: [main], types: [completed]`.
+    * Enforced strict fail-closed release gate: `if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}`. If CI fails, Pages build and deployment jobs are skipped completely.
+    * Guaranteed exact-commit deployment: configured `actions/checkout` with `ref: ${{ github.event.workflow_run.head_sha || github.sha }}`, ensuring only the exact tested commit that passed CI is checked out and deployed to production.
+  - Supply-Chain Action Pinning Audit:
+    * Corrected unpinned `supabase/setup-cli@v1` in `.github/workflows/ci.yml` by pinning to verified upstream commit SHA `supabase/setup-cli@ab058987d8d6c725971f6cf9d0b5c98467e30bd1 # v1.7.1`.
+    * Verified 100% of action references across all workflows are pinned to full immutable commit SHAs with release comments.
+  - Ephemeral Database Seed Fixture Correction (`supabase/seed.sql`):
+    * Resolved foreign key violation in `supabase start` by explicitly inserting baseline fictional users (`admin@bls.local`, `instructor@bls.local`, `learner@bls.local`) into `auth.users`, `public.profiles`, and `public.user_roles` at the start of `seed.sql`, ensuring all subsequent course, cohort, and quiz fixture queries execute cleanly from zero.
+  - Deployment Architecture & Documentation Alignment:
+    * Updated `docs/DEPLOYMENT.md`, `PLAN.md`, and `docs/HANDOFF.md` to accurately document the technical deployment gate and supply-chain pinning policy.
 
 - Implemented Milestone 6 Phase 6.5.2C: CI / Dependency / Release Hygiene — COMPLETE:
   - Automated CI Pipeline Established (`.github/workflows/ci.yml`):
