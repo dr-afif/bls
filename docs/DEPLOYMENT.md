@@ -263,6 +263,31 @@ Hosted Supabase and third-party configurations that cannot be safely tested from
   - Confirm no access tokens appear in URL query strings or browser history.
   - Confirm all browser-accessible tables enforce Row Level Security.
 
+### Part 3: Pre-Launch Production Clean-Slate Reset Requirement
+
+Milestone 6 technical release readiness is complete and verified (PASS). Before onboarding real participants for physical course delivery, a controlled clean-slate production reset must be executed to remove pre-launch operational and test data:
+
+- [ ] **Operational & Test Data to Remove**:
+  - Delete `KTGS BANDAR SERI PUTRA` test cohort (confirmed test cohort created during development).
+  - Delete `BLS-DEMO-01` demonstration cohort.
+  - Delete demonstration resources and resource versions.
+  - Delete fictional pre-test and post-test quizzes, question banks, and question versions.
+  - Delete all test memberships, course entitlements, quiz attempts, and attempt answers.
+  - Delete or permanently suspend the controlled learner regression account (`m***@upm.edu.my`).
+  - Purge any remaining development/test fixtures from operational tables.
+- [ ] **Production Infrastructure & System State to Preserve**:
+  - Retain authorized custodian administrator accounts (`afif89@gmail.com`, `afif89+bls@gmail.com`).
+  - Retain organization record and system-level configuration.
+  - Retain all 28 schema migrations, database constraints, and Row Level Security policies.
+  - Retain active Edge Functions (`admin-invite-user`, `issue-resource-access`).
+  - Retain Auth configuration (Site URL `https://dr-afif.github.io/bls/` and redirect allowlist `https://dr-afif.github.io/bls/**`).
+  - Retain Custom SMTP settings (`smtp.gmail.com:465`).
+  - Retain CI/CD pipelines and CI-gated deployment configuration.
+  - Retain private storage bucket (`course-resources`) configuration.
+  - Retain required immutable system audit events (`public.audit_events`).
+- [ ] **Seed Fixture Isolation Invariant**:
+  - Local and CI seed fixtures (`supabase/seed.sql`) must remain strictly ephemeral local/CI-only and must **never** be applied to the hosted production database.
+
 ## Rollback
 
 Frontend:

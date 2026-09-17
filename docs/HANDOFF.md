@@ -11,7 +11,7 @@
   - Phase 5.2: Administrator quiz authoring, question bank, and immutable publication.
   - Phase 5.3: Learner quiz journey, timer, autosave, submission, and learner-safe results.
   - Phase 5.4: Instructor assessment readiness, post-test release, and administrator results/details.
-- Milestone 6 (Phases 6.1, 6.2, 6.3, 6.4, 6.5) — COMPLETE.
+- Milestone 6 (Phases 6.1, 6.2, 6.3, 6.4, 6.5) — COMPLETE (TECHNICAL PRODUCTION READINESS: PASS; FINAL CLEAN-SLATE RESET: REQUIRED BEFORE LAUNCH).
   - Phase 6.1: Secure Reporting Foundation — COMPLETE.
   - Phase 6.2: Administrator Cohort Analytics UI — COMPLETE.
   - Phase 6.3: Secure Question & Item Analysis — COMPLETE.
@@ -31,6 +31,7 @@
   - Phase 6.5.2D: Final Production Verification — COMPLETE:
     - Phase 6.5.2D1: Final Evidence Completion & Production Fixture Audit — RETURNED NO-GO.
     - Phase 6.5.2D2: Hosted Fixture Cleanup & Final Release Re-Gate — COMPLETE (GO).
+    - Phase 6.5.2D3: Final Launch Confirmation & Milestone 6 Closure — COMPLETE (PASS).
 
 
 ## Current repository state
@@ -55,6 +56,25 @@
   non-clinical fixtures and are not yet wired to the production route UI.
 
 ## Work completed
+
+- Implemented Milestone 6 Phase 6.5.2D3: Final Launch Confirmation & Milestone 6 Closure — COMPLETE (PASS):
+  - Manual Production Smoke Verification:
+    * Legitimate administrator production smoke test: PASS. Verified manually by authorized custodian on live production environment (`https://dr-afif.github.io/bls/`). Confirmed successful production login, accessible desktop/mobile administrator shell, clean loading across People, Cohorts, Results/Analytics, and Exports, zero runtime errors, and clean logout.
+    * Controlled learner production smoke test: PASS. Verified manually using the retained controlled regression probe (`m***@upm.edu.my`) on live production environment. Confirmed successful production login, accessible learner shell, strict learner authorization preserved, 0 course entitlements, 0 cohort memberships, privileged routes inaccessible (rendering standard Page Not Found boundaries), and clean logout.
+    * Instructor authenticated browser smoke: DEFERRED with justification. No legitimate hosted instructor identity currently exists following fixture cleanup. Ephemeral fixture accounts (`instructor@bls.local`) must NOT be recreated in the production environment. Instructor server/RLS authorization remains fully verified by automated pgTAP regression suites. Authenticated instructor UI smoke verification will be conducted when the first legitimate physical course instructor is formally onboarded.
+  - Auth Redirect Allowlist Verification:
+    * Audited live Supabase Auth configuration against project `zlaixhnyydxgbphgsetv` via Supabase CLI config diff.
+    * Confirmed Site URL remains `https://dr-afif.github.io/bls/`.
+    * Confirmed additional redirect allowlist is already strictly narrowed to `https://dr-afif.github.io/bls/**` alongside required local development origins (`http://localhost:5173/**`, `http://127.0.0.1:5173/**`). The overly broad `https://dr-afif.github.io/**` pattern was not present; zero mutation was required.
+  - Provenance Review Resolved:
+    * Re-audited all 23 hosted records whose author/reviewer/approver/publisher provenance fields were reassigned from deleted `admin@bls.local` to custodian `afif89+bls@gmail.com` during Phase 6.5.2D2.
+    * Product owner confirmed that cohort `KTGS BANDAR SERI PUTRA` (`KTGS02-0826`) was created personally as TEST DATA during development while logged in as former fixture `admin@bls.local`. It does not represent genuine physical pilot provenance.
+    * The reassignment of `cohorts.created_by` is therefore non-blocking and will be purged during the pre-launch clean-slate reset.
+    * The remaining 22 records (1 demo cohort, 8 guide resource versions, 2 quizzes, 3 quiz versions, 4 questions, 4 question versions) were confirmed as demonstration/fixture content.
+  - Release Gate Assessment & Pre-Launch Clean-Slate Reset Requirement:
+    * Milestone 6 TECHNICAL PRODUCTION READINESS is COMPLETE and PASS.
+    * Real participant onboarding must NOT begin immediately.
+    * A controlled FINAL PRODUCTION CLEAN-SLATE RESET is REQUIRED immediately prior to first real participant onboarding to remove pre-launch operational/test data while preserving operational custodians, schema, RLS, functions, auth settings, SMTP, and audit history.
 
 - Implemented Milestone 6 Phase 6.5.2D2: Hosted Fixture Cleanup & Final Release Re-Gate — COMPLETE (GO):
   - Neutralized and Removed Hosted Fixture Accounts:
@@ -784,11 +804,15 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
   * `@vitest/mocker` (1 moderate advisory): dev-only subdependency of `vitest`, zero runtime impact.
 - Hosted fixture accounts (`admin@bls.local`, `instructor@bls.local`, `learner@bls.local`) were completely removed prior to launch via supported `auth.admin.deleteUser`. Phase 6.5.2D1 NO-GO blocker is closed.
 - Ephemeral test fixture boundary: `supabase/seed.sql` fixtures remain CI/local-test only; the production database must never be populated by seed fixture identities.
-- Real pilot cohort `KTGS BANDAR SERI PUTRA` (`46edcfa8-cf05-405b-9b94-947919415482`) fixture memberships were cleaned; cohort is in scheduled state with 0 members and 0 attempts, ready for real participants.
-- Demonstration cohort `BLS-DEMO-01` (`11000000-0000-0000-0000-000000000001`) remains available and isolated for demonstration purposes; it visibly appears in admin cohort lists with code `BLS-DEMO-01` (non-blocking).
-- Controlled regression account `m***@upm.edu.my` remains `active` with strictly `learner` role, 0 cohort memberships, and 0 course entitlements as an operational verification probe.
+- Cohort `KTGS BANDAR SERI PUTRA` (`46edcfa8-cf05-405b-9b94-947919415482`) was confirmed by the product owner to have been created as TEST DATA during development under the former `admin@bls.local` fixture; it is not genuine production pilot provenance. Reassignment of its `created_by` field to custodian `afif89+bls@gmail.com` during fixture cleanup is non-blocking and will be purged during the pre-launch clean-slate reset.
+- Demonstration cohort `BLS-DEMO-01` (`11000000-0000-0000-0000-000000000001`) remains available and isolated for demonstration purposes; it will also be purged during the pre-launch clean-slate reset.
+- Controlled regression account `m***@upm.edu.my` remains `active` with strictly `learner` role, 0 cohort memberships, and 0 course entitlements as an operational verification probe until the clean-slate reset.
+- Final production clean-slate reset boundary: Before onboarding real participants, an operational clean-slate reset must remove pre-launch operational and test data:
+  * Operational/test data to remove: `KTGS BANDAR SERI PUTRA` test cohort, `BLS-DEMO-01` demo cohort, demonstration resources and resource versions, fictional quizzes, question banks, and question versions, test memberships and entitlements, test quiz attempts and results, controlled learner regression account once no longer needed, and any other pre-launch fixture data visible in real operational workflows.
+  * Infrastructure and system state to preserve: legitimate admin/super-admin custodians (`afif89@gmail.com`, `afif89+bls@gmail.com`), organization and system configuration, database schema and migrations (28/28), Row Level Security policies, Edge Functions (`admin-invite-user`, `issue-resource-access`), Auth URL and redirect configuration, Custom SMTP settings, CI/CD workflows and deployment gates, private storage bucket configuration, and required immutable system/audit history.
+- Local/CI seed fixtures (`supabase/seed.sql`) must remain local/CI-only and must NEVER be pushed into the hosted production tenant.
 - Verification evidence classification:
-  * `live browser authenticated`: verified controlled learner invitation, password creation, and login flow live on production GitHub Pages in Phase 6.5.2B2.4.
+  * `live browser authenticated`: verified legitimate administrator live login and shell access across People, Cohorts, Results/Analytics, and Exports with clean logout; verified controlled learner live login, learner shell access, strict authorization boundary, and logout in Phase 6.5.2D3. Instructor authenticated smoke is DEFERRED with justification (no hosted instructor identity currently exists; covered server-side by pgTAP; UI smoke to occur upon first legitimate instructor onboarding).
   * `live browser unauthenticated`: verified route-guard boundaries render Page Not Found for `/admin/people` and `/instructor/cohorts`, and login attempt with deleted `admin@bls.local` is rejected with 400 Bad Request.
   * `server/RLS verified`: verified all 29 public tables enforce RLS, private schema tables deny select, `course-resources` bucket is private, Edge Functions are ACTIVE, and all 13 pgTAP regression files (358 assertions) pass on linked production database.
   * `source verified`: client route guards, HashRouter basename, TanStack Query cache invalidation, and Zod schemas verified in source code.
@@ -802,13 +826,14 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Milestone 6 and Phase 6.5.2D2 Hosted Fixture Cleanup & Final Release Re-Gate are COMPLETE.
-The privileged fixture-account blocker from Phase 6.5.2D1 is RESOLVED and CLOSED.
-The final release gate decision is:
+Milestone 6 and Phase 6.5.2D3 Final Launch Confirmation are COMPLETE.
+Technical production readiness is PASS.
+Milestone 6 is formally CLOSED.
 
-**GO — READY FOR REAL PARTICIPANT ONBOARDING**
+Do NOT start real participant onboarding immediately.
 
 Recommended next action:
-1. Proceed with real participant onboarding according to operational custodian procedures.
-2. Conduct real physical course pilot delivery for cohort `KTGS BANDAR SERI PUTRA`.
-3. Plan post-launch maintenance items (React Router v7 upgrade, code-splitting optimizations).
+1. Prior to first real participant launch, execute the controlled FINAL PRODUCTION CLEAN-SLATE RESET to purge pre-launch operational/test data according to documented reset boundaries.
+2. Onboard the first legitimate instructor identity and perform authenticated instructor UI smoke verification.
+3. Onboard real physical course participants and deliver physical course pilot.
+4. Plan post-launch maintenance items (React Router v7 upgrade, code-splitting optimizations).
