@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-09-11
+2026-09-17
 
 ## Current milestone
 
@@ -11,7 +11,7 @@
   - Phase 5.2: Administrator quiz authoring, question bank, and immutable publication.
   - Phase 5.3: Learner quiz journey, timer, autosave, submission, and learner-safe results.
   - Phase 5.4: Instructor assessment readiness, post-test release, and administrator results/details.
-- Milestone 6 (Phases 6.1, 6.2, 6.3, 6.4, 6.5) — ACTIVE.
+- Milestone 6 (Phases 6.1, 6.2, 6.3, 6.4, 6.5) — COMPLETE.
   - Phase 6.1: Secure Reporting Foundation — COMPLETE.
   - Phase 6.2: Administrator Cohort Analytics UI — COMPLETE.
   - Phase 6.3: Secure Question & Item Analysis — COMPLETE.
@@ -28,7 +28,7 @@
   - Phase 6.5.2C: CI / Dependency / Release Hygiene — COMPLETE:
     - Phase 6.5.2C1: CI Supply-Chain & Deployment-Gate Correction — COMPLETE.
     - Phase 6.5.2C2: Close Manual Deployment CI Bypass — COMPLETE.
-  - Phase 6.5.2D: Final Production Verification — NEXT.
+  - Phase 6.5.2D: Final Production Verification — COMPLETE.
 
 
 ## Current repository state
@@ -53,6 +53,31 @@
   non-clinical fixtures and are not yet wired to the production route UI.
 
 ## Work completed
+
+- Implemented Milestone 6 Phase 6.5.2D: Final Production Verification — COMPLETE:
+  - Full Automated Release Verification:
+    * Frontend: 33 Vitest test files, 189 tests passed (100% green).
+    * Static Analysis: TypeScript typecheck passed with 0 errors; ESLint passed with 0 warnings/errors.
+    * Production Build: Vite production build completed successfully in 19.5s; dist bundle verified.
+    * Database: 28 migrations verified and 100% aligned between local and linked Supabase project.
+    * Schema Linter: Supabase db lint on linked public schema passed with 0 errors.
+    * Database Testing: Full pgTAP suite (13 test files, 358 assertions) passed 100% on linked database.
+  - Security Architecture & Production Audit:
+    * Row Level Security: Verified 100% of public tables (29/29) have RLS enabled (`rowsecurity: true`).
+    * Schema Isolation: Verified private schema tables (`private.attempt_answer_scores`, `private.quiz_operation_events`) deny SELECT privilege to both `anon` and `authenticated` browser roles.
+    * Function Hardening: Verified 100% of `SECURITY DEFINER` functions in public and private schemas enforce a locked empty search path (`SET search_path = ''`).
+    * Storage Privacy: Verified `course-resources` storage bucket is private (`public: false`).
+    * Repository Secret Scan: 0 credentials, service-role keys, tokens, or private secrets discovered in git.
+  - Live Infrastructure & Services:
+    * Edge Functions: Verified `admin-invite-user` (v2, ACTIVE, verify_jwt: true) and `issue-resource-access` (v3, ACTIVE, verify_jwt: true).
+    * Auth Configuration: Site URL (`https://dr-afif.github.io/bls/`), redirect allowlist (`https://dr-afif.github.io/bls/**`), leaked-password protection enabled, Custom SMTP configured via dedicated Gmail infrastructure (`smtp.gmail.com:465`).
+    * Invitation Template Contract: Hosted template verified to use `{{ .RedirectTo }}#/auth/callback?token_hash={{ .TokenHash }}&type=invite`, with zero `.ConfirmationURL` fallback.
+    * Live PWA Shell: Verified `manifest.webmanifest`, app name "BLS Course Companion", standalone display, service worker shell caching with strict API/token exclusion patterns.
+  - Production Test Account Disposition:
+    * Controlled regression learner (`m***@upm.edu.my`) verified active, strictly learner-only, 0 course entitlements, 0 cohort memberships, audit trail clean.
+    * Recommended disposition: Retain active temporarily for immediate post-launch smoke testing, then suspend for permanent regression testing.
+  - Release Gate Assessment:
+    * Verdict: READY FOR PRODUCTION (READY WITH DOCUMENTED NON-BLOCKING RISKS).
 
 - Implemented Milestone 6 Phase 6.5.2C2: Close Manual Deployment CI Bypass — COMPLETE:
   - Eliminated Production CI Bypass Loophole (`.github/workflows/deploy-pages.yml`):
@@ -731,8 +756,8 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 - The shared test password is intentionally temporary and weak. Replace it with
   unique generated passwords before any broader testing and never reuse these
   accounts for real learner information.
-- Supabase Auth leaked-password protection is disabled. Enable it and replace
-  the shared fictional test password before broader or real-user testing.
+- Supabase Auth leaked-password protection is enabled on the hosted project.
+  Weak prototype/test passwords must never be used for real learner or staff accounts.
 - The OneDrive workspace's `.git` directory remains an inaccessible cloud
   reparse point to command-line Git even though the visible project files are
   hydrated. A healthy replacement clone now exists at
@@ -742,4 +767,11 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Proceed to Milestone 6 Phase 6.5.2D: Final Production Verification.
+Milestone 6 and Phase 6.5.2D Final Production Verification are COMPLETE.
+The production application at https://dr-afif.github.io/bls/ is fully verified,
+gated by automated CI, and ready for production release.
+
+Recommended next action:
+1. Proceed with production launch according to operational custodian procedures.
+2. After initial live verification, optionally suspend the controlled regression account `m***@upm.edu.my`.
+3. Plan post-launch maintenance items (React Router v7 upgrade, code-splitting optimizations).

@@ -287,3 +287,30 @@ Recommended monitoring areas:
 - Certificate-generation failures
 
 Do not include sensitive answers, tokens, or signed URLs in monitoring payloads.
+
+## Verified Production Release Baseline (Milestone 6 Phase 6.5.2D)
+
+- **Production Frontend**: `https://dr-afif.github.io/bls/`
+- **Hosted Supabase Project**: `zlaixhnyydxgbphgsetv`
+- **Automated Verification**:
+  - Frontend: 189 Vitest tests across 33 test files (100% pass rate).
+  - Static Analysis: 0 TypeScript errors, 0 ESLint errors/warnings.
+  - Production Bundle: Built in 19.5s via Vite.
+  - Database: 28 migrations aligned locally and remotely; 0 schema lint errors.
+  - pgTAP Regression: 13 test files and 358 assertions passed on the linked database.
+- **Security Baseline**:
+  - 100% RLS coverage on all 29 public tables.
+  - Strict private schema isolation (`private.attempt_answer_scores`, `private.quiz_operation_events` inaccessible to `anon` and `authenticated`).
+  - 100% of `SECURITY DEFINER` functions enforce `SET search_path = ''`.
+  - Storage bucket `course-resources` is private (`public: false`).
+  - 0 secrets or sensitive tokens in git history or working tree.
+- **Release Invariant**:
+  - Gated exclusively on successful `CI` completion on `main` via `workflow_run`.
+  - Checkouts use `workflow_run.head_sha` without fallback.
+  - Manual deployment (`workflow_dispatch`) is disabled to prevent unverified production releases.
+- **Platform Custodian Responsibilities**:
+  1. Monitor hosted Supabase Auth rate limits, database connections, and storage quotas.
+  2. Maintain Gmail Custom SMTP credentials and monitor delivery rates.
+  3. Ensure all future schema changes are applied exclusively through forward migrations with pgTAP test coverage.
+  4. Periodically inspect `public.audit_events` for unauthorized access or abnormal provisioning patterns.
+  5. Never commit secrets, service-role keys, or tokens to the repository.

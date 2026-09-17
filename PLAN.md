@@ -301,7 +301,7 @@ authenticated learner journey is not yet implemented.
 - Phase 6.2 (Administrator Cohort Analytics UI) — COMPLETE.
 - Phase 6.3 (Secure Question & Item Analysis) — COMPLETE.
 - Phase 6.4 (Audited CSV Exports) — COMPLETE.
-- Phase 6.5 (Production Hardening & Launch Readiness) — IN PROGRESS:
+- Phase 6.5 (Production Hardening & Launch Readiness) — COMPLETE:
   - Phase 6.5.1 (Production Readiness Audit & Plan) — COMPLETE.
   - Phase 6.5.2A (Production Identity & Safe PWA Shell) — COMPLETE.
   - Phase 6.5.2B (User Invitation & Account Lifecycle) — COMPLETE:
@@ -315,7 +315,7 @@ authenticated learner journey is not yet implemented.
   - Phase 6.5.2C (CI / Dependency / Release Hygiene) — COMPLETE:
     - Phase 6.5.2C1 (CI Supply-Chain & Deployment-Gate Correction) — COMPLETE.
     - Phase 6.5.2C2 (Close Manual Deployment CI Bypass) — COMPLETE.
-  - Phase 6.5.2D (Final Production Verification) — NEXT.
+  - Phase 6.5.2D (Final Production Verification) — COMPLETE.
 
 
 ### Product
