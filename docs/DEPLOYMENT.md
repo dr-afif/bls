@@ -247,6 +247,10 @@ Hosted Supabase and third-party configurations that cannot be safely tested from
   - "Check for leaked passwords" is enabled in Supabase Dashboard (Authentication → Password).
 - [ ] **Storage Bucket Privacy**:
   - Bucket `course-resources` is private with 0 public access policies.
+- [ ] **Hosted Identity Hygiene**:
+  - Verify no ephemeral fixture accounts (`@bls.local`) exist in the production database (`auth.users` contains only authorized custodians and legitimate enrolled users).
+  - Confirm `supabase/seed.sql` fixtures remain strictly for local and ephemeral CI testing.
+  - Verify real pilot cohort `KTGS BANDAR SERI PUTRA` contains zero fixture memberships before real participant onboarding.
 - [ ] **Live Browser Smoke Tests (Production GitHub Pages)**:
   - Sign in with existing credentials (`/auth/login`).
   - Verify session restoration upon page refresh.

@@ -28,7 +28,9 @@
   - Phase 6.5.2C: CI / Dependency / Release Hygiene — COMPLETE:
     - Phase 6.5.2C1: CI Supply-Chain & Deployment-Gate Correction — COMPLETE.
     - Phase 6.5.2C2: Close Manual Deployment CI Bypass — COMPLETE.
-  - Phase 6.5.2D: Final Production Verification — COMPLETE.
+  - Phase 6.5.2D: Final Production Verification — COMPLETE:
+    - Phase 6.5.2D1: Final Evidence Completion & Production Fixture Audit — RETURNED NO-GO.
+    - Phase 6.5.2D2: Hosted Fixture Cleanup & Final Release Re-Gate — COMPLETE (GO).
 
 
 ## Current repository state
@@ -53,6 +55,33 @@
   non-clinical fixtures and are not yet wired to the production route UI.
 
 ## Work completed
+
+- Implemented Milestone 6 Phase 6.5.2D2: Hosted Fixture Cleanup & Final Release Re-Gate — COMPLETE (GO):
+  - Neutralized and Removed Hosted Fixture Accounts:
+    * Identified release blocker in Phase 6.5.2D1: privileged hosted fixture account `admin@bls.local` (`63b48080-9e50-4011-bf57-2a5abf8e9107`) with active sessions, weak temporary dev password, plus `instructor@bls.local` (`a29df73d-5cc8-4a83-9384-0723f75b8664`) and `learner@bls.local` (`2f25eafc-cc99-40d0-9fdb-3cee61de0440`) enrolled in real pilot cohort `KTGS BANDAR SERI PUTRA`.
+    * Immediate containment executed: all 3 fixture profiles suspended (`account_status = 'suspended'`), and all active sessions (3) and refresh tokens revoked for `admin@bls.local` (`auth.sessions` = 0, `auth.refresh_tokens` = 0).
+    * Dependent rows removed: purged all fixture memberships across real pilot cohort `KTGS BANDAR SERI PUTRA` and `BLS-DEMO-01` (`public.cohort_members` = 0), removed fixture course entitlements (`public.course_entitlements` = 0), and cleaned resource access events.
+    * Provenance and audit integrity preserved: transferred author/approver/publisher provenance on seed catalog resources, courses, quizzes, and questions from `admin@bls.local` to authorized production custodian `afif89+bls@gmail.com` (`28dcbd6c-1816-47f7-91ce-15a08f390222`). This satisfied all schema check constraints (`resource_versions_approval_valid`, `approved_question_version_has_provenance`, `published_quiz_version_has_provenance`) and immutability invariants while safely releasing foreign-key cascade locks.
+    * Executed official Supabase Auth Admin deletion (`supabase.auth.admin.deleteUser(id, false)`) for all three fixture identities. Verified zero residual records across `auth.users`, `public.profiles`, `public.user_roles`, `auth.sessions`, and `auth.refresh_tokens`. Preserved complete historical audit events (`public.audit_events` = 17 intact).
+  - Production Database & Cohort Cleanliness Verified:
+    * Hosted `auth.users` count reduced by exactly 3 (from 6 to 3). Only authorized custodians (`afif89@gmail.com`, `afif89+bls@gmail.com`) and controlled test probe (`m***@upm.edu.my`) remain. Zero unexpected or privileged fixture accounts remain.
+    * Real pilot cohort `KTGS BANDAR SERI PUTRA` (`46edcfa8-cf05-405b-9b94-947919415482`) completely free of fixture accounts (member_count = 0, attempt_count = 0, status = `scheduled`).
+    * Demonstration cohort `BLS-DEMO-01` (`11000000-0000-0000-0000-000000000001`) retained cleanly as isolated demo data (member_count = 0, attempt_count = 0).
+    * Controlled regression account `m***@upm.edu.my` remains `active`, role `learner`, 0 cohort memberships, 0 course entitlements.
+  - Ephemeral Test Fixture Isolation:
+    * Refactored 4 pgTAP regression test files (`reporting_analytics.test.sql`, `staff_results.test.sql`, `quiz_admin_authoring_test.sql`, `quiz_engine_foundation_test.sql`) to provision ephemeral test identities within their isolated `begin; ... rollback;` transaction blocks, decoupling test execution from persistent database state.
+    * Confirmed `supabase/seed.sql` remains strictly for local/CI ephemeral test environments; production database is never populated by seed fixtures.
+  - Comprehensive Release Verification Re-Run:
+    * TypeScript typecheck: passed with 0 errors (`tsc -b --pretty false`).
+    * ESLint: passed with 0 errors (`eslint .`).
+    * Vitest suite: 33 files, 189 tests passed (100% green).
+    * Production build: Vite build completed cleanly in 8.04s.
+    * Linked database migrations: 28/28 migrations aligned.
+    * Linked schema linter: `supabase db lint --linked --schema public` passed with 0 errors.
+    * Linked pgTAP regression suite: all 13 test files, 358 assertions passed (100% PASS) on linked production database with zero residual rows.
+    * Hosted security audit: 100% of public tables (29/29) RLS-enabled, private tables deny select, `course-resources` bucket private, Edge Functions `admin-invite-user` (v2) and `issue-resource-access` (v3) active, Custom SMTP enabled on port 465, TokenHash invite template contract intact.
+    * Live browser smoke tests: verified unauthenticated route protection returns Page Not Found for `/admin/people` and `/instructor/cohorts`, and login attempt with deleted `admin@bls.local` is rejected with 400 Bad Request ("The email or password is incorrect") with zero unexpected console errors.
+  - Release Decision: GO — READY FOR REAL PARTICIPANT ONBOARDING. Privileged fixture-account release blocker is CLOSED.
 
 - Implemented Milestone 6 Phase 6.5.2D: Final Production Verification — COMPLETE:
   - Full Automated Release Verification:
@@ -749,15 +778,21 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
   generator, so its documented design and accessibility rules were applied
   directly.
 - `npm audit` reports 6 vulnerabilities across 4 areas:
-  * `react-router` (2 moderate advisories): SSR hydration constructor injection (not reachable; app is client-side SPA) and open-redirect via backslash in Link/useNavigate (mitigated by strict internal routing under `createHashRouter`). Full resolution requires React Router v7 migration deferred to post-launch.
+  * `react-router` (2 moderate advisories): authoritative version is locked at `react-router-dom 6.30.4` and `react-router 6.30.4`. SSR hydration constructor injection is unreached (app is client-side SPA) and open-redirect is mitigated by strict internal routing under `createHashRouter`. Full resolution requires React Router v7 migration deferred to post-launch.
   * `fast-uri` (2 high advisories): transitive via `ajv` in `@hookform/resolvers`, unreached because form validation in this application uses `zod` via `@hookform/resolvers/zod`.
   * `js-yaml` (1 high advisory): dev-only subdependency of `eslint`, zero runtime impact.
   * `@vitest/mocker` (1 moderate advisory): dev-only subdependency of `vitest`, zero runtime impact.
-- The shared test password is intentionally temporary and weak. Replace it with
-  unique generated passwords before any broader testing and never reuse these
-  accounts for real learner information.
-- Supabase Auth leaked-password protection is enabled on the hosted project.
-  Weak prototype/test passwords must never be used for real learner or staff accounts.
+- Hosted fixture accounts (`admin@bls.local`, `instructor@bls.local`, `learner@bls.local`) were completely removed prior to launch via supported `auth.admin.deleteUser`. Phase 6.5.2D1 NO-GO blocker is closed.
+- Ephemeral test fixture boundary: `supabase/seed.sql` fixtures remain CI/local-test only; the production database must never be populated by seed fixture identities.
+- Real pilot cohort `KTGS BANDAR SERI PUTRA` (`46edcfa8-cf05-405b-9b94-947919415482`) fixture memberships were cleaned; cohort is in scheduled state with 0 members and 0 attempts, ready for real participants.
+- Demonstration cohort `BLS-DEMO-01` (`11000000-0000-0000-0000-000000000001`) remains available and isolated for demonstration purposes; it visibly appears in admin cohort lists with code `BLS-DEMO-01` (non-blocking).
+- Controlled regression account `m***@upm.edu.my` remains `active` with strictly `learner` role, 0 cohort memberships, and 0 course entitlements as an operational verification probe.
+- Verification evidence classification:
+  * `live browser authenticated`: verified controlled learner invitation, password creation, and login flow live on production GitHub Pages in Phase 6.5.2B2.4.
+  * `live browser unauthenticated`: verified route-guard boundaries render Page Not Found for `/admin/people` and `/instructor/cohorts`, and login attempt with deleted `admin@bls.local` is rejected with 400 Bad Request.
+  * `server/RLS verified`: verified all 29 public tables enforce RLS, private schema tables deny select, `course-resources` bucket is private, Edge Functions are ACTIVE, and all 13 pgTAP regression files (358 assertions) pass on linked production database.
+  * `source verified`: client route guards, HashRouter basename, TanStack Query cache invalidation, and Zod schemas verified in source code.
+  * `prior E2E evidence`: E2E invitation, password establishment, and session lifecycle verified under Phase 6.5.2B2.4.
 - The OneDrive workspace's `.git` directory remains an inaccessible cloud
   reparse point to command-line Git even though the visible project files are
   hydrated. A healthy replacement clone now exists at
@@ -767,11 +802,13 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Milestone 6 and Phase 6.5.2D Final Production Verification are COMPLETE.
-The production application at https://dr-afif.github.io/bls/ is fully verified,
-gated by automated CI, and ready for production release.
+Milestone 6 and Phase 6.5.2D2 Hosted Fixture Cleanup & Final Release Re-Gate are COMPLETE.
+The privileged fixture-account blocker from Phase 6.5.2D1 is RESOLVED and CLOSED.
+The final release gate decision is:
+
+**GO — READY FOR REAL PARTICIPANT ONBOARDING**
 
 Recommended next action:
-1. Proceed with production launch according to operational custodian procedures.
-2. After initial live verification, optionally suspend the controlled regression account `m***@upm.edu.my`.
+1. Proceed with real participant onboarding according to operational custodian procedures.
+2. Conduct real physical course pilot delivery for cohort `KTGS BANDAR SERI PUTRA`.
 3. Plan post-launch maintenance items (React Router v7 upgrade, code-splitting optimizations).

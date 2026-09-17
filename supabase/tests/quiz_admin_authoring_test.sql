@@ -20,6 +20,23 @@ create temporary table authoring_test_state (
   value uuid not null
 );
 grant all on table authoring_test_state to authenticated;
+insert into auth.users (id, email) values
+  ('2f25eafc-cc99-40d0-9fdb-3cee61de0440', 'learner@bls.local'),
+  ('a29df73d-5cc8-4a83-9384-0723f75b8664', 'instructor@bls.local'),
+  ('63b48080-9e50-4011-bf57-2a5abf8e9107', 'admin@bls.local')
+on conflict (id) do nothing;
+
+update public.profiles set
+  account_status = 'active',
+  organization_id = (select id from public.organizations limit 1)
+where id in ('2f25eafc-cc99-40d0-9fdb-3cee61de0440', 'a29df73d-5cc8-4a83-9384-0723f75b8664', '63b48080-9e50-4011-bf57-2a5abf8e9107');
+
+insert into public.user_roles (user_id, role) values
+  ('2f25eafc-cc99-40d0-9fdb-3cee61de0440', 'learner'),
+  ('a29df73d-5cc8-4a83-9384-0723f75b8664', 'instructor'),
+  ('63b48080-9e50-4011-bf57-2a5abf8e9107', 'admin')
+on conflict do nothing;
+
 insert into authoring_test_state values
   ('learner', (select id from auth.users where email = 'learner@bls.local')),
   ('instructor', (select id from auth.users where email = 'instructor@bls.local')),

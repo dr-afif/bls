@@ -315,7 +315,9 @@ authenticated learner journey is not yet implemented.
   - Phase 6.5.2C (CI / Dependency / Release Hygiene) — COMPLETE:
     - Phase 6.5.2C1 (CI Supply-Chain & Deployment-Gate Correction) — COMPLETE.
     - Phase 6.5.2C2 (Close Manual Deployment CI Bypass) — COMPLETE.
-  - Phase 6.5.2D (Final Production Verification) — COMPLETE.
+  - Phase 6.5.2D (Final Production Verification) — COMPLETE:
+    - Phase 6.5.2D1 (Final Evidence Completion & Production Fixture Audit) — RETURNED NO-GO.
+    - Phase 6.5.2D2 (Hosted Fixture Cleanup & Final Release Re-Gate) — COMPLETE (GO).
 
 
 ### Product
