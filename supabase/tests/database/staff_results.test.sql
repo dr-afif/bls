@@ -14,38 +14,38 @@ grant all on table quiz_test_state to authenticated;
 grant all on table quiz_test_state to anon;
 
 insert into auth.users (id, email) values
-  ('2f25eafc-cc99-40d0-9fdb-3cee61de0440', 'learner@bls.local'),
-  ('a29df73d-5cc8-4a83-9384-0723f75b8664', 'instructor@bls.local'),
-  ('63b48080-9e50-4011-bf57-2a5abf8e9107', 'admin@bls.local')
+  ('eb000001-0000-0000-0000-000000000001', 'learner_sr@bls.local'),
+  ('eb000001-0000-0000-0000-000000000002', 'inst_sr@bls.local'),
+  ('eb000001-0000-0000-0000-000000000003', 'admin_sr@bls.local')
 on conflict (id) do nothing;
 
 update public.profiles set
   account_status = 'active',
   organization_id = (select id from public.organizations limit 1)
-where id in ('2f25eafc-cc99-40d0-9fdb-3cee61de0440', 'a29df73d-5cc8-4a83-9384-0723f75b8664', '63b48080-9e50-4011-bf57-2a5abf8e9107');
+where id in ('eb000001-0000-0000-0000-000000000001', 'eb000001-0000-0000-0000-000000000002', 'eb000001-0000-0000-0000-000000000003');
 
 insert into public.user_roles (user_id, role) values
-  ('2f25eafc-cc99-40d0-9fdb-3cee61de0440', 'learner'),
-  ('a29df73d-5cc8-4a83-9384-0723f75b8664', 'instructor'),
-  ('63b48080-9e50-4011-bf57-2a5abf8e9107', 'admin')
+  ('eb000001-0000-0000-0000-000000000001', 'learner'),
+  ('eb000001-0000-0000-0000-000000000002', 'instructor'),
+  ('eb000001-0000-0000-0000-000000000003', 'admin')
 on conflict do nothing;
 
 insert into public.cohort_members (cohort_id, user_id, member_role, membership_status) values
-  ((select id from public.cohorts limit 1), '2f25eafc-cc99-40d0-9fdb-3cee61de0440', 'learner', 'active'),
-  ((select id from public.cohorts limit 1), 'a29df73d-5cc8-4a83-9384-0723f75b8664', 'instructor', 'active')
+  ((select id from public.cohorts limit 1), 'eb000001-0000-0000-0000-000000000001', 'learner', 'active'),
+  ((select id from public.cohorts limit 1), 'eb000001-0000-0000-0000-000000000002', 'instructor', 'active')
 on conflict do nothing;
 
 insert into public.course_entitlements (organization_id, user_id, course_id, access_type, status) values
-  ((select id from public.organizations limit 1), '2f25eafc-cc99-40d0-9fdb-3cee61de0440', (select id from public.courses limit 1), 'permanent', 'active')
+  ((select id from public.organizations limit 1), 'eb000001-0000-0000-0000-000000000001', (select id from public.courses limit 1), 'permanent', 'active')
 on conflict do nothing;
 
 insert into quiz_test_state values
-  ('learner', (select id from auth.users where email = 'learner@bls.local')),
-  ('instructor', (select id from auth.users where email = 'instructor@bls.local')),
-  ('admin', (select id from auth.users where email = 'admin@bls.local')),
+  ('learner', (select id from auth.users where email = 'learner_sr@bls.local')),
+  ('instructor', (select id from auth.users where email = 'inst_sr@bls.local')),
+  ('admin', (select id from auth.users where email = 'admin_sr@bls.local')),
   ('cohort', (select cm.cohort_id from public.cohort_members cm
     join auth.users u on u.id = cm.user_id
-    where u.email = 'learner@bls.local' and cm.member_role = 'learner'
+    where u.email = 'learner_sr@bls.local' and cm.member_role = 'learner'
       and cm.membership_status = 'active' limit 1));
 
 -- We need to find an active attempt or create one to test attempt details

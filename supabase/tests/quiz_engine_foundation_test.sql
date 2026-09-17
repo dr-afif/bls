@@ -19,38 +19,38 @@ create temporary table quiz_test_state (
 grant all on table quiz_test_state to authenticated;
 
 insert into auth.users (id, email) values
-  ('2f25eafc-cc99-40d0-9fdb-3cee61de0440', 'learner@bls.local'),
-  ('a29df73d-5cc8-4a83-9384-0723f75b8664', 'instructor@bls.local'),
-  ('63b48080-9e50-4011-bf57-2a5abf8e9107', 'admin@bls.local')
+  ('ee000001-0000-0000-0000-000000000001', 'learner_qe@bls.local'),
+  ('ee000001-0000-0000-0000-000000000002', 'inst_qe@bls.local'),
+  ('ee000001-0000-0000-0000-000000000003', 'admin_qe@bls.local')
 on conflict (id) do nothing;
 
 update public.profiles set
   account_status = 'active',
   organization_id = (select id from public.organizations limit 1)
-where id in ('2f25eafc-cc99-40d0-9fdb-3cee61de0440', 'a29df73d-5cc8-4a83-9384-0723f75b8664', '63b48080-9e50-4011-bf57-2a5abf8e9107');
+where id in ('ee000001-0000-0000-0000-000000000001', 'ee000001-0000-0000-0000-000000000002', 'ee000001-0000-0000-0000-000000000003');
 
 insert into public.user_roles (user_id, role) values
-  ('2f25eafc-cc99-40d0-9fdb-3cee61de0440', 'learner'),
-  ('a29df73d-5cc8-4a83-9384-0723f75b8664', 'instructor'),
-  ('63b48080-9e50-4011-bf57-2a5abf8e9107', 'admin')
+  ('ee000001-0000-0000-0000-000000000001', 'learner'),
+  ('ee000001-0000-0000-0000-000000000002', 'instructor'),
+  ('ee000001-0000-0000-0000-000000000003', 'admin')
 on conflict do nothing;
 
 insert into public.cohort_members (cohort_id, user_id, member_role, membership_status) values
-  ((select id from public.cohorts limit 1), '2f25eafc-cc99-40d0-9fdb-3cee61de0440', 'learner', 'active'),
-  ((select id from public.cohorts limit 1), 'a29df73d-5cc8-4a83-9384-0723f75b8664', 'instructor', 'active')
+  ((select id from public.cohorts limit 1), 'ee000001-0000-0000-0000-000000000001', 'learner', 'active'),
+  ((select id from public.cohorts limit 1), 'ee000001-0000-0000-0000-000000000002', 'instructor', 'active')
 on conflict do nothing;
 
 insert into public.course_entitlements (organization_id, user_id, course_id, access_type, status) values
-  ((select id from public.organizations limit 1), '2f25eafc-cc99-40d0-9fdb-3cee61de0440', (select id from public.courses limit 1), 'permanent', 'active')
+  ((select id from public.organizations limit 1), 'ee000001-0000-0000-0000-000000000001', (select id from public.courses limit 1), 'permanent', 'active')
 on conflict do nothing;
 
 insert into quiz_test_state values
-  ('learner', (select id from auth.users where email = 'learner@bls.local')),
-  ('instructor', (select id from auth.users where email = 'instructor@bls.local')),
-  ('admin', (select id from auth.users where email = 'admin@bls.local')),
+  ('learner', (select id from auth.users where email = 'learner_qe@bls.local')),
+  ('instructor', (select id from auth.users where email = 'inst_qe@bls.local')),
+  ('admin', (select id from auth.users where email = 'admin_qe@bls.local')),
   ('cohort', (select cm.cohort_id from public.cohort_members cm
     join auth.users u on u.id = cm.user_id
-    where u.email = 'learner@bls.local' and cm.member_role = 'learner'
+    where u.email = 'learner_qe@bls.local' and cm.member_role = 'learner'
       and cm.membership_status = 'active' limit 1));
 
 set local role anon;

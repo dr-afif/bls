@@ -21,26 +21,26 @@ create temporary table authoring_test_state (
 );
 grant all on table authoring_test_state to authenticated;
 insert into auth.users (id, email) values
-  ('2f25eafc-cc99-40d0-9fdb-3cee61de0440', 'learner@bls.local'),
-  ('a29df73d-5cc8-4a83-9384-0723f75b8664', 'instructor@bls.local'),
-  ('63b48080-9e50-4011-bf57-2a5abf8e9107', 'admin@bls.local')
+  ('ed000001-0000-0000-0000-000000000001', 'learner_qa@bls.local'),
+  ('ed000001-0000-0000-0000-000000000002', 'inst_qa@bls.local'),
+  ('ed000001-0000-0000-0000-000000000003', 'admin_qa@bls.local')
 on conflict (id) do nothing;
 
 update public.profiles set
   account_status = 'active',
   organization_id = (select id from public.organizations limit 1)
-where id in ('2f25eafc-cc99-40d0-9fdb-3cee61de0440', 'a29df73d-5cc8-4a83-9384-0723f75b8664', '63b48080-9e50-4011-bf57-2a5abf8e9107');
+where id in ('ed000001-0000-0000-0000-000000000001', 'ed000001-0000-0000-0000-000000000002', 'ed000001-0000-0000-0000-000000000003');
 
 insert into public.user_roles (user_id, role) values
-  ('2f25eafc-cc99-40d0-9fdb-3cee61de0440', 'learner'),
-  ('a29df73d-5cc8-4a83-9384-0723f75b8664', 'instructor'),
-  ('63b48080-9e50-4011-bf57-2a5abf8e9107', 'admin')
+  ('ed000001-0000-0000-0000-000000000001', 'learner'),
+  ('ed000001-0000-0000-0000-000000000002', 'instructor'),
+  ('ed000001-0000-0000-0000-000000000003', 'admin')
 on conflict do nothing;
 
 insert into authoring_test_state values
-  ('learner', (select id from auth.users where email = 'learner@bls.local')),
-  ('instructor', (select id from auth.users where email = 'instructor@bls.local')),
-  ('admin', (select id from auth.users where email = 'admin@bls.local')),
+  ('learner', (select id from auth.users where email = 'learner_qa@bls.local')),
+  ('instructor', (select id from auth.users where email = 'inst_qa@bls.local')),
+  ('admin', (select id from auth.users where email = 'admin_qa@bls.local')),
   ('course', gen_random_uuid()),
   ('topic', (select id from public.bls_topics where active order by display_order limit 1));
 
