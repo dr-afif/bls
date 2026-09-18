@@ -41,6 +41,8 @@ flowchart LR
 - Display videos and protected PDFs
 - Autosave quiz answers
 - Present server-calculated results
+- Deliver bilingual interface in English and Bahasa Melayu (`en` / `ms`)
+- Provide intermediary invitation acceptance to defend against email security prefetchers
 - Register the PWA service worker
 - Never contain privileged secrets
 
@@ -56,26 +58,26 @@ flowchart LR
 
 ### PostgreSQL
 
-- Profiles
-- Roles
+- Profiles (with language preference and registration states)
+- Protected learner identities (isolated National Identity / I.C. records)
+- Roles and staff hierarchy
 - Organizations
-- Cohorts
-- Courses
-- Resources
-- Entitlements
-- Progress
-- Quizzes
-- Attempts
-- Analytics
-- Certificates
+- Cohorts (with reversible `learner_access_state`)
+- Cohort courses (multi-course associations)
+- Cohort learner roster staging
+- Application-managed access invitations (7-day lifecycle)
+- Courses and entitlements
+- Resources and immutable versions
+- Quizzes, questions, and attempt snapshots
 - Audit logs
 
 ### Row Level Security
 
 - Restrict learners to their own records
-- Restrict course data to active entitlement
+- Restrict course data to active entitlement and `learner_access_state = 'open'`
 - Restrict instructors to assigned cohorts
-- Restrict administrators to their scope
+- Strictly deny instructors direct SELECT on `learner_identities` (masked projection via secure view only)
+- Restrict administrators to their organization scope
 - Prevent learners from reading correct-answer fields
 - Prevent learners from altering scores, roles, or entitlements
 

@@ -88,13 +88,17 @@ A course or organization administrator who manages learners, resources, quizzes,
 ## Learner course-companion journey
 
 ```text
-Invitation or signup
+Staff adds learner email to cohort roster
   ↓
-Email verification and profile completion
+7-day invitation sent (bilingual EN + BM)
   ↓
-Account approval or code validation
+Recipient clicks link & lands on intermediary acceptance screen (scanner defense)
   ↓
-Home and cohort details
+Registration: supplies full name, I.C., preferred language (EN/MS), password
+  ↓
+Account active: cohort enrollment & course entitlements effective
+  ↓
+Home and cohort details (all attached courses)
   ↓
 Preparation guidance and practical references
   ↓
@@ -102,7 +106,7 @@ Pre-test
   ↓
 Attend physical BLS course
   ↓
-Post-test released
+Post-test released by instructor or administrator
   ↓
 Post-test
   ↓
@@ -113,33 +117,35 @@ View result
 
 ### Authentication and onboarding
 
-- Email and password signup
-- Invite-only registration
-- Optional registration codes
-- Email verification
-- Login and logout
-- Password reset
-- Profile completion
-- Terms acceptance
-- Account-status handling
+- Email-only pre-invitation roster staging (manual entry and bulk import/paste)
+- 7-day application invitation lifecycle with bot-scanner protection, expiry, and superseding resend
+- First-time learner registration: full name, National Identity Card (I.C.) number, preferred language (`en` or `ms`), password
+- Returning learner fast-path cohort addition without re-registration or forced password change
+- Strict staff onboarding hierarchy: super-administrators invite administrators and instructors; administrators invite instructors; instructors invite and manage learners strictly within assigned cohorts
+- Login, logout, and account-level password recovery
+- Account states: `pending_verification`, `pending_registration`, `pending_approval`, `active`, `suspended`, `expired`, `archived`
+- Protected National Identity (I.C.) boundary: full values visible to administrators and self; masked projection (`******-**-1234`) for instructors
 
 ### Learner home and guides
 
-- Current or upcoming cohort
+- Current or upcoming cohort with all attached courses
 - Course date, time, venue, instructor, and preparation notes
 - Quick access to frequently used guides
 - Searchable practical guides, documents, checklists, and supporting videos
+- Bilingual interface (English and Bahasa Melayu) with user preference persistence
 - Pre-test and post-test availability
-- Access and account-status information
+- Reversible cohort access status handling (`open` / `closed`)
 
 ### Instructor teaching toolkit
 
-- Next teaching session
+- Next teaching session and assigned-cohort context
 - Materials grouped by teaching stage or BLS topic
 - Lecture and demonstration videos
 - Teaching guides and checklists
 - Search and recent materials
-- Relevant assigned-cohort context
+- Assigned cohort roster management (with masked I.C. view)
+- Post-test release for assigned cohorts
+
 
 ### Cohorts
 
@@ -194,7 +200,9 @@ Access checks must be performed server-side for each protected action.
 
 A physical-course offering or cohort may configure:
 
-- Whether a pre-test is required
+- Multiple attached courses (every learner enrolled receives all attached courses)
+- Reversible learner access state (`learner_access_state`: `open` | `closed`)
+- Multiple assigned instructors
 - Course date, time, venue, instructor, and preparation notes
 - Which learner guides and instructor materials are published
 - When and how the pre-test becomes available
@@ -209,16 +217,17 @@ completion-based learning pathway.
 
 ## User and account states
 
-Suggested account states:
+Account states:
 
-- `pending_verification`
-- `pending_approval`
-- `active`
-- `suspended`
-- `expired`
-- `archived`
+- `pending_verification` (Auth identity created; email verification pending)
+- `pending_registration` (Email verified; learner registration of full name, I.C., and language pending)
+- `pending_approval` (Optional approval queue)
+- `active` (Fully registered, active account)
+- `suspended` (Globally suspended by administrator)
+- `expired` (Account access period ended)
+- `archived` (Historical or retired account)
 
-Account status and course entitlement are separate concepts.
+Account status, cohort membership, and course entitlement are separate concepts.
 
 ## Resource statuses
 

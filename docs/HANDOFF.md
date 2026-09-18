@@ -2,36 +2,22 @@
 
 ## Last updated
 
-2026-09-17
+2026-09-18
 
 ## Current milestone
 
-- Milestone 5 (Phases 5.1, 5.2, 5.3, and 5.4) — COMPLETE.
-  - Phase 5.1: Secure quiz engine foundation, attempts, autosave, server timing, scoring, audit logging.
-  - Phase 5.2: Administrator quiz authoring, question bank, and immutable publication.
-  - Phase 5.3: Learner quiz journey, timer, autosave, submission, and learner-safe results.
-  - Phase 5.4: Instructor assessment readiness, post-test release, and administrator results/details.
-- Milestone 6 (Phases 6.1, 6.2, 6.3, 6.4, 6.5) — COMPLETE (TECHNICAL PRODUCTION READINESS: PASS; FINAL CLEAN-SLATE RESET: REQUIRED BEFORE LAUNCH).
-  - Phase 6.1: Secure Reporting Foundation — COMPLETE.
-  - Phase 6.2: Administrator Cohort Analytics UI — COMPLETE.
-  - Phase 6.3: Secure Question & Item Analysis — COMPLETE.
-  - Phase 6.4: Audited CSV Exports — COMPLETE.
-  - Phase 6.5.1: Production Readiness Audit & Hardening Plan — COMPLETE.
-  - Phase 6.5.2A: Production Identity & Safe PWA Shell — COMPLETE.
-    - Phase 6.5.2B1: Secure User Provisioning & Access-State Hardening (Local Implementation) — COMPLETE.
-    - Phase 6.5.2B1.5: Provisioning Transaction & Identity-Lifecycle Hardening — COMPLETE.
-    - Phase 6.5.2B1.6: Pre-Deployment Provisioning Safety Corrections — COMPLETE.
-    - Phase 6.5.2B1.7: PKCE-Compatible Invitation Acceptance — COMPLETE.
-    - Phase 6.5.2B1.8: Invitation Template Redirect Contract Correction — COMPLETE.
-    - Phase 6.5.2B2A: Hosted Provisioning Infrastructure Deployment & Verification — COMPLETE.
-    - Phase 6.5.2B2B: Controlled Live Invitation Verification — COMPLETE.
-  - Phase 6.5.2C: CI / Dependency / Release Hygiene — COMPLETE:
-    - Phase 6.5.2C1: CI Supply-Chain & Deployment-Gate Correction — COMPLETE.
-    - Phase 6.5.2C2: Close Manual Deployment CI Bypass — COMPLETE.
-  - Phase 6.5.2D: Final Production Verification — COMPLETE:
-    - Phase 6.5.2D1: Final Evidence Completion & Production Fixture Audit — RETURNED NO-GO.
-    - Phase 6.5.2D2: Hosted Fixture Cleanup & Final Release Re-Gate — COMPLETE (GO).
-    - Phase 6.5.2D3: Final Launch Confirmation & Milestone 6 Closure — COMPLETE (PASS).
+- Milestone 6 (Phases 6.1, 6.2, 6.3, 6.4, 6.5) — COMPLETE & FORMALLY CLOSED (TECHNICAL PRODUCTION READINESS: PASS; FINAL CLEAN-SLATE RESET: REQUIRED BEFORE REAL PARTICIPANT LAUNCH).
+- Milestone 7 (Controlled Onboarding, Multi-Course Cohorts & Bilingual Foundation) — CURRENT:
+  - Architecture & Documentation Phase — COMPLETE (Architecture plan detailed in [`docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md`](MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md) and ADRs 017–021 recorded in [`docs/DECISIONS.md`](DECISIONS.md); awaiting user review before beginning Phase 7.1 implementation).
+  - Phase 7.1: Schema & Compatibility Foundation — PLANNED.
+  - Phase 7.2: Bilingual Application Foundation — PLANNED.
+  - Phase 7.3: Staff Bootstrap & Invitations — PLANNED.
+  - Phase 7.4: Cohort Roster & Invitation Engine — PLANNED.
+  - Phase 7.5: First-Time & Returning User Registration — PLANNED.
+  - Phase 7.6: Multi-Course Access + Close/Restore — PLANNED.
+  - Phase 7.7: E2E Production Verification — PLANNED.
+  - Final Release Gate: Controlled Production Clean-Slate Reset — REQUIRED immediately prior to first real participant launch.
+
 
 
 ## Current repository state
@@ -57,7 +43,22 @@
 
 ## Work completed
 
+- Implemented Milestone 7: Controlled Onboarding, Multi-Course Cohorts & Bilingual Foundation (Architecture & Documentation Phase) — COMPLETE:
+  - Produced canonical architecture specification: [`docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md`](MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md).
+  - Documented ADRs 017–021 in [`docs/DECISIONS.md`](DECISIONS.md):
+    * `ADR-017`: Roster-before-auth identity intent and 7-day invitation lifecycle.
+    * `ADR-018`: Multi-course cohort join model and expand-backfill-contract migration.
+    * `ADR-019`: Reversible cohort learner-access gate (`learner_access_state`).
+    * `ADR-020`: Bilingual (EN/MS) translation framework and authored content localization.
+    * `ADR-021`: Protected National Identity (I.C.) data boundary and role-based masking.
+  - Reconciled all 6 known current architecture conflicts with clear migration strategies.
+  - Enforced locked product requirements (Q1–Q12) and National Identity privacy boundaries.
+  - Designed formal state machines for first-time learner registration, returning user cohort addition, and staff bootstrap.
+  - Structured detailed 7-phase implementation plan (Phases 7.1–7.7) and confirmed pre-launch clean-slate reset execution sequencing.
+  - Baseline preserved: zero code, migration, or hosted database mutations executed during this architecture phase.
+
 - Implemented Milestone 6 Phase 6.5.2D3: Final Launch Confirmation & Milestone 6 Closure — COMPLETE (PASS):
+
   - Manual Production Smoke Verification:
     * Legitimate administrator production smoke test: PASS. Verified manually by authorized custodian on live production environment (`https://dr-afif.github.io/bls/`). Confirmed successful production login, accessible desktop/mobile administrator shell, clean loading across People, Cohorts, Results/Analytics, and Exports, zero runtime errors, and clean logout.
     * Controlled learner production smoke test: PASS. Verified manually using the retained controlled regression probe (`m***@upm.edu.my`) on live production environment. Confirmed successful production login, accessible learner shell, strict learner authorization preserved, 0 course entitlements, 0 cohort memberships, privileged routes inaccessible (rendering standard Page Not Found boundaries), and clean logout.
@@ -826,14 +827,12 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 
 ## Exact recommended next action
 
-Milestone 6 and Phase 6.5.2D3 Final Launch Confirmation are COMPLETE.
-Technical production readiness is PASS.
-Milestone 6 is formally CLOSED.
-
-Do NOT start real participant onboarding immediately.
+Milestone 6 is formally CLOSED (Technical Production Readiness: PASS).
+Milestone 7 Architecture & Documentation Phase is COMPLETE.
+The comprehensive architecture plan is detailed in [`docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md`](MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md) and ADRs 017–021 in [`docs/DECISIONS.md`](DECISIONS.md).
 
 Recommended next action:
-1. Prior to first real participant launch, execute the controlled FINAL PRODUCTION CLEAN-SLATE RESET to purge pre-launch operational/test data according to documented reset boundaries.
-2. Onboard the first legitimate instructor identity and perform authenticated instructor UI smoke verification.
-3. Onboard real physical course participants and deliver physical course pilot.
-4. Plan post-launch maintenance items (React Router v7 upgrade, code-splitting optimizations).
+1. Review and approve the Milestone 7 Architecture Plan.
+2. Upon approval, begin implementation of Milestone 7 Phase 7.1 (Schema & Compatibility Foundation).
+3. Do NOT execute the production clean-slate reset at this time. The controlled pre-launch clean-slate reset must occur immediately prior to onboarding the first real course participants (after Phase 7.7 passes).
+4. Do NOT mutate hosted production data or seed fixtures during development.

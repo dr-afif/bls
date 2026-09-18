@@ -265,7 +265,9 @@ Hosted Supabase and third-party configurations that cannot be safely tested from
 
 ### Part 3: Pre-Launch Production Clean-Slate Reset Requirement
 
-Milestone 6 technical release readiness is complete and verified (PASS). Before onboarding real participants for physical course delivery, a controlled clean-slate production reset must be executed to remove pre-launch operational and test data:
+Milestone 6 technical release readiness is complete and verified (PASS). Milestone 7 will be developed and verified using the retained test/demo data. Do NOT perform the clean-slate reset during Milestone 7 planning or development.
+
+Immediately prior to onboarding the first real participants for physical course delivery (following completion of Milestone 7 Phase 7.7), a controlled clean-slate production reset must be executed to remove pre-launch operational and test data:
 
 - [ ] **Operational & Test Data to Remove**:
   - Delete `KTGS BANDAR SERI PUTRA` test cohort (confirmed test cohort created during development).
@@ -273,6 +275,7 @@ Milestone 6 technical release readiness is complete and verified (PASS). Before 
   - Delete demonstration resources and resource versions.
   - Delete fictional pre-test and post-test quizzes, question banks, and question versions.
   - Delete all test memberships, course entitlements, quiz attempts, and attempt answers.
+  - Delete temporary Milestone 7 test identities, test rosters, and test invitations.
   - Delete or permanently suspend the controlled learner regression account (`m***@upm.edu.my`).
   - Purge any remaining development/test fixtures from operational tables.
 - [ ] **Production Infrastructure & System State to Preserve**:

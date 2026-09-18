@@ -296,7 +296,7 @@ authenticated learner journey is not yet implemented.
 
 ## Milestone 6 — Analytics, exports, and hardening
 
-**Status:** active.
+**Status:** complete; formally closed. Technical production readiness is PASS. Pre-launch clean-slate reset is REQUIRED immediately prior to first real participant launch.
 - Phase 6.1 (Reporting & Analytics Foundation) — COMPLETE.
 - Phase 6.2 (Administrator Cohort Analytics UI) — COMPLETE.
 - Phase 6.3 (Secure Question & Item Analysis) — COMPLETE.
@@ -326,7 +326,6 @@ authenticated learner journey is not yet implemented.
       * Provenance review: RESOLVED (`KTGS BANDAR SERI PUTRA` confirmed as test data created under former fixture; non-blocking).
       * Final Production Clean-Slate Reset: REQUIRED immediately prior to first real participant onboarding.
 
-
 ### Product
 
 - Cohort pre-/post-test comparison
@@ -349,6 +348,41 @@ authenticated learner journey is not yet implemented.
 - Reports respect role and cohort scope.
 - Charts have text and table alternatives.
 - No unresolved critical security or accessibility findings remain.
+
+## Milestone 7 — Controlled onboarding, multi-course cohorts, and bilingual foundation
+
+**Status:** planned (architecture & documentation complete in [`docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md`](docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md); implementation pending review and approval).
+
+### Objectives
+
+1. Support controlled email-only learner roster entry, delegating full name and I.C. collection to first-time registration.
+2. Implement strict staff access hierarchy: super-administrator onboards administrators and instructors; administrators onboard instructors; instructors manage assigned cohorts only.
+3. Manage a resilient 7-day application invitation lifecycle with anti-scanner defense, idempotency, expiry, and superseding resend.
+4. Support reusable learner accounts for new cohort additions without re-registration or forced password changes.
+5. Migrate cohorts to multiple courses via `cohort_courses` join table (all cohort learners receive all attached courses).
+6. Provide a reversible `learner_access_state` gate (`open` | `closed`) at the cohort level.
+7. Isolate sensitive national identity (I.C.) numbers in `learner_identities` with strict RLS (instructors receive masked `******-**-1234` only).
+8. Establish a bilingual application foundation supporting English (`en`, default/fallback) and Bahasa Melayu (`ms`), with separate human-authored content and frozen bilingual quiz questions.
+
+### Phase Plan
+
+- **Phase 7.1 — Schema & Compatibility Foundation**:
+  Deploy `cohort_courses`, `cohort_learner_roster`, `access_invitations`, `learner_identities`, `learner_access_state` enum, and `pending_registration` account state. Drop `one_active_cohort_per_learner` partial index. Backfill `cohort_courses` from `cohorts.course_id`. Update `handle_auth_user_confirmed`.
+- **Phase 7.2 — Bilingual Application Foundation**:
+  Client-side translation framework (`useTranslation()`), locale dictionaries (`en.ts`, `ms.ts`), profile language preference, bilingual metadata schema, and fallback behavior.
+- **Phase 7.3 — Staff Bootstrap & Invitations**:
+  Staff access list, role hierarchy enforcement (`super_admin` -> admin/instructor; `admin` -> instructor; no self-assignment; no super-admin creation in UI), and first legitimate instructor onboarding.
+- **Phase 7.4 — Cohort Roster & Invitation Engine**:
+  Manual learner email addition, bulk paste/CSV validation preview (new, existing, duplicate, invalid, conflict), separated roster addition vs invitation dispatch, 7-day token lifecycle, and contextual bilingual emails.
+- **Phase 7.5 — First-Time & Returning User Registration**:
+  Intermediary landing page, registration form (full name, I.C., preferred language, password), atomic completion RPC, returning user fast-path, and instructor I.C. masking verification.
+- **Phase 7.6 — Multi-Course Access + Close/Restore**:
+  Cut over RLS helpers and application queries to `cohort_courses`, attach/detach multiple courses per cohort, reversible cohort access close/restore, and individual learner removal/re-add.
+- **Phase 7.7 — E2E Production Verification**:
+  Comprehensive Vitest, pgTAP, and Playwright verification across all roles, multi-course access, I.C. privacy, 7-day expiry, bilingual flows, and PWA shell integrity.
+- **Post-7.7 Release Gate**:
+  Controlled final production clean-slate reset immediately prior to first real participant launch.
+
 
 ## Deferred work
 

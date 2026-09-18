@@ -329,3 +329,84 @@ Protected PDFs require a network connection. Signed links remain bearer
 credentials during their short lifetime and cannot prevent screenshots or a
 recipient from copying content after retrieval. The service worker and
 application caches must exclude protected responses and URLs.
+
+## ADR-017 — Roster-before-auth identity intent and 7-day invitation lifecycle
+
+### Decision
+
+Decouple participant roster intent from immediate `auth.users` provisioning. Store intended participant emails in `cohort_learner_roster` and manage a 7-day application invitation lifecycle in `access_invitations`. Staff enter email only; learners submit their full name, I.C., preferred language, and password during registration. Interpose an explicit landing page to prevent email scanners from consuming one-time tokens. Resending an invitation generates a fresh token and supersedes the prior invitation.
+
+### Rationale
+
+- Staff frequently receive only a participant email roster prior to a physical course. Requiring full names up front causes operational friction and data-entry errors.
+- Default Supabase Auth email tokens have short expirations that expire prematurely for course participants invited days in advance. Blindly extending all auth tokens weakens session security.
+- Modern enterprise email security scanners prefetch and consume single-use authentication links.
+- Returning users must not be forced to re-register personal data or change passwords.
+
+### Consequence
+
+Invitation redemption requires an intermediary verification step before transitioning profiles to `pending_registration` and finally `active`. The database must track invitation states (`prepared`, `sent`, `redeemed`, `expired`, `superseded`) independently from Auth session state.
+
+## ADR-018 — Multi-course cohort join model and expand-backfill-contract migration
+
+### Decision
+
+Migrate from a single `cohorts.course_id` column to a many-to-many join table `cohort_courses`. Every learner enrolled in a cohort automatically receives course entitlements for every course attached to that cohort. Execute the migration via an expand-backfill-contract strategy: create `cohort_courses`, backfill existing pairs, update access helpers to read `cohort_courses`, make `cohorts.course_id` nullable, and drop the legacy column after production parity is verified.
+
+### Rationale
+
+- Physical BLS course offerings often combine complementary certifications (e.g., Adult BLS, Pediatric BLS, and AED Essentials) within a single training cohort.
+- Direct destructive column replacement would break active production queries and RLS helpers.
+- Operational policy mandates that all learners in a cohort receive all cohort courses, avoiding per-learner enrollment picker complexity in Milestone 7.
+
+### Consequence
+
+Access helpers (`has_effective_course_access`, `is_assigned_instructor_for_course`), quiz availability functions, and cohort administration UI must query across `cohort_courses`.
+
+## ADR-019 — Reversible cohort learner-access gate (`learner_access_state`)
+
+### Decision
+
+Introduce an explicit `learner_access_state` enum (`open`, `closed`) on `public.cohorts`, defaulting to `open`. Allow administrators and super-administrators to close or restore learner access without deleting accounts, memberships, entitlements, or historical attempt records. Effective course access checks require `learner_access_state = 'open'`.
+
+### Rationale
+
+- Course administrators require the operational ability to close cohort access after physical training concludes, or restore it for delayed assessments or audits.
+- Destructively revoking entitlements or deleting memberships destroys historical auditability and prevents clean re-entry.
+- Decoupling learner access state from operational cohort status (`scheduled`, `active`, `completed`) preserves clean state machines.
+
+### Consequence
+
+Closing access does not lock out learner accounts from their profiles or past score reports; it cleanly gates access to active learning guides and quiz attempts. Both close and restore actions generate immutable audit events.
+
+## ADR-020 — Bilingual (EN/MS) translation framework and authored content localization
+
+### Decision
+
+Support English (`en`, default and fallback) and Bahasa Melayu (`ms`) across the application. Use client-side translation dictionaries (`useTranslation()`) rather than duplicate component trees. Store user language preference in `profiles.preferred_language`. Provide bilingual (EN + BM) onboarding emails. Prohibit runtime machine translation for clinical content: educational resources and versioned quiz questions must be authored in both languages, with both variants frozen immutably in question version and attempt snapshots.
+
+### Rationale
+
+- Malaysian healthcare workers and trainees operate in both English and Bahasa Melayu.
+- Clinical life support terminology requires precise, committee-approved human translations; runtime machine translation risks dangerous inaccuracies.
+- Freezing both language prompts within immutable question versions ensures historical assessment auditability cannot drift over time.
+
+### Consequence
+
+Frontend components must reference translation keys. Educational content authoring workflows must support bilingual text fields.
+
+## ADR-021 — Protected National Identity (I.C.) data boundary and role-based masking
+
+### Decision
+
+Store Malaysian Identity Card (MyKad) numbers in a dedicated, isolated table `public.learner_identities` rather than the general `public.profiles` table. Deny SELECT access to `authenticated` public and `instructor` roles. Allow full I.C. visibility only to `super_admin`, `admin`, and the learner themselves. Provide instructors with a masked projection (`******-**-1234`) via a secure view or RPC. Strictly prohibit logging or auditing full I.C. values.
+
+### Rationale
+
+- National identity numbers are sensitive personal data under privacy standards.
+- Instructors need identity verification for attendance and practical verification but have no operational requirement to view or store full national identity numbers.
+- Segregating sensitive identity data prevents accidental disclosure in broad profile queries or browser payloads.
+
+### Consequence
+
+Roster displays for instructors show only masked identifiers. Full identity retrieval is restricted to administrative workflows with audit tracking.

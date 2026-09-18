@@ -17,31 +17,39 @@
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | Primary key and `auth.users.id` |
-| `full_name` | text | Required |
+| `full_name` | text | Required (collected at first-time registration) |
 | `staff_id` | text | Optional or organization-required |
 | `phone` | text | Optional |
 | `profession` | text | Optional |
-| `organization_id` | uuid | Nullable for single-organization MVP |
+| `organization_id` | uuid | Required organization scope |
 | `department` | text | Optional |
-| `account_status` | enum | Verification and approval state |
+| `preferred_language` | text | `en` (default/fallback) or `ms` |
+| `account_status` | enum | `pending_verification`, `pending_registration`, `pending_approval`, `active`, `suspended`, `expired`, `archived` |
 | `created_at` | timestamptz | Required |
 | `updated_at` | timestamptz | Required |
+
+### `learner_identities` (Milestone 7 — Protected Identity Boundary)
+
+| Column | Type | Notes |
+|---|---|---|
+| `user_id` | uuid | Primary key references `public.profiles(id)` on delete cascade |
+| `id_type` | text | `mykad` (default) or `passport` |
+| `id_number` | text | Normalized full identification number (encrypted/restricted) |
+| `masked_id` | text | Masked projection (e.g. `******-**-1234`) |
+| `verified_at` | timestamptz | Optional administrative verification timestamp |
+| `created_at` | timestamptz | Required |
+| `updated_at` | timestamptz | Required |
+
+Strict RLS denies SELECT to instructors and public. Full values are visible only to administrators and self. Instructors access `masked_id` through a secure view.
 
 ### `user_roles`
 
 | Column | Type |
 |---|---|
 | `user_id` | uuid |
-| `role` | enum |
+| `role` | enum (`learner`, `instructor`, `admin`, `super_admin`) |
 | `created_at` | timestamptz |
 | `created_by` | uuid |
-
-Suggested roles:
-
-- learner
-- instructor
-- admin
-- super_admin
 
 ### `organizations`
 
@@ -57,37 +65,85 @@ Suggested roles:
 - `organization_id`
 - `code`
 - `name`
+- `name_ms` (Optional localized name)
 - `description`
+- `description_ms` (Optional localized description)
 - `venue`
 - `start_at`
 - `end_at`
-- `status`
+- `status` (`draft`, `scheduled`, `active`, `completed`, `cancelled`, `archived`)
+- `learner_access_state` (`open`, `closed` — controls learner entitlement gating)
 - `contact_name`
 - `contact_phone`
 - `preparation_notes`
 - `created_by`
 - `created_at`
 - `updated_at`
+- *Legacy `course_id` made nullable in Phase 7.1 and superseded by `cohort_courses`.*
 
-The implemented Milestone 3 schema enforces unique case-insensitive cohort
-codes within an organization, an end time after the start time, and audited
-administrator-only browser writes.
+### `cohort_courses` (Milestone 7 — Multi-Course Join Model)
+
+| Column | Type | Notes |
+|---|---|---|
+| `cohort_id` | uuid | References `public.cohorts(id)` on delete cascade |
+| `course_id` | uuid | References `public.courses(id)` on delete restrict |
+| `display_order` | integer | Non-negative display sequence |
+| `created_at` | timestamptz | Required |
+| `created_by` | uuid | References `public.profiles(id)` |
+
+Primary key: `(cohort_id, course_id)`. Every learner enrolled in the cohort receives entitlements to all attached courses.
+
+### `cohort_learner_roster` (Milestone 7 — Pre-Invitation Roster Staging)
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid | Primary key |
+| `organization_id` | uuid | References `public.organizations(id)` |
+| `cohort_id` | uuid | References `public.cohorts(id)` on delete cascade |
+| `email` | text | Normalized lowercase email address |
+| `roster_status` | text | `staged`, `invited`, `activated`, `removed` |
+| `user_id` | uuid | Linked user profile (null until account exists) |
+| `added_by` | uuid | References `public.profiles(id)` |
+| `created_at` | timestamptz | Required |
+| `updated_at` | timestamptz | Required |
+
+Unique constraint: `(cohort_id, email)`.
+
+### `access_invitations` (Milestone 7 — 7-Day Invitation Engine)
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid | Primary key |
+| `organization_id` | uuid | References `public.organizations(id)` |
+| `invitation_type` | text | `new_learner_cohort`, `existing_learner_cohort`, `staff_bootstrap` |
+| `cohort_id` | uuid | Nullable (required for cohort invites, null for staff) |
+| `email` | text | Normalized invitee email |
+| `intended_role` | enum | `learner`, `instructor`, `admin` |
+| `status` | text | `prepared`, `sent`, `redeemed`, `expired`, `failed`, `superseded` |
+| `token_hash` | text | Unique SHA-256 hash of one-time application invite secret |
+| `sent_at` | timestamptz | Timestamp of last email dispatch |
+| `expires_at` | timestamptz | 7-day validity timestamp (`now() + interval '7 days'`) |
+| `last_resent_at` | timestamptz | Timestamp of resend (if applicable) |
+| `resend_count` | integer | Number of resend operations |
+| `redeemed_at` | timestamptz | Timestamp of successful consumption |
+| `redeemed_by_user_id` | uuid | User who redeemed the invitation |
+| `invited_by` | uuid | Actor who issued the invitation |
+| `metadata` | jsonb | Operational context (no secrets) |
+| `created_at` | timestamptz | Required |
+| `updated_at` | timestamptz | Required |
 
 ### `cohort_members`
 
 - `cohort_id`
 - `user_id`
-- `member_role`
-- `membership_status`
+- `member_role` (`learner`, `instructor`)
+- `membership_status` (`active`, `completed`, `removed`)
 - `joined_at`
 - `completed_at`
 - `added_by`
 
-Implemented membership validation requires the profile and cohort to share an
-organization and requires `member_role` to match an assigned application role.
-Learners may have only one active membership; removed and completed records are
-retained rather than deleted. Assigned instructors may read the permitted
-roster, while learners read only their own membership.
+Primary key: `(cohort_id, user_id)`. The previous `one_active_cohort_per_learner` partial index is removed in Milestone 7 to support multi-cohort learning over time. Assigned instructors may read the cohort roster with masked I.C.s; learners read only their own membership.
+
 
 ## Courses and access
 

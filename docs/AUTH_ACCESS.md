@@ -14,64 +14,79 @@ Use Supabase Auth for:
 
 ## Registration modes
 
-### Invite-only
+### Controlled cohort roster invitation (Milestone 7)
 
-Implemented default. Public self-registration is not exposed in the frontend.
+Implemented default for learners. Public self-registration is not exposed.
 
-An administrator creates an invitation. The invited user verifies the email, completes the profile, and receives the configured entitlement.
+1. Authorized staff (assigned instructor or administrator) enters the learner's email address into the cohort roster. No names, passwords, or I.C. numbers are required up front.
+2. A 7-day application invitation is dispatched via Custom SMTP. The email is bilingual (EN + BM).
+3. The recipient opens an intermediary landing page that displays cohort details and requires an explicit user action ("Accept Invitation") to protect against premature token consumption by email security scanners.
+4. If the user is new: they complete the registration form (Full Name, National Identity Card / I.C. number, Preferred Language `en` or `ms`, and Password). Upon atomic submission, the account transitions to `active`, the I.C. is stored securely in `learner_identities`, and cohort memberships/entitlements are activated.
+5. If the user is existing: their account is recognized, the new cohort membership and course entitlements are linked, and they proceed directly to the companion without re-registering personal data or changing passwords.
 
-### Open signup with approval
+### Staff bootstrap invitation
 
-Anyone may create an account, but new users remain `pending_approval` until an administrator approves them.
+Authorized staff onboarding follows the strict role hierarchy:
+- `super_admin`: May invite `admin` and `instructor` roles; manages organization staff.
+- `admin`: May invite `instructor` roles; manages cohort assignments.
+- `instructor`: May invite learners strictly to cohorts where actively assigned; cannot invite staff.
+- Super administrator roles cannot be created through the application UI.
 
-### Registration code
+### Open signup and registration codes (Deferred)
 
-A user signs up and enters a code linked to a cohort or course. Codes may have an expiry and usage limit.
+Public self-registration and self-service registration codes remain deferred.
 
 ## Account states
 
-- `pending_verification`
-- `pending_approval`
-- `active`
-- `suspended`
-- `expired`
-- `archived`
+- `pending_verification`: Auth identity created; awaiting email confirmation or invitation token validation.
+- `pending_registration`: Email confirmed; awaiting learner first-time profile completion (full name, I.C., language, password).
+- `pending_approval`: Optional queue for unassigned signups.
+- `active`: Fully registered and entitled account.
+- `suspended`: Globally suspended by administrator (denies application shell and API access).
+- `expired`: Account access duration has ended.
+- `archived`: Historical account retired from operational use.
 
-## Roles
+## Roles & Authorization Hierarchy
 
 ### Learner
 
-- View own profile
-- View entitled courses
-- View permitted resources
-- Record own progress
-- Start eligible quizzes
-- View own permitted results
-- View own certificates
+- View own profile and own National Identity (I.C.) details.
+- View entitled courses across assigned active cohorts where `learner_access_state = 'open'`.
+- View permitted practical guides and supporting media.
+- Start eligible pre- and post-tests and autosave answers.
+- View own permitted quiz results and historical attempts.
+- Cannot view other learners' data or access administrative or instructor routes.
 
 ### Instructor
 
-- Learner permissions
-- View assigned cohorts
-- View assigned learners' progress and results
-- Add feedback where enabled
+- Learner permissions for own access.
+- View assigned cohorts and cohort teaching context.
+- Access Teaching Kit materials by topic and teaching stage.
+- Add and import learner emails to assigned cohort rosters.
+- Send and resend invitations for assigned cohorts.
+- View assigned cohort learners' attendance and completion status with **MASKED I.C. ONLY** (`******-**-1234`).
+- Release post-tests for assigned cohorts.
+- Cannot view or manage unassigned cohorts, self-assign cohorts, or grant staff roles.
+- Strictly denied access to full I.C. numbers in `learner_identities`.
 
 ### Administrator
 
-- Manage users in scope
-- Manage cohorts
-- Grant and revoke access
-- Manage courses, resources, questions, and quizzes
-- View scoped analytics
-- Export reports
-- View scoped audit records
+- All instructor permissions across organization scope.
+- Manage users, cohorts, courses, resources, questions, and quizzes.
+- Assign instructors to cohorts.
+- View full National Identity (I.C.) numbers for learners in their organization when operationally required.
+- Toggle reversible cohort learner access (`open` / `closed`).
+- Onboard instructors via staff invitations.
+- Export operational reports and view organization audit logs.
+- Cannot invite `admin` or `super_admin` roles.
 
 ### Super administrator
 
-- Manage administrators
-- Manage system-wide settings
-- View all organizations and audit records
-- Perform high-impact archival or deletion operations
+- All administrator permissions across all organizations.
+- Onboard administrators and instructors via staff invitations.
+- Manage system-wide settings, storage buckets, and high-impact data operations.
+- Only role permitted to invite or manage administrators.
+
 
 ## Course entitlement types
 
@@ -100,7 +115,7 @@ Revocation immediately overrides all date calculations.
 A protected action should confirm:
 
 1. User is authenticated.
-2. Account status is active.
+2. Account status is `active` (not `pending_verification`, `pending_registration`, or `suspended`).
 3. Course exists and is published.
 4. Entitlement belongs to the user.
 5. Entitlement is not revoked.
@@ -108,6 +123,22 @@ A protected action should confirm:
 7. Expiry time has not passed.
 8. Resource or quiz publication window is valid.
 9. Prerequisites are complete where required.
+10. If the entitlement is associated with a cohort, the cohort's `learner_access_state` must be `'open'`.
+
+## National Identity (I.C.) Privacy Boundary (Milestone 7)
+
+Malaysian National Identity Card (MyKad / I.C.) numbers are sensitive personal data.
+
+- **Physical Isolation**: I.C. numbers are stored in `public.learner_identities`, decoupled from the general `public.profiles` table.
+- **Authorization & RLS Policies**:
+  - `super_admin` & `admin`: Authorized to read full I.C. numbers for learners within their organization.
+  - `learner`: Authorized to read own I.C. record (`user_id = auth.uid()`).
+  - `instructor`: **STRICTLY DENIED** SELECT access to `learner_identities`. Zero rows are returned through direct table queries.
+- **Masked Instructor Projection**:
+  - Instructors view assigned cohort rosters via a secured view / RPC (`public.get_cohort_roster_for_instructor`) that projects only a masked string: `******-**-1234`. The full I.C. is never transmitted to instructor client devices.
+- **Audit & Log Hygiene**:
+  - Full I.C. values must NEVER appear in `audit_events.metadata`, browser console logs, error messages, or network diagnostics.
+  - Profile update audit events record only actor, target user ID, timestamp, and entity type.
 
 ## Grace period
 
