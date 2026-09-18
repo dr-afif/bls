@@ -355,29 +355,29 @@ authenticated learner journey is not yet implemented.
 
 ### Objectives
 
-1. Support controlled email-only learner roster entry, delegating full name and I.C. collection to first-time registration.
-2. Implement strict staff access hierarchy: super-administrator onboards administrators and instructors; administrators onboard instructors; instructors manage assigned cohorts only.
-3. Manage a resilient 7-day application invitation lifecycle with anti-scanner defense, idempotency, expiry, and superseding resend.
-4. Support reusable learner accounts for new cohort additions without re-registration or forced password changes.
-5. Migrate cohorts to multiple courses via `cohort_courses` join table (all cohort learners receive all attached courses).
+1. Support controlled email-only learner roster entry (`public.cohort_learner_roster`), delegating full name and I.C. collection to first-time registration.
+2. Implement durable staff authorization intent (`public.staff_access_entries`) before Auth accounts exist, adhering to strict hierarchy: super-admin stages admin/instructor; admin stages instructor; instructors manage assigned cohorts only.
+3. Manage a resilient 7-day application invitation lifecycle (`public.access_invitations`) referencing exactly one authorization intent target, with anti-scanner defense, server-derived effective expiry, and superseding resend.
+4. Support immediate cohort enrollment for existing active learners upon invitation dispatch, plus a one-time passwordless return link without forced password changes or personal data re-registration.
+5. Migrate cohorts to multiple courses via `cohort_courses` join table with optional per-course schedule and venue overrides (`start_at`, `end_at`, `venue`).
 6. Provide a reversible `learner_access_state` gate (`open` | `closed`) at the cohort level.
-7. Isolate sensitive national identity (I.C.) numbers in `learner_identities` with strict RLS (instructors receive masked `******-**-1234` only).
+7. Isolate sensitive national identity (I.C.) numbers in `private.learner_identities` (denying direct browser SELECT) with server-derived masked identifiers for instructors.
 8. Establish a bilingual application foundation supporting English (`en`, default/fallback) and Bahasa Melayu (`ms`), with separate human-authored content and frozen bilingual quiz questions.
 
 ### Phase Plan
 
 - **Phase 7.1 — Schema & Compatibility Foundation**:
-  Deploy `cohort_courses`, `cohort_learner_roster`, `access_invitations`, `learner_identities`, `learner_access_state` enum, and `pending_registration` account state. Drop `one_active_cohort_per_learner` partial index. Backfill `cohort_courses` from `cohorts.course_id`. Update `handle_auth_user_confirmed`.
+  Deploy `public.cohort_courses` (with optional `start_at`, `end_at`, `venue` overrides), `public.cohort_learner_roster`, `public.staff_access_entries`, `public.access_invitations` (with target referential integrity), `private.learner_identities` in `private` schema, `learner_access_state` enum, and `pending_registration` account state. Correct all actor foreign keys to nullable `ON DELETE SET NULL`. Drop `one_active_cohort_per_learner` partial index. Backfill `cohort_courses` from `cohorts.course_id`. Update `handle_auth_user_confirmed`.
 - **Phase 7.2 — Bilingual Application Foundation**:
   Client-side translation framework (`useTranslation()`), locale dictionaries (`en.ts`, `ms.ts`), profile language preference, bilingual metadata schema, and fallback behavior.
-- **Phase 7.3 — Staff Bootstrap & Invitations**:
-  Staff access list, role hierarchy enforcement (`super_admin` -> admin/instructor; `admin` -> instructor; no self-assignment; no super-admin creation in UI), and first legitimate instructor onboarding.
+- **Phase 7.3 — Email Transport Spike & Staff Bootstrap**:
+  Execute Email Transport Spike to evaluate and verify supported server-side mail transport. Implement `public.staff_access_entries` management, role hierarchy enforcement (`super_admin` -> admin/instructor; `admin` -> instructor; no self-assignment; no super-admin creation in UI), and first legitimate instructor onboarding.
 - **Phase 7.4 — Cohort Roster & Invitation Engine**:
-  Manual learner email addition, bulk paste/CSV validation preview (new, existing, duplicate, invalid, conflict), separated roster addition vs invitation dispatch, 7-day token lifecycle, and contextual bilingual emails.
-- **Phase 7.5 — First-Time & Returning User Registration**:
-  Intermediary landing page, registration form (full name, I.C., preferred language, password), atomic completion RPC, returning user fast-path, and instructor I.C. masking verification.
+  Manual learner email addition, bulk paste/CSV validation preview (new, existing, duplicate, invalid, conflict), separated roster addition vs invitation dispatch. Immediate enrollment activation of membership and entitlements for existing active users. 7-day token lifecycle with server-derived effective expiry and superseding resend.
+- **Phase 7.5 — Passwordless Return Spike, First-Time & Returning User Registration**:
+  Execute Passwordless Return Link Spike. Intermediary landing page (anti-scanner defense), new learner registration form (full name, normalized 12-digit MyKad or Passport with safe duplicate protection, preferred language, password), atomic completion RPC into `private.learner_identities`. Returning user one-time passwordless return token exchange.
 - **Phase 7.6 — Multi-Course Access + Close/Restore**:
-  Cut over RLS helpers and application queries to `cohort_courses`, attach/detach multiple courses per cohort, reversible cohort access close/restore, and individual learner removal/re-add.
+  Cut over RLS helpers and application queries to `cohort_courses` (resolving schedule/venue overrides), attach/detach multiple courses per cohort, reversible cohort access close/restore, and individual learner removal/re-add.
 - **Phase 7.7 — E2E Production Verification**:
   Comprehensive Vitest, pgTAP, and Playwright verification across all roles, multi-course access, I.C. privacy, 7-day expiry, bilingual flows, and PWA shell integrity.
 - **Post-7.7 Release Gate**:

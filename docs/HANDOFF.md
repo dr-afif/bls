@@ -8,12 +8,12 @@
 
 - Milestone 6 (Phases 6.1, 6.2, 6.3, 6.4, 6.5) — COMPLETE & FORMALLY CLOSED (TECHNICAL PRODUCTION READINESS: PASS; FINAL CLEAN-SLATE RESET: REQUIRED BEFORE REAL PARTICIPANT LAUNCH).
 - Milestone 7 (Controlled Onboarding, Multi-Course Cohorts & Bilingual Foundation) — CURRENT:
-  - Architecture & Documentation Phase — COMPLETE (Architecture plan detailed in [`docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md`](MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md) and ADRs 017–021 recorded in [`docs/DECISIONS.md`](DECISIONS.md); awaiting user review before beginning Phase 7.1 implementation).
+  - Architecture & Documentation Phase — COMPLETE & REFINED (Architecture plan detailed in [`docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md`](MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md) and ADRs 017–022 recorded in [`docs/DECISIONS.md`](DECISIONS.md); incorporating all 10 architecture review corrections; awaiting user review before beginning Phase 7.1 implementation).
   - Phase 7.1: Schema & Compatibility Foundation — PLANNED.
   - Phase 7.2: Bilingual Application Foundation — PLANNED.
-  - Phase 7.3: Staff Bootstrap & Invitations — PLANNED.
+  - Phase 7.3: Email Transport Spike & Staff Bootstrap — PLANNED.
   - Phase 7.4: Cohort Roster & Invitation Engine — PLANNED.
-  - Phase 7.5: First-Time & Returning User Registration — PLANNED.
+  - Phase 7.5: Passwordless Return Spike, First-Time & Returning User Registration — PLANNED.
   - Phase 7.6: Multi-Course Access + Close/Restore — PLANNED.
   - Phase 7.7: E2E Production Verification — PLANNED.
   - Final Release Gate: Controlled Production Clean-Slate Reset — REQUIRED immediately prior to first real participant launch.
@@ -43,18 +43,28 @@
 
 ## Work completed
 
-- Implemented Milestone 7: Controlled Onboarding, Multi-Course Cohorts & Bilingual Foundation (Architecture & Documentation Phase) — COMPLETE:
+- Implemented Milestone 7: Controlled Onboarding, Multi-Course Cohorts & Bilingual Foundation (Architecture & Documentation Phase) — COMPLETE & REFINED:
   - Produced canonical architecture specification: [`docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md`](MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md).
-  - Documented ADRs 017–021 in [`docs/DECISIONS.md`](DECISIONS.md):
-    * `ADR-017`: Roster-before-auth identity intent and 7-day invitation lifecycle.
-    * `ADR-018`: Multi-course cohort join model and expand-backfill-contract migration.
+  - Documented ADRs 017–022 in [`docs/DECISIONS.md`](DECISIONS.md):
+    * `ADR-017`: Pre-Auth authorization intent, invitation-to-target integrity, and 7-day invitation lifecycle.
+    * `ADR-018`: Multi-course cohort join model and optional per-course schedule overrides.
     * `ADR-019`: Reversible cohort learner-access gate (`learner_access_state`).
     * `ADR-020`: Bilingual (EN/MS) translation framework and authored content localization.
-    * `ADR-021`: Protected National Identity (I.C.) data boundary and role-based masking.
+    * `ADR-021`: Private schema National Identity (I.C.) boundary, safe uniqueness, and role-based masking.
+    * `ADR-022`: Existing-user enrollment timing, passwordless return flow, and email transport technical spike.
+  - Incorporated 10 critical architecture review corrections:
+    1. Added durable staff authorization intent (`public.staff_access_entries`) before Auth creation, adhering to strict hierarchy and separating intent from invitation attempts.
+    2. Enforced invitation-to-target referential integrity in `public.access_invitations` (`cohort_roster_entry_id` vs `staff_access_entry_id` with exclusive CHECK).
+    3. Corrected all proposed actor foreign keys to nullable `ON DELETE SET NULL`, preserving immutable provenance in `public.audit_events`.
+    4. Moved full National Identity to `private.learner_identities` (denying direct browser SELECT) with server-derived masked projection (`******-**-1234`) and controlled RPCs.
+    5. Defined MyKad (strictly 12 digits `^\d{12}$`) and passport normalization with safe duplicate failure preventing identity enumeration.
+    6. Extended `cohort_courses` with optional schedule and venue overrides (`start_at`, `end_at`, `venue`) inheriting parent cohort values when null.
+    7. Locked authoritative existing-user enrollment timing (staging = intent only; invitation dispatch immediately activates cohort membership and course entitlements).
+    8. Designed one-time passwordless return flow for existing users via short-lived Supabase Auth token exchange, preserving existing passwords without forced entry.
+    9. Documented Email Transport Spike as a required technical gate in Phase 7.3 before invitation implementation.
+    10. Enforced dynamic server-derived effective expiry (`status = 'sent' AND expires_at <= now()`) independent of background cron jobs.
+    11. Hardened token handling (high-entropy secrets, SHA-256 database hashes, immediate URL/history scrubbing, anti-scanner landing page).
   - Reconciled all 6 known current architecture conflicts with clear migration strategies.
-  - Enforced locked product requirements (Q1–Q12) and National Identity privacy boundaries.
-  - Designed formal state machines for first-time learner registration, returning user cohort addition, and staff bootstrap.
-  - Structured detailed 7-phase implementation plan (Phases 7.1–7.7) and confirmed pre-launch clean-slate reset execution sequencing.
   - Baseline preserved: zero code, migration, or hosted database mutations executed during this architecture phase.
 
 - Implemented Milestone 6 Phase 6.5.2D3: Final Launch Confirmation & Milestone 6 Closure — COMPLETE (PASS):
@@ -828,11 +838,11 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 ## Exact recommended next action
 
 Milestone 6 is formally CLOSED (Technical Production Readiness: PASS).
-Milestone 7 Architecture & Documentation Phase is COMPLETE.
-The comprehensive architecture plan is detailed in [`docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md`](MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md) and ADRs 017–021 in [`docs/DECISIONS.md`](DECISIONS.md).
+Milestone 7 Architecture & Documentation Phase is COMPLETE & REFINED.
+The comprehensive architecture plan is detailed in [`docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md`](MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md) and ADRs 017–022 in [`docs/DECISIONS.md`](DECISIONS.md).
 
 Recommended next action:
-1. Review and approve the Milestone 7 Architecture Plan.
+1. Review and approve the refined Milestone 7 Architecture Plan.
 2. Upon approval, begin implementation of Milestone 7 Phase 7.1 (Schema & Compatibility Foundation).
 3. Do NOT execute the production clean-slate reset at this time. The controlled pre-launch clean-slate reset must occur immediately prior to onboarding the first real course participants (after Phase 7.7 passes).
 4. Do NOT mutate hosted production data or seed fixtures during development.

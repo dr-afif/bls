@@ -88,17 +88,28 @@ A course or organization administrator who manages learners, resources, quizzes,
 ## Learner course-companion journey
 
 ```text
-Staff adds learner email to cohort roster
+Staff stages learner email on cohort roster (intent only)
   ↓
-7-day invitation sent (bilingual EN + BM)
+Invitation dispatched:
+  ├─ NEW LEARNER: 7-day invitation sent (bilingual EN + BM)
+  │    ↓
+  │  Recipient clicks link & lands on intermediary acceptance screen (anti-scanner defense)
+  │    ↓
+  │  Registration: supplies full name, normalized I.C. (MyKad 12-digit / Passport), preferred language (EN/MS), password
+  │    ↓
+  │  Atomic registration: identity stored in private.learner_identities, account active, cohort & courses effective
+  │
+  └─ EXISTING ACTIVE LEARNER:
+       ↓
+     Instant enrollment: cohort membership & multi-course entitlements activated immediately upon send
+       ↓
+     Notification email delivered with schedule (resolving course overrides) & 7-day return link
+       ↓
+     Recipient clicks link → intermediary screen → clicks "Open Cohort"
+       ↓
+     One-time Auth token exchange: authenticated directly into app without entering old password (password unchanged)
   ↓
-Recipient clicks link & lands on intermediary acceptance screen (scanner defense)
-  ↓
-Registration: supplies full name, I.C., preferred language (EN/MS), password
-  ↓
-Account active: cohort enrollment & course entitlements effective
-  ↓
-Home and cohort details (all attached courses)
+Home and cohort details (all attached courses with schedule/venue overrides where defined)
   ↓
 Preparation guidance and practical references
   ↓
@@ -117,19 +128,22 @@ View result
 
 ### Authentication and onboarding
 
-- Email-only pre-invitation roster staging (manual entry and bulk import/paste)
-- 7-day application invitation lifecycle with bot-scanner protection, expiry, and superseding resend
-- First-time learner registration: full name, National Identity Card (I.C.) number, preferred language (`en` or `ms`), password
-- Returning learner fast-path cohort addition without re-registration or forced password change
-- Strict staff onboarding hierarchy: super-administrators invite administrators and instructors; administrators invite instructors; instructors invite and manage learners strictly within assigned cohorts
+- Email-only pre-invitation roster staging (`public.cohort_learner_roster`)
+- Durable staff authorization intent (`public.staff_access_entries`) before Auth accounts exist
+- 7-day application invitation lifecycle (`public.access_invitations`) referencing exactly one authorization intent target
+- Server-enforced effective expiry (`status = 'sent' AND expires_at <= now()`) independent of cron
+- First-time learner registration: full name, normalized I.C. number (12-digit MyKad or Passport), preferred language (`en` or `ms`), password
+- Safe duplicate identity protection failing cleanly without user enumeration
+- Returning learner instant enrollment upon invitation dispatch and one-time passwordless return link flow
+- Strict staff onboarding hierarchy: super-administrators stage administrators and instructors; administrators stage instructors; instructors manage learners strictly within assigned cohorts; removal of staff intent never deletes user accounts
 - Login, logout, and account-level password recovery
 - Account states: `pending_verification`, `pending_registration`, `pending_approval`, `active`, `suspended`, `expired`, `archived`
-- Protected National Identity (I.C.) boundary: full values visible to administrators and self; masked projection (`******-**-1234`) for instructors
+- Protected National Identity (I.C.) boundary: private schema table `private.learner_identities` denying direct browser SELECT; full values accessible only via authorized RPCs to administrators and self; server-derived masked projection (`******-**-1234`) for instructors
 
 ### Learner home and guides
 
 - Current or upcoming cohort with all attached courses
-- Course date, time, venue, instructor, and preparation notes
+- Course date, time, venue, instructor, and preparation notes (resolving per-course schedule and venue overrides)
 - Quick access to frequently used guides
 - Searchable practical guides, documents, checklists, and supporting videos
 - Bilingual interface (English and Bahasa Melayu) with user preference persistence
@@ -143,14 +157,17 @@ View result
 - Lecture and demonstration videos
 - Teaching guides and checklists
 - Search and recent materials
-- Assigned cohort roster management (with masked I.C. view)
+- Assigned cohort roster management (with server-derived masked I.C. view)
 - Post-test release for assigned cohorts
 
 
 ### Cohorts
 
+- Multi-course association via `cohort_courses` join model (all cohort learners receive all attached courses)
+- Optional per-course schedule and venue overrides (`start_at`, `end_at`, `venue`) inheriting parent cohort values when null
 - Physical-course dates, times, venues, and notes
 - Learner and instructor membership
+- Reversible cohort learner-access gate (`learner_access_state = 'open' | 'closed'`)
 - Permitted readiness or quiz-completion summaries
 - Upcoming, past, and attention-required states
 

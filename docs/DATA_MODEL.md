@@ -28,28 +28,37 @@
 | `created_at` | timestamptz | Required |
 | `updated_at` | timestamptz | Required |
 
-### `learner_identities` (Milestone 7 — Protected Identity Boundary)
+### `private.learner_identities` (Milestone 7 — Protected Private Schema Identity Boundary)
 
 | Column | Type | Notes |
 |---|---|---|
 | `user_id` | uuid | Primary key references `public.profiles(id)` on delete cascade |
 | `id_type` | text | `mykad` (default) or `passport` |
-| `id_number` | text | Normalized full identification number (encrypted/restricted) |
-| `masked_id` | text | Masked projection (e.g. `******-**-1234`) |
+| `id_number` | text | Normalized full identification number (restricted private storage) |
 | `verified_at` | timestamptz | Optional administrative verification timestamp |
 | `created_at` | timestamptz | Required |
 | `updated_at` | timestamptz | Required |
 
-Strict RLS denies SELECT to instructors and public. Full values are visible only to administrators and self. Instructors access `masked_id` through a secure view.
+- **Schema Boundary**: Located in `private` schema. Direct SELECT privilege is DENIED to all browser roles (`anon`, `authenticated`).
+- **Access Interfaces**: Exposed strictly through `SECURITY DEFINER` RPCs with locked `search_path`:
+  - `get_my_learner_identity()`: learner reads own identity.
+  - `update_my_learner_identity(...)`: learner updates own identity during registration.
+  - `get_learner_identity_for_admin(...)`: administrator reads full identity within organization scope.
+  - `get_cohort_roster_for_instructor(...)`: instructor reads cohort roster with server-derived masked identifier (`******-**-1234`). Full values never appear in network payloads.
+- **Server-Derived Masking**: Masked strings are computed dynamically on the server (`'******-**-' || right(id_number, 4)` for MyKad). No mutable redundant column is stored.
+- **Normalization & Uniqueness**:
+  - `mykad`: normalized to strictly 12 digits (`^\d{12}$`), stripping all hyphens and whitespace.
+  - `passport`: normalized to trimmed uppercase alphanumeric (`^[A-Z0-9-]{6,20}$`).
+  - Constraint: `UNIQUE (id_type, id_number)`. Duplicate registration fails safely with generic error messaging to prevent identity enumeration. Full IDs are never logged.
 
 ### `user_roles`
 
-| Column | Type |
-|---|---|
-| `user_id` | uuid |
-| `role` | enum (`learner`, `instructor`, `admin`, `super_admin`) |
-| `created_at` | timestamptz |
-| `created_by` | uuid |
+| Column | Type | Notes |
+|---|---|---|
+| `user_id` | uuid | References `public.profiles(id)` on delete cascade |
+| `role` | enum | `learner`, `instructor`, `admin`, `super_admin` |
+| `created_at` | timestamptz | Required |
+| `created_by` | uuid | References `public.profiles(id)` on delete set null |
 
 ### `organizations`
 
@@ -76,49 +85,75 @@ Strict RLS denies SELECT to instructors and public. Full values are visible only
 - `contact_name`
 - `contact_phone`
 - `preparation_notes`
-- `created_by`
+- `created_by` (uuid references `public.profiles(id)` on delete set null)
 - `created_at`
 - `updated_at`
 - *Legacy `course_id` made nullable in Phase 7.1 and superseded by `cohort_courses`.*
 
-### `cohort_courses` (Milestone 7 — Multi-Course Join Model)
+### `cohort_courses` (Milestone 7 — Multi-Course Join Model & Schedule Overrides)
 
 | Column | Type | Notes |
 |---|---|---|
 | `cohort_id` | uuid | References `public.cohorts(id)` on delete cascade |
 | `course_id` | uuid | References `public.courses(id)` on delete restrict |
 | `display_order` | integer | Non-negative display sequence |
+| `start_at` | timestamptz | Optional per-course schedule start override (null inherits cohort `start_at`) |
+| `end_at` | timestamptz | Optional per-course schedule end override (null inherits cohort `end_at`) |
+| `venue` | text | Optional per-course venue override (null inherits cohort `venue`) |
 | `created_at` | timestamptz | Required |
-| `created_by` | uuid | References `public.profiles(id)` |
+| `created_by` | uuid | References `public.profiles(id)` on delete set null |
 
-Primary key: `(cohort_id, course_id)`. Every learner enrolled in the cohort receives entitlements to all attached courses.
+- Primary key: `(cohort_id, course_id)`. Every learner enrolled in the cohort receives entitlements to all attached courses.
+- Schedule Constraint: `CHECK (end_at IS NULL OR start_at IS NULL OR end_at > start_at)`.
+- Inheritance Semantics: When override fields are NULL, applications and invitation emails resolve the parent cohort's values.
 
-### `cohort_learner_roster` (Milestone 7 — Pre-Invitation Roster Staging)
+### `cohort_learner_roster` (Milestone 7 — Pre-Invitation Learner Roster Staging)
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | Primary key |
-| `organization_id` | uuid | References `public.organizations(id)` |
+| `organization_id` | uuid | References `public.organizations(id)` on delete cascade |
 | `cohort_id` | uuid | References `public.cohorts(id)` on delete cascade |
 | `email` | text | Normalized lowercase email address |
 | `roster_status` | text | `staged`, `invited`, `activated`, `removed` |
-| `user_id` | uuid | Linked user profile (null until account exists) |
-| `added_by` | uuid | References `public.profiles(id)` |
+| `user_id` | uuid | Linked user profile (null until account exists; on delete set null) |
+| `added_by` | uuid | References `public.profiles(id)` on delete set null |
 | `created_at` | timestamptz | Required |
 | `updated_at` | timestamptz | Required |
 
 Unique constraint: `(cohort_id, email)`.
 
-### `access_invitations` (Milestone 7 — 7-Day Invitation Engine)
+### `staff_access_entries` (Milestone 7 — Durable Staff Authorization Intent)
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | Primary key |
-| `organization_id` | uuid | References `public.organizations(id)` |
+| `organization_id` | uuid | References `public.organizations(id)` on delete cascade |
+| `email` | text | Normalized lowercase staff email address |
+| `intended_role` | text | `admin`, `instructor` (check constraint) |
+| `status` | text | `staged`, `activated`, `removed` (check constraint) |
+| `user_id` | uuid | Linked user profile (null until account exists; on delete set null) |
+| `added_by` | uuid | References `public.profiles(id)` on delete set null |
+| `created_at` | timestamptz | Required |
+| `updated_at` | timestamptz | Required |
+
+- **Purpose**: Durable organizational intent for administrative and teaching staff before `auth.users` exists.
+- **Hierarchy Rules**: `super_admin` may stage `admin` or `instructor`; `admin` may stage `instructor` only; no workflow may stage `super_admin`.
+- **Constraint**: Partial unique index `UNIQUE (organization_id, email, intended_role) WHERE status IN ('staged', 'activated')` prevents duplicate active/staged intent.
+- **Account Safety**: Removal transitions `status` to `removed` and never deletes established user accounts.
+
+### `access_invitations` (Milestone 7 — 7-Day Invitation Engine & Attempt Log)
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid | Primary key |
+| `organization_id` | uuid | References `public.organizations(id)` on delete cascade |
+| `cohort_roster_entry_id` | uuid | Nullable reference to `public.cohort_learner_roster(id)` on delete cascade |
+| `staff_access_entry_id` | uuid | Nullable reference to `public.staff_access_entries(id)` on delete cascade |
 | `invitation_type` | text | `new_learner_cohort`, `existing_learner_cohort`, `staff_bootstrap` |
-| `cohort_id` | uuid | Nullable (required for cohort invites, null for staff) |
+| `cohort_id` | uuid | Nullable reference to `public.cohorts(id)` on delete cascade |
 | `email` | text | Normalized invitee email |
-| `intended_role` | enum | `learner`, `instructor`, `admin` |
+| `intended_role` | text | `learner`, `instructor`, `admin` |
 | `status` | text | `prepared`, `sent`, `redeemed`, `expired`, `failed`, `superseded` |
 | `token_hash` | text | Unique SHA-256 hash of one-time application invite secret |
 | `sent_at` | timestamptz | Timestamp of last email dispatch |
@@ -126,21 +161,25 @@ Unique constraint: `(cohort_id, email)`.
 | `last_resent_at` | timestamptz | Timestamp of resend (if applicable) |
 | `resend_count` | integer | Number of resend operations |
 | `redeemed_at` | timestamptz | Timestamp of successful consumption |
-| `redeemed_by_user_id` | uuid | User who redeemed the invitation |
-| `invited_by` | uuid | Actor who issued the invitation |
+| `redeemed_by_user_id` | uuid | User who redeemed the invitation (on delete set null) |
+| `invited_by` | uuid | Actor who issued the invitation (on delete set null) |
 | `metadata` | jsonb | Operational context (no secrets) |
 | `created_at` | timestamptz | Required |
 | `updated_at` | timestamptz | Required |
 
+- **Target Referential Integrity**: `CHECK ((cohort_roster_entry_id IS NOT NULL AND staff_access_entry_id IS NULL) OR (cohort_roster_entry_id IS NULL AND staff_access_entry_id IS NOT NULL))` ensures every invitation attempt links to exactly one durable authorization intent target.
+- **Effective Expiry**: Invariant `effective_expired = (status = 'sent' AND expires_at <= now())` is enforced dynamically by all verification and redemption functions without dependency on cron jobs.
+- **Token Security**: The raw invitation secret is generated with high cryptographic entropy, delivered only in the transient invitation link, and immediately scrubbed from the browser URL/history via `history.replaceState`. Only the SHA-256 hash is persisted in `token_hash`.
+
 ### `cohort_members`
 
-- `cohort_id`
-- `user_id`
+- `cohort_id` (references `public.cohorts(id)` on delete cascade)
+- `user_id` (references `public.profiles(id)` on delete cascade)
 - `member_role` (`learner`, `instructor`)
 - `membership_status` (`active`, `completed`, `removed`)
 - `joined_at`
 - `completed_at`
-- `added_by`
+- `added_by` (references `public.profiles(id)` on delete set null)
 
 Primary key: `(cohort_id, user_id)`. The previous `one_active_cohort_per_learner` partial index is removed in Milestone 7 to support multi-cohort learning over time. Assigned instructors may read the cohort roster with masked I.C.s; learners read only their own membership.
 

@@ -18,19 +18,32 @@ Use Supabase Auth for:
 
 Implemented default for learners. Public self-registration is not exposed.
 
-1. Authorized staff (assigned instructor or administrator) enters the learner's email address into the cohort roster. No names, passwords, or I.C. numbers are required up front.
-2. A 7-day application invitation is dispatched via Custom SMTP. The email is bilingual (EN + BM).
-3. The recipient opens an intermediary landing page that displays cohort details and requires an explicit user action ("Accept Invitation") to protect against premature token consumption by email security scanners.
-4. If the user is new: they complete the registration form (Full Name, National Identity Card / I.C. number, Preferred Language `en` or `ms`, and Password). Upon atomic submission, the account transitions to `active`, the I.C. is stored securely in `learner_identities`, and cohort memberships/entitlements are activated.
-5. If the user is existing: their account is recognized, the new cohort membership and course entitlements are linked, and they proceed directly to the companion without re-registering personal data or changing passwords.
+1. **Roster Staging (Intent Only)**: Authorized staff (assigned instructor or administrator) enters the learner's email address into `public.cohort_learner_roster`. No names, passwords, or I.C. numbers are required up front. Staging records intended participation only and grants no access.
+2. **Invitation Dispatch**:
+   - **Existing Active User**: Sending an invitation immediately activates or restores `public.cohort_members` and creates/synchronizes `public.course_entitlements` for all attached cohort courses. The existing learner does not need to open the email to access the cohort if signing in directly. A bilingual notification email is delivered containing cohort details (resolving any course schedule overrides) and a one-time return link.
+   - **New Learner**: Creates an `access_invitations` attempt record referencing the `cohort_roster_entry_id` with 7-day validity. A bilingual invitation email is dispatched.
+3. **Intermediary Scanner Defense**: The recipient opens an intermediary landing page displaying cohort details. An explicit human action ("Accept Invitation" for new learners, "Open Cohort" for existing learners) is required to proceed, protecting against premature token consumption by automated corporate email security scanners.
+4. **First-Time Learner Registration**: The new learner completes the registration form (Full Name, National Identity Card / I.C. number [MyKad 12 digits or Passport], Preferred Language `en` or `ms`, and Password). Upon atomic submission via `complete_learner_registration`:
+   - Account status transitions to `active`.
+   - Identity is validated, normalized, and stored in `private.learner_identities`.
+   - Duplicate identities fail safely with generic messaging to prevent enumeration.
+   - Cohort memberships and multi-course entitlements are activated.
+5. **Existing Learner Passwordless Return**: When an existing active user clicks "Open Cohort" on the intermediary page:
+   - Server validates the 7-day invitation token and verifies the email matches the existing account.
+   - Server requests a fresh short-lived Supabase Auth token (via `auth.admin.generateLink`).
+   - The browser exchanges the token via `supabase.auth.verifyOtp` to establish an authenticated session.
+   - The user enters the application directly without re-entering their old password; their existing password is NOT changed.
 
-### Staff bootstrap invitation
+### Staff bootstrap authorization intent
 
-Authorized staff onboarding follows the strict role hierarchy:
-- `super_admin`: May invite `admin` and `instructor` roles; manages organization staff.
-- `admin`: May invite `instructor` roles; manages cohort assignments.
-- `instructor`: May invite learners strictly to cohorts where actively assigned; cannot invite staff.
+Authorized staff onboarding follows the strict role hierarchy backed by `public.staff_access_entries`:
+- `super_admin`: May stage `admin` and `instructor` roles in `public.staff_access_entries`; manages organization staff.
+- `admin`: May stage `instructor` roles only; manages cohort assignments.
+- `instructor`: May stage learner emails strictly to cohorts where actively assigned; cannot stage or invite staff.
 - Super administrator roles cannot be created through the application UI.
+- Removing staff intent transitions status to `removed` and never deletes an established user account.
+- Individual invitation attempts are recorded in `public.access_invitations` referencing `staff_access_entry_id`.
+- Dispatch of dynamic bilingual staff emails is governed by the server-side Email Transport Spike (Phase 7.3).
 
 ### Open signup and registration codes (Deferred)
 
@@ -62,30 +75,30 @@ Public self-registration and self-service registration codes remain deferred.
 - Learner permissions for own access.
 - View assigned cohorts and cohort teaching context.
 - Access Teaching Kit materials by topic and teaching stage.
-- Add and import learner emails to assigned cohort rosters.
+- Add and import learner emails to assigned cohort rosters (`public.cohort_learner_roster`).
 - Send and resend invitations for assigned cohorts.
-- View assigned cohort learners' attendance and completion status with **MASKED I.C. ONLY** (`******-**-1234`).
+- View assigned cohort learners' attendance and completion status with **SERVER-DERIVED MASKED I.C. ONLY** (`******-**-1234`).
 - Release post-tests for assigned cohorts.
 - Cannot view or manage unassigned cohorts, self-assign cohorts, or grant staff roles.
-- Strictly denied access to full I.C. numbers in `learner_identities`.
+- Strictly denied direct SELECT access to `private.learner_identities`. Full I.C. numbers never appear in instructor network payloads.
 
 ### Administrator
 
 - All instructor permissions across organization scope.
 - Manage users, cohorts, courses, resources, questions, and quizzes.
 - Assign instructors to cohorts.
-- View full National Identity (I.C.) numbers for learners in their organization when operationally required.
+- View full National Identity (I.C.) numbers for learners in their organization strictly via authorized RPC (`get_learner_identity_for_admin`) when operationally required.
 - Toggle reversible cohort learner access (`open` / `closed`).
-- Onboard instructors via staff invitations.
+- Stage instructors via `public.staff_access_entries` and manage staff access.
 - Export operational reports and view organization audit logs.
 - Cannot invite `admin` or `super_admin` roles.
 
 ### Super administrator
 
 - All administrator permissions across all organizations.
-- Onboard administrators and instructors via staff invitations.
+- Stage administrators and instructors via `public.staff_access_entries`.
 - Manage system-wide settings, storage buckets, and high-impact data operations.
-- Only role permitted to invite or manage administrators.
+- Only role permitted to stage or manage administrators.
 
 
 ## Course entitlement types
@@ -127,18 +140,25 @@ A protected action should confirm:
 
 ## National Identity (I.C.) Privacy Boundary (Milestone 7)
 
-Malaysian National Identity Card (MyKad / I.C.) numbers are sensitive personal data.
+Malaysian National Identity Card (MyKad / I.C.) numbers are sensitive personal data under privacy standards.
 
-- **Physical Isolation**: I.C. numbers are stored in `public.learner_identities`, decoupled from the general `public.profiles` table.
-- **Authorization & RLS Policies**:
-  - `super_admin` & `admin`: Authorized to read full I.C. numbers for learners within their organization.
-  - `learner`: Authorized to read own I.C. record (`user_id = auth.uid()`).
-  - `instructor`: **STRICTLY DENIED** SELECT access to `learner_identities`. Zero rows are returned through direct table queries.
-- **Masked Instructor Projection**:
-  - Instructors view assigned cohort rosters via a secured view / RPC (`public.get_cohort_roster_for_instructor`) that projects only a masked string: `******-**-1234`. The full I.C. is never transmitted to instructor client devices.
+- **Private Schema Boundary**: I.C. records are physically segregated in `private.learner_identities` rather than `public.profiles` or any publicly accessible table. Direct SELECT privilege is DENIED to all browser roles (`anon`, `authenticated`).
+- **Controlled Access RPCs (`SECURITY DEFINER`, `SET search_path = ''`)**:
+  - `get_my_learner_identity()`: Allows an authenticated learner to inspect their own identity record.
+  - `update_my_learner_identity(id_type, id_number)`: Allows a learner to establish/update their identity during registration with strict format validation.
+  - `get_learner_identity_for_admin(target_user_id)`: Permits administrators and super-administrators to retrieve full identity records strictly within their authorized organization scope.
+  - `get_cohort_roster_for_instructor(target_cohort_id)`: Provides assigned instructors with a cohort roster projection containing only server-derived masked identifiers.
+- **Server-Derived Masking**:
+  - Masked values are derived dynamically on the server (`'******-**-' || right(id_number, 4)` for MyKad) rather than stored in a second mutable column.
+  - Full I.C. numbers are never transmitted in instructor network responses, client state, or generic profile queries.
+- **Identity Formats & Normalization**:
+  - `mykad`: Normalized strictly to 12 digits (`^\d{12}$`), stripping all hyphens and whitespace.
+  - `passport`: Normalized to trimmed uppercase alphanumeric (`^[A-Z0-9-]{6,20}$`).
+  - Table constraint `UNIQUE (id_type, id_number)` prevents duplicate learner identities.
+  - Duplicate registration fails safely with generic error messaging ("The identification provided is already associated with an account. Please sign in or contact an administrator.") to prevent identity enumeration.
 - **Audit & Log Hygiene**:
-  - Full I.C. values must NEVER appear in `audit_events.metadata`, browser console logs, error messages, or network diagnostics.
-  - Profile update audit events record only actor, target user ID, timestamp, and entity type.
+  - Full I.C. values must NEVER appear in `audit_events.metadata`, browser console logs, server error messages, or network diagnostics.
+  - Identity update audit events record only actor, target user ID, timestamp, and entity type (`learner_identity`).
 
 ## Grace period
 

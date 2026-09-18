@@ -330,38 +330,58 @@ credentials during their short lifetime and cannot prevent screenshots or a
 recipient from copying content after retrieval. The service worker and
 application caches must exclude protected responses and URLs.
 
-## ADR-017 — Roster-before-auth identity intent and 7-day invitation lifecycle
+## ADR-017 — Pre-Auth authorization intent, invitation-to-target integrity, and 7-day invitation lifecycle
 
 ### Decision
 
-Decouple participant roster intent from immediate `auth.users` provisioning. Store intended participant emails in `cohort_learner_roster` and manage a 7-day application invitation lifecycle in `access_invitations`. Staff enter email only; learners submit their full name, I.C., preferred language, and password during registration. Interpose an explicit landing page to prevent email scanners from consuming one-time tokens. Resending an invitation generates a fresh token and supersedes the prior invitation.
+Decouple authorization intent from immediate `auth.users` provisioning for both learners and staff:
+1. **Learner Intent**: Record intended cohort participants in `public.cohort_learner_roster(id, organization_id, cohort_id, email, roster_status, user_id, added_by)`.
+2. **Staff Intent**: Record organization staff authorization intent in `public.staff_access_entries(id, organization_id, email, intended_role, status, user_id, added_by)`. Super-admins may stage admins or instructors; admins may stage instructors only; no standard workflow may stage super-admins. Removal sets status to `removed` and never deletes established user accounts.
+3. **Invitation Referential Integrity**: Each row in `public.access_invitations` represents an individual invitation attempt and must reference exactly one authorization intent target via foreign keys (`cohort_roster_entry_id` or `staff_access_entry_id`) with a CHECK constraint enforcing exclusivity. The invitation row is an attempt record, not the intent source of truth.
+4. **Foreign Key Nullability**: All actor references (`added_by`, `invited_by`, `created_by`, `redeemed_by_user_id`) must be nullable with `ON DELETE SET NULL`. Immutable actor provenance is preserved in append-only `public.audit_events`.
+5. **Token Security & Lifecycle**: High-entropy cryptographic secrets; stored in database only as SHA-256 hashes (`token_hash`); raw tokens exist only in transient delivery URLs and are scrubbed immediately from browser URL/history via `history.replaceState`. Interpose an explicit intermediary landing page to protect against premature token redemption by automated email security scanners. Resending an invitation generates a fresh token and supersedes prior attempts atomically.
+6. **Server-Derived Effective Expiry**: Invitation validity is governed by `effective_expired = (status = 'sent' AND expires_at <= now())` enforced dynamically in all redemption RPCs and query projections, eliminating dependency on background cron jobs.
 
 ### Rationale
 
-- Staff frequently receive only a participant email roster prior to a physical course. Requiring full names up front causes operational friction and data-entry errors.
-- Default Supabase Auth email tokens have short expirations that expire prematurely for course participants invited days in advance. Blindly extending all auth tokens weakens session security.
-- Modern enterprise email security scanners prefetch and consume single-use authentication links.
-- Returning users must not be forced to re-register personal data or change passwords.
+- Staff frequently receive only participant or colleague email lists prior to course setup. Requiring personal details up front causes operational friction and data-entry errors.
+- Separating authorization intent entities from invitation attempt records ensures intent survives failed or resent invitations.
+- Default Supabase Auth email tokens expire prematurely for physical courses scheduled days or weeks in advance; 7-day application-level tokens solve this cleanly.
+- Enforcing nullable actor foreign keys prevents database constraint conflicts with `ON DELETE SET NULL`.
+- Modern enterprise email security scanners prefetch and consume single-use authentication links; an explicit user-initiated POST on an intermediary landing page defends against bot redemption.
 
 ### Consequence
 
-Invitation redemption requires an intermediary verification step before transitioning profiles to `pending_registration` and finally `active`. The database must track invitation states (`prepared`, `sent`, `redeemed`, `expired`, `superseded`) independently from Auth session state.
+Invitation redemption requires an intermediary verification step before transitioning profiles to `pending_registration` and finally `active`. The database tracks invitation states (`prepared`, `sent`, `redeemed`, `expired`, `superseded`) independently from Auth session state.
 
-## ADR-018 — Multi-course cohort join model and expand-backfill-contract migration
+## ADR-018 — Multi-course cohort join model and optional per-course schedule overrides
 
 ### Decision
 
-Migrate from a single `cohorts.course_id` column to a many-to-many join table `cohort_courses`. Every learner enrolled in a cohort automatically receives course entitlements for every course attached to that cohort. Execute the migration via an expand-backfill-contract strategy: create `cohort_courses`, backfill existing pairs, update access helpers to read `cohort_courses`, make `cohorts.course_id` nullable, and drop the legacy column after production parity is verified.
+Migrate from a single `cohorts.course_id` column to a many-to-many join table `cohort_courses`. Every learner enrolled in a cohort automatically receives course entitlements for every course attached to that cohort.
+
+Extend `cohort_courses` with optional schedule and venue overrides:
+- `start_at timestamptz NULL`
+- `end_at timestamptz NULL`
+- `venue text NULL`
+- Table constraint: `CHECK (end_at IS NULL OR start_at IS NULL OR end_at > start_at)`
+
+**Resolution Semantics**:
+- When override columns are NULL, child courses inherit the parent `cohorts` start time, end time, and venue.
+- When specified, course-specific values take precedence in invitation displays, learner itineraries, and course agendas.
+- Courses within a cohort may have different schedules without creating duplicate cohorts.
+
+Execute the database migration via an expand-backfill-contract strategy: create `cohort_courses`, backfill existing pairs, update access helpers to read `cohort_courses`, make `cohorts.course_id` nullable, and drop the legacy column after production parity is verified.
 
 ### Rationale
 
-- Physical BLS course offerings often combine complementary certifications (e.g., Adult BLS, Pediatric BLS, and AED Essentials) within a single training cohort.
+- Physical BLS course offerings often combine complementary certifications (e.g., Adult BLS, Pediatric BLS, and AED Essentials) within a single training cohort, where components may occur at distinct times or rooms.
 - Direct destructive column replacement would break active production queries and RLS helpers.
 - Operational policy mandates that all learners in a cohort receive all cohort courses, avoiding per-learner enrollment picker complexity in Milestone 7.
 
 ### Consequence
 
-Access helpers (`has_effective_course_access`, `is_assigned_instructor_for_course`), quiz availability functions, and cohort administration UI must query across `cohort_courses`.
+Access helpers (`has_effective_course_access`, `is_assigned_instructor_for_course`), quiz availability functions, and cohort administration UI must query across `cohort_courses`, resolving schedule overrides where present.
 
 ## ADR-019 — Reversible cohort learner-access gate (`learner_access_state`)
 
@@ -395,18 +415,57 @@ Support English (`en`, default and fallback) and Bahasa Melayu (`ms`) across the
 
 Frontend components must reference translation keys. Educational content authoring workflows must support bilingual text fields.
 
-## ADR-021 — Protected National Identity (I.C.) data boundary and role-based masking
+## ADR-021 — Private schema National Identity (I.C.) boundary, safe uniqueness, and role-based masking
 
 ### Decision
 
-Store Malaysian Identity Card (MyKad) numbers in a dedicated, isolated table `public.learner_identities` rather than the general `public.profiles` table. Deny SELECT access to `authenticated` public and `instructor` roles. Allow full I.C. visibility only to `super_admin`, `admin`, and the learner themselves. Provide instructors with a masked projection (`******-**-1234`) via a secure view or RPC. Strictly prohibit logging or auditing full I.C. values.
+Isolate sensitive National Identity numbers within a dedicated private table `private.learner_identities` rather than the public schema or `public.profiles`:
+1. **Schema Boundary**: Direct SELECT privilege on `private.learner_identities` is denied to all browser roles (`anon`, `authenticated`).
+2. **Controlled Access RPCs**: Controlled `SECURITY DEFINER` functions with locked `SET search_path = ''`:
+   - `learner`: reads own identity via `get_my_learner_identity()`, updates via `update_my_learner_identity()`.
+   - `admin` / `super_admin`: reads full identity within authorized organization scope via `get_learner_identity_for_admin()`.
+   - `instructor`: accesses assigned cohort roster with masked identifier (`******-**-1234`) via `get_cohort_roster_for_instructor()`. Full identity values never enter instructor network payloads or client state.
+3. **Server-Derived Masking**: Masked identifiers are computed dynamically on the server (`'******-**-' || right(id_number, 4)` for MyKad) rather than stored as redundant mutable columns.
+4. **Supported Identity Types & Normalization**:
+   - `mykad`: normalized strictly to 12 digits (`^\d{12}$`) stripping all hyphens and whitespace.
+   - `passport`: normalized to trimmed uppercase alphanumeric (`^[A-Z0-9-]{6,20}$`).
+5. **Safe Duplicate Protection**: Database unique constraint `UNIQUE (id_type, id_number)`. Duplicate registration fails safely with generic error messaging to prevent identity enumeration. Full identity values are strictly excluded from audit logs, server error messages, and browser logs.
 
 ### Rationale
 
-- National identity numbers are sensitive personal data under privacy standards.
-- Instructors need identity verification for attendance and practical verification but have no operational requirement to view or store full national identity numbers.
-- Segregating sensitive identity data prevents accidental disclosure in broad profile queries or browser payloads.
+- National identity numbers are sensitive personal data under privacy standards and regulations.
+- Instructors need identity verification for attendance and practical verification but have zero operational justification to view or store full national identity numbers.
+- Segregating sensitive identity data into a private schema prevents accidental exposure in broad profile queries, GraphQL/PostgREST table auto-reflection, or frontend serialization.
+- Server-side dynamic derivation of masked identifiers eliminates data desynchronization bugs.
 
 ### Consequence
 
 Roster displays for instructors show only masked identifiers. Full identity retrieval is restricted to administrative workflows with audit tracking.
+
+## ADR-022 — Existing-user enrollment timing, passwordless return flow, and email transport technical spike
+
+### Decision
+
+1. **Authoritative Existing-User Enrollment Timing**:
+   - Staging on cohort roster records intended participation only (grants no access).
+   - Sending an invitation for an existing active user immediately validates actor/cohort, activates/restores `cohort_members`, creates/synchronizes `course_entitlements` for all attached cohort courses, dispatches the notification email, and writes audit events.
+   - The existing user does NOT need to open the email to access the cohort if they log into the webapp independently.
+   - Suspended or archived accounts are never silently reactivated.
+2. **One-Time Passwordless Return Flow**:
+   - Invitation email delivers a 7-day link to an intermediary landing page.
+   - When the existing user clicks the human confirmation button, the server validates the invitation token, confirms email identity, and generates a fresh short-lived Supabase Auth token (via `auth.admin.generateLink`).
+   - The browser exchanges the token hash via `supabase.auth.verifyOtp` to establish an authenticated session directly into the application.
+   - The user enters the application without re-entering their old password; their existing password is NOT changed. Optional password reset remains available through profile settings.
+3. **Prerequisite Technical Spikes**:
+   - **Email Transport Spike (Phase 7.3)**: Supabase Auth Custom SMTP is managed by GoTrue and cannot be assumed to send arbitrary Edge Function application emails. A dedicated technical spike must evaluate and verify the safest server-side mail transport (e.g. server-side SMTP library reusing verified credentials vs. HTTP provider API) supporting dynamic bilingual HTML/text, multi-course payloads, and testability before invitation implementation.
+   - **Passwordless Return Link Spike (Phase 7.5)**: Verify exact Supabase `auth.admin.generateLink` / `verifyOtp` semantics in Edge Functions and frontend auth callbacks.
+
+### Rationale
+
+- Existing learners who are re-invited should not be blocked from accessing course materials if they simply sign in to the app directly.
+- Requiring returning learners to recall passwords from months ago creates support friction during physical course registration. A verified one-time link provides a smooth return experience while preserving their existing password.
+- Documenting technical spikes prevents unvalidated assumptions about platform capabilities from breaking implementation schedules.
+
+### Consequence
+
+Phase 7.3 cannot proceed to invitation implementation without completing the Email Transport Spike. Phase 7.5 must execute the return link spike before finalizing the returning user flow.

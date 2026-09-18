@@ -211,29 +211,14 @@ The first functional MVP should include:
 - Authentication, authorization, protected storage, secure scoring, and audit
   controls become mandatory before real user data or protected resources are
   introduced.
-- Multi-course cohorts: a cohort may contain multiple courses via `cohort_courses`;
-  every learner enrolled in a cohort receives access to every course attached to
-  that cohort (Milestone 7).
-- Controlled learner onboarding: staff enter email only on the cohort roster;
-  learners supply their legal full name, National Identity Card (I.C.) number,
-  preferred language, and password during first-time registration (Milestone 7).
-- 7-day application invitation lifecycle with anti-scanner defense, idempotency,
-  expiry, and superseding resend (Milestone 7).
-- Existing user reuse: returning learners receive new cohort notifications and are
-  enrolled without re-registering personal identity data or forced password
-  changes (Milestone 7).
-- Strict staff hierarchy: super-administrators invite administrators and instructors;
-  administrators invite instructors and manage cohorts; instructors invite and
-  manage learners strictly within assigned cohorts (Milestone 7).
-- Reversible cohort learner-access gate: administrators can toggle `learner_access_state`
-  between `open` and `closed` without destroying accounts, enrollments, or historical
-  attempt data (Milestone 7).
-- National Identity (I.C.) privacy: full I.C. numbers are protected in `learner_identities`
-  and visible only to administrators and the learner themselves; instructors see
-  strictly masked identifiers (`******-**-1234`) (Milestone 7).
-- Bilingual foundation: full bilingual support in English (`en`, default/fallback)
-  and Bahasa Melayu (`ms`), with separate human-authored educational content and
-  historically frozen bilingual quiz questions (Milestone 7).
+- Multi-course cohorts: a cohort may contain multiple courses via `cohort_courses` join table, supporting optional per-course schedule and venue overrides (`start_at`, `end_at`, `venue`); every learner enrolled in a cohort receives access to every course attached to that cohort (Milestone 7).
+- Controlled learner onboarding: staff enter email only on the cohort roster (`public.cohort_learner_roster`); learners supply their legal full name, normalized National Identity (I.C.) number (12-digit MyKad or Passport), preferred language, and password during first-time registration (Milestone 7).
+- 7-day application invitation lifecycle with anti-scanner defense, idempotency, server-derived effective expiry, and superseding resend, referencing exactly one authorization intent target (`cohort_learner_roster` or `staff_access_entries`) (Milestone 7).
+- Existing user reuse: returning active learners are immediately enrolled upon invitation dispatch; a notification email provides a 7-day link that exchanges for a short-lived Auth token, granting passwordless return into the app without forced password changes or personal data re-registration (Milestone 7).
+- Strict staff hierarchy & durable staff intent: backed by `public.staff_access_entries`; super-administrators stage administrators and instructors; administrators stage instructors; instructors manage learners strictly within assigned cohorts; removing staff intent never deletes user accounts (Milestone 7).
+- Reversible cohort learner-access gate: administrators can toggle `learner_access_state` between `open` and `closed` without destroying accounts, enrollments, or historical attempt data (Milestone 7).
+- National Identity (I.C.) privacy: full I.C. numbers are protected in `private.learner_identities` (no direct browser SELECT), visible only to authorized administrators and the learner themselves via secure RPCs; instructors see strictly server-derived masked identifiers (`******-**-1234`) (Milestone 7).
+- Bilingual foundation: full bilingual support in English (`en`, default/fallback) and Bahasa Melayu (`ms`), with separate human-authored educational content and historically frozen bilingual quiz questions (Milestone 7).
 
 ## Remaining production decisions
 

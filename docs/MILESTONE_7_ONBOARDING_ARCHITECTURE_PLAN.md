@@ -3,14 +3,16 @@
 ## 1. Executive Summary & Scope
 
 Milestone 7 transitions the BLS Course Companion from an operational MVP prototype into a production-grade, bilingual platform ready for physical Basic Life Support course delivery. It solves the critical pre-launch operational requirements:
-1. **Controlled Learner Onboarding**: Staff pre-enter learner **emails only**; learners register their own legal name, national identity card (I.C.) number, preferred language, and password after verifying email control.
-2. **Staff Access Hierarchy**: Super-administrators onboard administrators and instructors; administrators onboard instructors and manage cohorts; instructors onboard and manage learners strictly within assigned cohorts.
-3. **Application-Controlled 7-Day Invitations**: A secure 7-day invitation lifecycle that prevents premature email-scanner consumption, supports idempotency and resend with superseding, and decouples invitation validity from sensitive short-lived auth tokens.
-4. **Existing User Continuity**: Reusable learner accounts that receive new cohort invitations without repeating identity registration or forced password changes.
-5. **Multi-Course Cohorts**: Supporting multiple courses per cohort (every cohort learner receives every cohort course) via an expand-backfill-contract migration from `cohorts.course_id` to `cohort_courses`.
-6. **Reversible Cohort Learner-Access Gate**: A clean `learner_access_state` (`open` | `closed`) enabling administrators to open or close cohort learner access without deleting accounts, attempts, or entitlements.
-7. **National Identity (I.C.) Privacy**: A dedicated protected data boundary ensuring administrators can view full I.C.s when operationally required, instructors see only masked values (`******-**-1234`), and learners view/edit only their own data.
-8. **Bilingual Foundation (English & Bahasa Melayu)**: An internationalized frontend with `en` (default/fallback) and `ms` locales, bilingual onboarding emails, separate human-authored content, and historically frozen bilingual quiz questions.
+1. **Durable Authorization Intent (Before Auth Exists)**: Separates durable organizational intent (`public.cohort_learner_roster` for learners, `public.staff_access_entries` for staff) from transient invitation attempts (`public.access_invitations`).
+2. **Controlled Learner Onboarding**: Staff pre-enter learner **emails only**; learners register their own legal name, national identity card (I.C.) number, preferred language, and password after verifying email control.
+3. **Staff Access Hierarchy**: Super-administrators onboard administrators and instructors; administrators onboard instructors and manage cohorts; instructors onboard and manage learners strictly within assigned cohorts.
+4. **Application-Controlled 7-Day Invitations**: A secure 7-day invitation lifecycle that prevents premature email-scanner consumption, supports idempotency and resend with superseding, enforces server-derived effective expiry, and references authorization intent with referential integrity.
+5. **Existing User Continuity & Passwordless Return**: Reusable learner accounts. Sending an invitation to an existing active user immediately activates cohort membership and entitlements; clicking the invite link provides a seamless one-time passwordless login flow into the app without re-registration or forced password resets.
+6. **Multi-Course Cohorts with Schedule Overrides**: Supporting multiple courses per cohort (every cohort learner receives every cohort course) via an expand-backfill-contract migration from `cohorts.course_id` to `cohort_courses`, with optional per-course schedule and venue overrides.
+7. **Reversible Cohort Learner-Access Gate**: A clean `learner_access_state` (`open` | `closed`) enabling administrators to open or close cohort learner access without deleting accounts, attempts, or entitlements.
+8. **Private National Identity (I.C.) Boundary**: Storing full I.C. records in `private.learner_identities` (denying direct table SELECT to browser roles), validating normalized MyKad/passport formats, preventing duplicate identities safely without enumeration leaks, and projecting masked identifiers (`******-**-1234`) to instructors via secure RPCs.
+9. **Bilingual Foundation (English & Bahasa Melayu)**: An internationalized frontend with `en` (default/fallback) and `ms` locales, bilingual onboarding emails, separate human-authored content, and historically frozen bilingual quiz questions.
+10. **Technical Implementation Spikes**: Explicit spikes for server-side Email Transport and Supabase Auth `generateLink` / `verifyOtp` one-time passwordless session establishment before coding begins.
 
 This phase is **architecture and documentation only**. No application source code, migrations, or hosted database mutations are performed during this planning run.
 
@@ -24,17 +26,17 @@ The following locked product decisions govern all Milestone 7 designs:
 |---|---|---|
 | **Q1: Role Management** | `super_admin` invites `admin` and `instructor`; `admin` invites `instructor` and manages cohorts; `instructor` invites learners *only* within assigned cohorts. No UI creation of `super_admin`. | Security definer functions enforce caller role and organization scope; Edge Functions reject privilege escalation; client guards prevent unauthorized UI exposure. |
 | **Q2: Pre-Invitation Data** | Staff enter **email only** for learners. First-time registration collects: full name, I.C., language preference (`en` \| `ms`), password, password confirmation. Invited email is immutable. | Roster entries store email intent before `auth.users` exists; `pending_registration` profile state gates access until registration RPC transaction commits. |
-| **Q3: Invitation Validity** | Invitations valid for **7 days**. Expired invites can be resent; resend supersedes old invite. No account penalty for expiry. | `access_invitations` table manages application-level 7-day validity and superseding. An intermediary landing page protects one-time redemption from email security bots. |
-| **Q4: Existing Users** | Existing users receive new cohort email; link recognizes account; no re-registration or forced password change; cohort membership linked. Optional password recovery available. | Fast-path redemption links existing `auth.users` profile to cohort; bypasses registration screen; directs immediately to authenticated companion. |
-| **Q5: Multi-Course Cohorts** | Cohorts can contain multiple courses. Every cohort learner receives every cohort course. No per-learner picker in M7. | `cohort_courses` join table introduced. Migration follows expand → backfill → dual-read → contract. Entitlements synchronized to all attached courses. |
+| **Q3: Invitation Validity** | Invitations valid for **7 days**. Expired invites can be resent; resend supersedes old invite. No account penalty for expiry. | `access_invitations` table manages application-level 7-day validity and superseding. An intermediary landing page protects one-time redemption from email security bots. Server enforces effective expiry (`status = 'sent' AND expires_at <= now()`). |
+| **Q4: Existing Users** | Existing users receive new cohort email; link recognizes account; no re-registration or forced password change; cohort membership linked. Optional password recovery available. | Sending invite immediately activates membership/entitlements. Intermediary page provides a passwordless one-time return link into the app. Direct login also works immediately. |
+| **Q5: Multi-Course Cohorts** | Cohorts can contain multiple courses. Every cohort learner receives every cohort course. No per-learner picker in M7. | `cohort_courses` join table introduced with optional per-course schedule overrides (`start_at`, `end_at`, `venue`). Migration follows expand → backfill → dual-read → contract. |
 | **Q6: Cohort Instructors** | Cohorts may have multiple assigned instructors. Assigned instructors manage learners in their cohorts only. Cannot self-assign or manage other cohorts. | `cohort_members` with `member_role = 'instructor'` scoped in RLS. Roster mutations require assigned instructor or org admin caller. |
 | **Q7: Cohort Access Lifetime** | Access starts upon account activation. No auto-expiry by date. Admin/super_admin explicitly toggles "Close cohort access" / "Restore cohort access". Fully reversible. | `cohorts.learner_access_state` enum (`open`, `closed`). Effective course access check enforces `open` state. Attempt and audit history preserved. |
 | **Q8: Learner Removal** | Removing learner from cohort revokes cohort access; global account, profile, I.C., past quiz attempts, and results remain intact. Re-add reuses account. | Soft removal updates `cohort_members.membership_status = 'removed'`. Does not suspend profile or delete attempts. |
-| **Q9: Roster & Import** | Manual email addition + bulk paste/CSV import. Pre-validation preview: valid new, existing user, already in cohort, invalid email, duplicate, conflict. Adding vs sending are separate actions. | Roster staging workflow: import/validate → save to roster (`not_invited`) → explicit "Send Invitations" dispatch action. |
+| **Q9: Roster & Import** | Manual email addition + bulk paste/CSV import. Pre-validation preview: valid new, existing user, already in cohort, invalid email, duplicate, conflict. Adding vs sending are separate actions. | Roster staging workflow: import/validate → save to roster (`staged`) → explicit "Send Invitations" dispatch action. |
 | **Q10: Bilingual Product** | Primary languages: English (`en`, default/fallback) and Bahasa Melayu (`ms`). Pre-registration emails bilingual. UI uses translation keys. Content authored separately (no runtime machine translation). Quiz versions freeze bilingual text. | `preferred_language` on profile; frontend translation dictionary provider; versioned bilingual question prompts and option text; resource language taxonomy. |
 | **Q11: Invitation Lifecycle** | User-facing statuses: *Not invited*, *Invited*, *Activated*, *Expired*, *Failed*, *Suspended*, *Removed*. | Normalized schema across roster entries, `access_invitations`, and `profiles.account_status` computes authoritative user-facing status. |
 | **Q12: Pre-Launch Clean Slate** | Production demo/test data retained during M7 development; one controlled clean-slate reset executed immediately prior to real participant onboarding. | Clean-slate boundaries documented in `docs/DEPLOYMENT.md`; seed fixtures remain CI/local-only. |
-| **I.C. Data Privacy** | Full I.C. visible to `super_admin`/`admin` and learner (own). Instructors see masked I.C. (`******-**-1234`) only. No logging/audit leaks. | Dedicated `learner_identities` table with strict RLS (instructors denied SELECT). Masked projection provided via secure view/RPC. |
+| **I.C. Data Privacy** | Full I.C. visible to `super_admin`/`admin` and learner (own). Instructors see masked I.C. (`******-**-1234`) only. No logging/audit leaks. | Dedicated `private.learner_identities` table (zero direct table SELECT to browser roles). Masked projection provided via secure view/RPC. |
 
 ---
 
@@ -42,9 +44,9 @@ The following locked product decisions govern all Milestone 7 designs:
 
 ### Gap 1: Single Course Cohorts vs. Multi-Course Cohorts
 - **Current**: `public.cohorts.course_id` (UUID, NOT NULL). RLS helpers (`private.is_assigned_instructor_for_course`, `private.has_effective_course_access`, `private.validate_cohort_course`), quiz availability functions, and frontend components assume 1:1 cohort-to-course relationship.
-- **Target**: A cohort has $N$ courses via `public.cohort_courses`.
+- **Target**: A cohort has $N$ courses via `public.cohort_courses`, with optional per-course schedule and venue overrides.
 - **Migration Strategy (Expand-Backfill-Contract)**:
-  1. *Expand*: Create `public.cohort_courses` table with composite primary key `(cohort_id, course_id)`, `display_order`, and timestamps.
+  1. *Expand*: Create `public.cohort_courses` table with composite primary key `(cohort_id, course_id)`, `display_order`, optional schedule overrides (`start_at`, `end_at`, `venue`), and timestamps.
   2. *Backfill*: Copy existing `(id, course_id, 0)` from `public.cohorts` into `public.cohort_courses`.
   3. *Dual-Write/Read Trigger*: Install a synchronization trigger that populates `cohort_courses` if legacy `cohorts.course_id` is written, and keeps `cohorts.course_id` set to the primary (first) course.
   4. *Helper & RLS Refactoring*: Update `has_effective_course_access()` and instructor check functions to query `cohort_courses`.
@@ -64,16 +66,17 @@ The following locked product decisions govern all Milestone 7 designs:
 - **Target**: Staff enter email only. Learner supplies full name, I.C., language, and password during first-time registration.
 - **Migration Strategy**:
   1. Create `public.cohort_learner_roster` and `public.access_invitations` tables to record email intent before `auth.users` exists.
-  2. Decouple roster addition from Auth user creation. Auth user and profile are provisioned either in a restricted `pending_registration` state or upon invitation redemption.
+  2. Decouple roster addition from Auth user creation. Auth user and profile are provisioned upon invitation redemption.
   3. Registration page `/auth/register` accepts full name and persists it atomically upon password establishment.
 
 ### Gap 4: Duplicate User Rejection vs. Existing User Reuse
 - **Current**: Edge Function `admin-invite-user` detects `isDuplicateUserError` and returns HTTP 409 `USER_ALREADY_EXISTS`. Existing users cannot be added to a new cohort via invitation.
-- **Target**: Existing users can be invited to new cohorts. Their identity is recognized; they receive a notification email with cohort and course details; clicking accepts the cohort without re-entering personal data.
+- **Target**: Existing users can be added to new cohorts. Their identity is recognized. Sending an invitation immediately enrolls them and issues a contextual cohort notification email with a one-time passwordless return link.
 - **Migration Strategy**:
-  1. Update invitation logic to check if the normalized email already exists in `auth.users` / `public.profiles`.
-  2. For existing users: create `cohort_learner_roster` and `cohort_members` entry, record an `access_invitation` of type `existing_user_cohort_addition`, and send an existing-user cohort assignment email.
-  3. Redemption recognizes existing session/user, links entitlements, and routes directly to the application shell.
+  1. Update invitation logic: when staff sends an invitation for an existing active learner, immediately activate `cohort_members` and synchronize `course_entitlements`.
+  2. Create an `access_invitations` record linked to the roster entry.
+  3. Deliver cohort notification email with one-time return link.
+  4. Intermediary redemption page uses Supabase `generateLink` to issue a fresh short-lived session, admitting the user without requiring their old password.
 
 ### Gap 5: Premature Account Activation on Email Confirmation
 - **Current**: Trigger `handle_auth_user_confirmed` on `auth.users` immediately transitions `profiles.account_status` from `pending_verification` to `'active'` whenever `email_confirmed_at` becomes NOT NULL.
@@ -84,13 +87,13 @@ The following locked product decisions govern all Milestone 7 designs:
   3. Update `RequireAccountAccess` guard to treat `pending_registration` as an uncompleted setup state, redirecting to `/auth/register`.
   4. Atomic registration completion RPC `complete_learner_registration` transitions `pending_registration` → `active` only after personal data is validated.
 
-### Gap 6: Generic Staff Provisioning vs. Strict Role Hierarchy
-- **Current**: `admin-invite-user` allows `admin` to invite `learner` or `instructor`. No pathway for `super_admin` to onboard an `admin`, nor for instructors to invite learners to their own cohorts.
-- **Target**: Strict role hierarchy (Q1).
+### Gap 6: Generic Staff Provisioning vs. Durable Staff Access Intent & Strict Hierarchy
+- **Current**: `admin-invite-user` allows `admin` to invite `learner` or `instructor` directly. No durable staff intent model exists prior to Auth creation, and no pathway exists for `super_admin` to onboard an `admin`.
+- **Target**: Strict role hierarchy (Q1) backed by durable staff authorization intent in `public.staff_access_entries`.
 - **Migration Strategy**:
-  1. Implement staff access invitation workflow: `super_admin` can invite `admin` or `instructor`; `admin` can invite `instructor`.
-  2. Implement cohort roster invitation workflow: assigned `instructor` or `admin` can add/invite learners within cohort scope.
-  3. Enforce role hierarchy in both database security definer functions and Edge Functions.
+  1. Implement `public.staff_access_entries` storing organizational staff intent.
+  2. `super_admin` stages `admin` or `instructor`; `admin` stages `instructor` only.
+  3. Invitations reference the staff access entry. Staff redemption establishes profile and role.
 
 ---
 
@@ -101,6 +104,7 @@ erDiagram
     ORGANIZATIONS ||--o{ COHORTS : owns
     ORGANIZATIONS ||--o{ COURSES : owns
     ORGANIZATIONS ||--o{ PROFILES : employs_or_manages
+    ORGANIZATIONS ||--o{ STAFF_ACCESS_ENTRIES : authorizes
     
     COHORTS ||--o{ COHORT_COURSES : includes
     COURSES ||--o{ COHORT_COURSES : assigned_to
@@ -110,11 +114,11 @@ erDiagram
     
     COHORTS ||--o{ COHORT_LEARNER_ROSTER : stages
     
-    COHORTS ||--o{ ACCESS_INVITATIONS : scoped_to
-    ACCESS_INVITATIONS ||--o| COHORT_LEARNER_ROSTER : redeems
+    COHORT_LEARNER_ROSTER ||--o{ ACCESS_INVITATIONS : generates_learner_invite
+    STAFF_ACCESS_ENTRIES ||--o{ ACCESS_INVITATIONS : generates_staff_invite
     
     PROFILES ||--o{ USER_ROLES : holds
-    PROFILES ||--o| LEARNER_IDENTITIES : has_sensitive
+    PROFILES ||--o| LEARNER_IDENTITIES : has_sensitive_private
     
     COURSES ||--o{ COURSE_ENTITLEMENTS : grants
     PROFILES ||--o{ COURSE_ENTITLEMENTS : receives
@@ -128,14 +132,18 @@ erDiagram
 
 ### Table Specifications & Responsibilities
 
-#### 1. `public.cohort_courses` (New)
-Represents the many-to-many relationship between cohorts and courses.
+#### 1. `public.cohort_courses` (New — Multi-Course Join Model with Schedule Overrides)
+Represents the many-to-many relationship between cohorts and courses, supporting course-specific schedule overrides.
 - `cohort_id uuid not null references public.cohorts(id) on delete cascade`
 - `course_id uuid not null references public.courses(id) on delete restrict`
 - `display_order integer not null default 0 check (display_order >= 0)`
+- `start_at timestamptz` (Optional schedule override; null inherits `cohorts.start_at`)
+- `end_at timestamptz` (Optional schedule override; null inherits `cohorts.end_at`)
+- `venue text` (Optional venue override; null inherits `cohorts.venue`)
 - `created_at timestamptz not null default now()`
-- `created_by uuid references public.profiles(id) on delete set null`
+- `created_by uuid references public.profiles(id) on delete set null` (Nullable actor FK)
 - **Primary Key**: `(cohort_id, course_id)`
+- **Constraints**: `constraint cohort_courses_schedule_valid check (end_at is null or start_at is null or end_at > start_at)`
 - **Indexes**: `cohort_courses_course_idx on (course_id)`
 
 #### 2. `public.cohorts` (Modified)
@@ -145,147 +153,184 @@ Represents the many-to-many relationship between cohorts and courses.
 - `description_ms text` (Optional localized description)
 - Legacy `course_id uuid` made nullable after backfill to `cohort_courses`.
 
-#### 3. `public.cohort_learner_roster` (New)
-Tracks intended learner participation prior to or during invitation.
+#### 3. `public.cohort_learner_roster` (New — Durable Learner Authorization Intent)
+Tracks durable authorization intent for learner participation in a cohort prior to or during invitation.
 - `id uuid primary key default gen_random_uuid()`
 - `organization_id uuid not null references public.organizations(id) on delete restrict`
 - `cohort_id uuid not null references public.cohorts(id) on delete cascade`
 - `email text not null check (email = lower(trim(email)) and email ~ '^.+@.+$')`
 - `roster_status text not null default 'staged' check (roster_status in ('staged', 'invited', 'activated', 'removed'))`
 - `user_id uuid references public.profiles(id) on delete set null` (Populated once user account exists)
-- `added_by uuid not null references public.profiles(id) on delete set null`
+- `added_by uuid references public.profiles(id) on delete set null` (Nullable actor FK)
 - `created_at timestamptz not null default now()`
 - `updated_at timestamptz not null default now()`
 - **Unique Constraint**: `unique (cohort_id, email)`
 - **Indexes**: `roster_org_email_idx on (organization_id, email)`
 
-#### 4. `public.access_invitations` (New)
-Application-managed invitation lifecycle engine.
+#### 4. `public.staff_access_entries` (New — Durable Staff Authorization Intent)
+Tracks durable organizational authorization intent for administrators and instructors before `auth.users` accounts exist.
 - `id uuid primary key default gen_random_uuid()`
 - `organization_id uuid not null references public.organizations(id) on delete restrict`
+- `email text not null check (email = lower(trim(email)) and email ~ '^.+@.+$')`
+- `intended_role public.app_role not null check (intended_role in ('admin', 'instructor'))`
+- `status text not null default 'staged' check (status in ('staged', 'activated', 'removed'))`
+- `user_id uuid references public.profiles(id) on delete set null` (Populated upon activation)
+- `added_by uuid references public.profiles(id) on delete set null` (Nullable actor FK)
+- `created_at timestamptz not null default now()`
+- `updated_at timestamptz not null default now()`
+- **Unique Constraint**: `unique (organization_id, email, intended_role)`
+- **Rules**:
+  - `super_admin` can insert rows for `admin` or `instructor`.
+  - `admin` can insert rows for `instructor` only.
+  - Setting `status = 'removed'` revokes pending authorization intent without deleting any established `auth.users` or `profiles` records.
+
+#### 5. `public.access_invitations` (New — 7-Day Invitation Lifecycle Engine)
+Manages transient invitation tokens and lifecycle attempts with strict referential integrity to authorization intent.
+- `id uuid primary key default gen_random_uuid()`
+- `organization_id uuid not null references public.organizations(id) on delete restrict`
+- `cohort_roster_entry_id uuid references public.cohort_learner_roster(id) on delete cascade`
+- `staff_access_entry_id uuid references public.staff_access_entries(id) on delete cascade`
 - `invitation_type text not null check (invitation_type in ('new_learner_cohort', 'existing_learner_cohort', 'staff_bootstrap'))`
-- `cohort_id uuid references public.cohorts(id) on delete cascade` (Required for learner invites; null for staff)
 - `email text not null check (email = lower(trim(email)))`
 - `intended_role public.app_role not null check (intended_role in ('learner', 'instructor', 'admin'))`
 - `status text not null default 'prepared' check (status in ('prepared', 'sent', 'redeemed', 'expired', 'failed', 'superseded'))`
-- `token_hash text not null unique` (Cryptographic hash of the one-time application invite secret)
+- `token_hash text not null unique` (SHA-256 cryptographic hash of the high-entropy one-time application invite secret)
 - `sent_at timestamptz`
 - `expires_at timestamptz not null` (Default: `now() + interval '7 days'`)
 - `last_resent_at timestamptz`
 - `resend_count integer not null default 0 check (resend_count >= 0)`
 - `redeemed_at timestamptz`
 - `redeemed_by_user_id uuid references public.profiles(id) on delete set null`
-- `invited_by uuid not null references public.profiles(id) on delete set null`
+- `invited_by uuid references public.profiles(id) on delete set null` (Nullable actor FK)
 - `metadata jsonb not null default '{}'::jsonb`
 - `created_at timestamptz not null default now()`
 - `updated_at timestamptz not null default now()`
-- **Indexes**: `invitations_cohort_email_idx on (cohort_id, email)`, `invitations_token_hash_idx on (token_hash)`, `invitations_expires_idx on (expires_at) where status = 'sent'`
+- **Target Integrity Constraint**:
+  `constraint invitation_target_exactly_one check ((cohort_roster_entry_id is not null and staff_access_entry_id is null) or (cohort_roster_entry_id is null and staff_access_entry_id is not null))`
+- **Indexes**:
+  - `invitations_target_learner_idx on (cohort_roster_entry_id)`
+  - `invitations_target_staff_idx on (staff_access_entry_id)`
+  - `invitations_token_hash_idx on (token_hash)`
+  - `invitations_expires_idx on (expires_at) where status = 'sent'`
 
-#### 5. `public.learner_identities` (New — Sensitive Data Boundary)
-Isolated table holding Malaysian Identity Card (MyKad) and government identity records.
+#### 6. `private.learner_identities` (New — Sensitive Data Boundary in Private Schema)
+Physically isolated in the `private` PostgreSQL schema. **Browser roles (`anon`, `authenticated`) receive ZERO direct SELECT/INSERT/UPDATE grants.**
 - `user_id uuid primary key references public.profiles(id) on delete cascade`
-- `id_type text not null default 'mykad' check (id_type in ('mykad', 'passport'))`
-- `id_number text not null check (char_length(trim(id_number)) between 6 and 20)` (Normalized alphanumeric)
-- `masked_id text not null check (char_length(trim(masked_id)) between 6 and 25)` (e.g. `******-**-1234`)
+- `id_type text not null check (id_type in ('mykad', 'passport'))`
+- `id_number text not null` (Normalized stored format: 12 numeric digits for MyKad; trimmed uppercase alphanumeric for passport)
 - `verified_at timestamptz`
 - `created_at timestamptz not null default now()`
 - `updated_at timestamptz not null default now()`
-- **Security Policy**: Strictly deny SELECT to `authenticated` public and `instructor` role. Only accessible to `super_admin`, `admin` of the same organization, and the learner themselves (`user_id = auth.uid()`). Masked values are exposed to instructors via a restricted secure projection view `public.roster_identities_masked`.
+- **Unique Constraint**: `unique (id_type, id_number)` (Prevents duplicate learner identities across accounts)
+- **Controlled Access Interfaces (SECURITY DEFINER RPCs with `SET search_path = ''`)**:
+  1. `get_my_learner_identity()`: Learner reads own identity record.
+  2. `update_my_learner_identity(id_type, id_number)`: Learner updates own identity with validation.
+  3. `get_learner_identity_for_admin(target_user_id)`: Organization admin / super-admin retrieves full identity; action is audited.
+  4. `get_cohort_roster_for_instructor(cohort_id)`: Assigned instructor retrieves roster with masked identity derived server-side (`'******-**-' || right(id_number, 4)` for MyKad). Full I.C. never enters instructor network payloads.
 
-#### 6. `public.profiles` (Modified)
+#### 7. `public.profiles` (Modified)
 - `preferred_language text not null default 'en' check (preferred_language in ('en', 'ms'))`
 - `account_status`: Update enum to include `'pending_registration'`:
   `('pending_verification', 'pending_registration', 'pending_approval', 'active', 'suspended', 'expired', 'archived')`
 
-#### 7. `public.cohort_members` (Modified)
+#### 8. `public.cohort_members` (Modified)
 - Drop partial index `one_active_cohort_per_learner`.
 - Maintain composite primary key `(cohort_id, user_id)`.
+- `added_by uuid references public.profiles(id) on delete set null` (Nullable actor FK).
 
 ---
 
-## 5. State Machines
+## 5. State Machines & Timing
 
 ### 5.1 First-Time Learner Registration State Machine
 
 ```mermaid
 stateDiagram-v2
-    [*] --> RosterStaged: Staff enters email into Cohort Roster
+    [*] --> RosterStaged: Staff enters email into Cohort Roster (staged)
     RosterStaged --> InvitationSent: Staff clicks "Send Invitations" (valid for 7 days)
     
-    InvitationSent --> Expired: 7 days elapse without redemption
-    Expired --> InvitationSent: Staff clicks "Resend Invitation" (creates fresh 7-day token, supersedes old)
+    InvitationSent --> EffectiveExpired: 7 days elapse without redemption (expires_at <= now())
+    EffectiveExpired --> InvitationSent: Staff clicks "Resend Invitation" (creates fresh 7-day token, supersedes old)
     
-    InvitationSent --> VerifyingLink: Recipient opens email link & clicks "Accept Invitation"
-    VerifyingLink --> PendingRegistration: Auth identity created/resolved; email confirmed
+    InvitationSent --> IntermediaryPage: Recipient opens email link (static page, scanner defense)
+    IntermediaryPage --> PendingRegistration: Recipient clicks "Accept Invitation"; Auth identity created; email confirmed
     
     PendingRegistration --> Active: Recipient completes registration form (Full Name, I.C., Language, Password)
     Active --> [*]: Enrolled in cohort, course entitlements active, admitted to app
 ```
 
-#### Detailed State Transition Rules:
-1. **Roster Entry (`roster_status = 'staged'`)**:
-   - Authorized actor (assigned instructor or admin) adds email to cohort.
-   - `auth.users` row does NOT exist yet.
-   - Invitation record created in `prepared` status.
+#### Detailed First-Time Registration Rules:
+1. **Roster Staging (`roster_status = 'staged'`)**:
+   - Staff enters email only. No `auth.users` or `profiles` row is created.
 2. **Invitation Dispatch (`roster_status = 'invited'`, `access_invitations.status = 'sent'`)**:
-   - `sent_at = now()`, `expires_at = now() + interval '7 days'`.
-   - Bilingual (EN + BM) invitation email sent via Custom SMTP.
-   - Link format: `https://dr-afif.github.io/bls/#/invite/accept?token={secret}`.
-3. **Link Visit & Bot Defense**:
-   - Intermediary landing page renders cohort information, courses list, and venue.
-   - Email prefetching scanners only make GET requests to the static page; they do NOT trigger state changes or consume the one-time token.
-   - User clicks button: "Accept Invitation & Setup Account".
+   - High-entropy cryptographic token generated (`crypto.getRandomValues`); SHA-256 hash saved to `access_invitations.token_hash`.
+   - `expires_at = now() + interval '7 days'`.
+   - Bilingual (EN + BM) invitation email dispatched via server-side transport.
+   - Link: `https://dr-afif.github.io/bls/#/invite/accept?token={secret}`.
+3. **Intermediary Landing Page & Bot Scanner Defense**:
+   - Static landing page renders cohort details, attached courses (resolving schedule overrides), and venue.
+   - Automated scanners prefetching the page perform GET requests that trigger zero state mutations.
+   - User explicitly clicks "Accept Invitation & Setup Account".
 4. **Auth Exchange & Account Restriction (`account_status = 'pending_registration'`)**:
-   - Server validates 7-day token.
-   - GoTrue user is created / verified with `email_confirmed_at = now()`.
+   - Server validates application token and verifies effective expiry (`status = 'sent' AND expires_at > now()`).
+   - Short-lived Supabase Auth exchange provisions `auth.users` with `email_confirmed_at = now()`.
    - `profiles.account_status = 'pending_registration'`.
-   - Browser receives authenticated session restricted to the `/auth/register` route. Route guards reject access to `/app/*`.
+   - Browser receives authenticated session restricted to `/auth/register`. Application shell routes (`/app/*`) deny access.
 5. **Registration Form Submission**:
-   - Learner enters: Full Name, I.C. Number, Preferred Language (`en` or `ms`), Password, Password Confirmation.
-   - Recipient cannot alter the invited email address.
-   - Form posts to atomic RPC `complete_learner_registration`.
+   - Learner supplies: Full Name, I.C. Number, Preferred Language (`en` or `ms`), Password, Password Confirmation.
+   - Invited email is immutable.
+   - Form calls atomic RPC `complete_learner_registration`.
 6. **Atomic Activation (`account_status = 'active'`)**:
-   - RPC updates `profiles.full_name`, `profiles.preferred_language`, sets `account_status = 'active'`.
-   - Inserts normalized and masked I.C. into `public.learner_identities`.
+   - Validates and normalizes I.C. (12 numeric digits for MyKad); checks uniqueness in `private.learner_identities`. Duplicate attempts fail with a generic message.
+   - Inserts record into `private.learner_identities`.
+   - Updates `profiles.full_name`, `profiles.preferred_language`, sets `account_status = 'active'`.
    - Assigns `learner` role in `public.user_roles`.
-   - Creates active membership in `public.cohort_members`.
-   - Provisions active course entitlements in `public.course_entitlements` for all courses in `cohort_courses`.
-   - Updates `access_invitations.status = 'redeemed'` and `cohort_learner_roster.roster_status = 'activated'`.
+   - Inserts `cohort_members` row and `course_entitlements` for all cohort courses.
+   - Marks invitation `redeemed` and roster entry `activated`.
    - Audits `learner.registered` and `cohort.membership_activated`.
-   - Redirects to `/app` (Learner Home) in chosen language.
+   - Redirects to `/app` in preferred language.
 
 ---
 
-### 5.2 Existing User Cohort Addition State Machine
+### 5.2 Existing User Cohort Addition State Machine & Passwordless Return
 
 ```mermaid
 stateDiagram-v2
-    [*] --> ExistingRecognized: Staff enters existing user's email into Cohort
-    ExistingRecognized --> NotificationSent: Staff sends invitation (valid 7 days)
-    NotificationSent --> OpenLanding: Recipient clicks link in email
-    OpenLanding --> SessionActive: User is already signed in on browser
-    OpenLanding --> Authenticate: User signs in with existing password / one-time OTP
-    SessionActive --> CohortConfirmed: Atomic cohort enrollment RPC executes
-    Authenticate --> CohortConfirmed: Atomic cohort enrollment RPC executes
-    CohortConfirmed --> [*]: Direct entry to BLS Course Companion
+    [*] --> RosterStaged: Staff enters existing learner email into Cohort
+    RosterStaged --> AccessActivated: Staff clicks "Send Invitation" (membership & entitlements immediately active)
+    AccessActivated --> NotificationSent: Cohort notification email sent with one-time return link (valid 7 days)
+
+    NotificationSent --> DirectLogin: User logs into app directly (new cohort is already visible)
+    NotificationSent --> IntermediaryPage: User clicks email link
+
+    IntermediaryPage --> PasswordlessExchange: User clicks "Open Cohort" on intermediary page
+    PasswordlessExchange --> SessionEstablished: Server exchanges invite for short-lived Supabase token; verifyOtp establishes session
+
+    SessionEstablished --> AppShell: User enters BLS Companion without typing old password
+    DirectLogin --> AppShell: User enters BLS Companion
 ```
 
-#### Detailed State Transition Rules:
-1. **Existing User Detection**:
-   - During roster import or manual entry, system detects that `auth.users` / `public.profiles` already contains the email.
-   - Existing profile details (full name, I.C., preferred language) are retained.
-2. **Notification Email**:
-   - Email is personalized in the user's stored `preferred_language`.
-   - Subject: *"You have been added to a new BLS Course cohort: {Cohort Name}"*.
-   - Clearly lists all courses attached to the cohort and physical session details.
-   - Does NOT instruct the user to register or provide personal details.
-   - Contains link: `https://dr-afif.github.io/bls/#/invite/accept?token={secret}`.
-3. **Redemption & Enrollment**:
-   - Recipient clicks link.
-   - If user has active browser session: clicks "Confirm Enrollment" -> server calls `enroll_existing_user_in_cohort`.
-   - If user is not logged in: prompted for password (with "Forgot Password" recovery path). Upon authentication, enrollment completes.
-   - RPC atomically creates `cohort_members` row and `course_entitlements` for all cohort courses.
-   - User transitions directly to companion home. No identity re-entry.
+#### Authoritative Existing User Rules:
+1. **Roster Staging**: Records intended participation only; grants zero access.
+2. **Invitation Dispatch Timing (Authoritative Rule)**:
+   - When staff clicks "Send Invitation" for an existing **active** user:
+     * Validates actor/cohort authority.
+     * **Immediately activates cohort membership** (`cohort_members.membership_status = 'active'`).
+     * **Immediately synchronizes course entitlements** for all attached cohort courses.
+     * Records `access_invitations` attempt record.
+     * Dispatches cohort notification email.
+     * Records audit events.
+   - Therefore, the user **does not need to open the email** before their newly authorized cohort appears if they independently log into the webapp.
+   - Suspended or archived accounts are **NEVER** reactivated by this process.
+3. **One-Time Passwordless Return Link**:
+   - The notification email includes: `https://dr-afif.github.io/bls/#/invite/accept?token={secret}`.
+   - When opened, the intermediary page displays the new cohort and attached courses.
+   - User clicks "Open Cohort":
+     1. Server verifies application invitation (`status = 'sent' AND expires_at > now()`).
+     2. Server obtains a fresh, short-lived Supabase Auth one-time token for that email.
+     3. Browser exchanges the token via `supabase.auth.verifyOtp`.
+     4. Authenticated session is established; user enters the companion without needing their password.
+     5. Password is NOT altered. Optional "Change password" or "Reset password" links remain available in user settings.
 
 ---
 
@@ -293,7 +338,7 @@ stateDiagram-v2
 
 ```mermaid
 stateDiagram-v2
-    [*] --> StaffStaged: Super Admin (or Admin) stages staff email + role
+    [*] --> StaffStaged: Super Admin (or Admin) stages staff email in staff_access_entries
     StaffStaged --> StaffInviteSent: Invitation sent (7-day validity)
     StaffInviteSent --> StaffAccepting: Staff opens link & clicks "Accept Invitation"
     StaffAccepting --> StaffProfileSetup: Sets Full Name, Language, Password
@@ -302,14 +347,14 @@ stateDiagram-v2
 ```
 
 #### Detailed Hierarchy Rules:
-- `super_admin`: Can invite `admin` or `instructor`.
-- `admin`: Can invite `instructor` only. Attempting to invite `admin` or `super_admin` returns 403 `FORBIDDEN_ROLE_ESCALATION`.
-- `instructor`: Cannot invite staff.
-- `super_admin` role cannot be granted through the standard application UI.
+- `super_admin`: Can stage/invite `admin` or `instructor`.
+- `admin`: Can stage/invite `instructor` only.
+- `instructor`: Cannot stage or invite staff.
+- `super_admin` role cannot be staged or granted through ordinary application UI.
 
 ---
 
-## 6. Multi-Course Architecture & Migration
+## 6. Multi-Course Architecture & Schedule Overrides
 
 ### Schema Model
 ```sql
@@ -317,311 +362,172 @@ create table public.cohort_courses (
   cohort_id uuid not null references public.cohorts (id) on delete cascade,
   course_id uuid not null references public.courses (id) on delete restrict,
   display_order integer not null default 0 check (display_order >= 0),
+  start_at timestamptz,
+  end_at timestamptz,
+  venue text,
   created_at timestamptz not null default now(),
   created_by uuid references public.profiles (id) on delete set null,
-  primary key (cohort_id, course_id)
+  primary key (cohort_id, course_id),
+  constraint cohort_courses_schedule_valid check (
+    end_at is null or start_at is null or end_at > start_at
+  )
 );
 
 create index cohort_courses_course_idx on public.cohort_courses (course_id);
 ```
 
-### Affected System Dependencies & Remediation Plan:
-1. **`private.is_assigned_instructor_for_course(target_course_id uuid)`**:
-   - *Current*: `join public.cohorts c on c.id = cm.cohort_id where c.course_id = target_course_id`
-   - *Target*: `join public.cohort_courses cc on cc.cohort_id = cm.cohort_id where cc.course_id = target_course_id`
-2. **`private.has_effective_course_access(target_course_id uuid)`**:
-   - Update to ensure cohort access check validates membership in a cohort linked via `cohort_courses` to `target_course_id` and verifies `cohorts.learner_access_state = 'open'`.
-3. **`private.validate_cohort_course()` Trigger**:
-   - Replaced by a trigger on `cohort_courses` verifying that the linked course belongs to the same organization as the cohort.
-4. **Quiz Engine Assignment (`start_quiz_attempt`)**:
-   - *Current*: `join public.cohorts c on c.id = cm.cohort_id and c.course_id = q.course_id`
-   - *Target*: `join public.cohort_courses cc on cc.cohort_id = cm.cohort_id and cc.course_id = q.course_id`
-5. **Frontend Repositories**:
-   - `src/features/operations/data/people-cohorts-repository.ts`: Update `getCohorts()`, `getCohortById()`, and `createCohort()` to support `course_ids: string[]`.
-   - `src/features/learner/`: Update learner home and course navigation to list all courses in the learner's active cohort.
+### Schedule Inheritance Semantics:
+- `start_at`: If NULL, inherits `cohorts.start_at`. Non-null overrides for that course.
+- `end_at`: If NULL, inherits `cohorts.end_at`. Non-null overrides for that course.
+- `venue`: If NULL, inherits `cohorts.venue`. Non-null overrides for that course.
+- In invitation emails and learner UI, each course displays its resolved schedule:
+  `effective_start = coalesce(cc.start_at, c.start_at)`
+  `effective_end = coalesce(cc.end_at, c.end_at)`
+  `effective_venue = coalesce(cc.venue, c.venue)`
 
 ---
 
 ## 7. Cohort Access Lifetime & Reversible Close/Restore
 
-### Access State Design
-Rather than destructively modifying or deleting `course_entitlements` or `cohort_members`, cohort access lifetime is governed by an explicit gate column on `public.cohorts`:
-- `learner_access_state public.cohort_access_state not null default 'open'`
-
-### Operational Semantics:
-- **`open`**: Enrolled learners with active memberships can view course guides, watch videos, download PDFs, take pre/post-tests, and view results.
-- **`closed`**: Enrolled learners retain their accounts, past attempts, scores, and personal records, but cannot access course resources or start new quiz attempts. The learner UI displays:
-  > *"Cohort access is currently closed by the course administrator. Your historical quiz scores and profile remain saved."*
-- **Reversible Action**:
-  - `admin` or `super_admin` can toggle between `open` and `closed` at any time via RPC `set_cohort_learner_access_state(cohort_id, new_state)`.
-  - Closing or restoring access is strictly audited (`cohort.access_closed`, `cohort.access_restored`).
-  - Instructors can view `learner_access_state` in Teaching Kit but cannot mutate it.
+- Cohort column: `learner_access_state public.cohort_access_state not null default 'open'`.
+- Toggling to `closed` gates access to course learning guides and new quiz attempts.
+- Enrolled learners retain accounts, memberships, entitlements, and historical attempt scores.
+- Reversible at any time by administrators and super-administrators via RPC `set_cohort_learner_access_state(cohort_id, new_state)`.
+- Fully audited (`cohort.access_closed`, `cohort.access_restored`).
+- Instructors view access state in Teaching Kit but cannot mutate it.
 
 ---
 
-## 8. National Identity (I.C.) Privacy & Masking
+## 8. National Identity (I.C.) Privacy & Normalization
 
-### Sensitivity Context
-In Malaysia, the Identity Card (MyKad) number is a 12-digit national identifier (`YYMMDD-PB-###G`) containing birth date, birth place, and gender. It is sensitive personal data under Malaysian personal data protection standards.
+### Data Boundary Isolation
+All sensitive identity card numbers reside in `private.learner_identities`. Direct PostgREST or table SELECT access by browser roles is completely revoked.
 
-### Privacy Boundary Architecture
-1. **Physical Isolation**:
-   - Stored in dedicated table `public.learner_identities` (not in `public.profiles`).
-   - Columns: `user_id`, `id_type`, `id_number` (full normalized), `masked_id` (e.g. `******-**-1234`), timestamps.
-2. **Access Control (RLS)**:
-   - `learner`: Can SELECT only their own record (`user_id = auth.uid()`).
-   - `super_admin` & `admin`: Can SELECT full records for learners in their organization.
-   - `instructor`: **STRICTLY DENIED** SELECT on `learner_identities`. RLS policy grants zero access to instructors on this table.
-3. **Instructor Masked View**:
-   - A secure view / RPC `public.get_cohort_roster_for_instructor(cohort_id)` returns only `masked_id`. The instructor client never receives the full I.C. in network payloads.
-4. **Audit and Log Sanitation**:
-   - Audit triggers and Edge Functions must never record `id_number` in `audit_events.metadata`.
-   - Masked format or entity ID only in audit records.
-   - Client error messages must never reflect submitted I.C. numbers.
+### Normalization & Uniqueness Rules
+- **MyKad (`id_type = 'mykad'`)**:
+  - Normalized stored representation: strictly 12 numeric digits without punctuation, spaces, or hyphens (`^\d{12}$`).
+  - Validation: verifies 12 digits, valid date of birth prefix (`YYMMDD`), valid Malaysian place of birth code.
+- **Passport (`id_type = 'passport'`)**:
+  - Normalized stored representation: uppercase, trimmed alphanumeric string with permissible hyphens (`^[A-Z0-9-]{6,20}$`).
+- **Uniqueness Invariant**:
+  - `unique (id_type, id_number)` in `private.learner_identities`.
+  - Duplicate registration attempts fail safely with a generic error ("Unable to complete registration. If you already have an account, please sign in."). No specific details are reflected to prevent identity enumeration.
+- **Masking Expression**:
+  - Server-side generated/derived projection for instructors:
+    `case when id_type = 'mykad' then '******-**-' || right(id_number, 4) else '*****' || right(id_number, 3) end`
+  - Full numbers are never logged or stored in audit metadata.
 
 ---
 
 ## 9. Bilingual Application Architecture (English & Bahasa Melayu)
 
-### Locales
-- **`en`**: English (Default & technical fallback).
-- **`ms`**: Bahasa Melayu (Secondary language).
-
-### Architecture Principles:
-1. **No Duplicated Component Trees**:
-   - Single React component tree utilizing a lightweight, typed translation hook `useTranslation()`.
-   - Translation dictionaries located in `src/lib/i18n/dictionaries/` (`en.ts`, `ms.ts`).
-2. **Persistence**:
-   - Stored in `profiles.preferred_language` for authenticated users.
-   - Stored in browser `localStorage` (`bls_language_preference`) for unauthenticated visitors.
-3. **Pre-Registration Invitations**:
-   - Invitation emails sent to new learners contain side-by-side or stacked bilingual copy (English followed by Bahasa Melayu).
-4. **Authored Clinical & Educational Content**:
-   - **No Runtime Machine Translation**: Medical and CPR guidelines require precise human terminology approved by clinical committees.
-   - Resources: Categorized by language (`en`, `ms`, `bilingual`, `language_independent`).
-   - Quizzes: Questions and options support bilingual text fields:
-     - `question_versions.prompt` (English default)
-     - `question_versions.prompt_ms` (Bahasa Melayu)
-     - `question_options.option_text` (English default)
-     - `question_options.option_text_ms` (Bahasa Melayu)
-   - Both variants are **historically frozen** within the versioned question record. Attempt snapshots store both English and Malay prompts/options so that historical reviews remain completely immutable.
+- Primary languages: English (`en`, default & fallback) and Bahasa Melayu (`ms`).
+- Client-side translation framework: `useTranslation()` with typed dictionaries (`en.ts`, `ms.ts`).
+- Onboarding emails: Delivered bilingual (side-by-side or stacked English + Bahasa Melayu).
+- Educational content: Separately human-authored in both languages; runtime machine translation is strictly prohibited.
+- Quiz content: Bilingual prompts (`prompt`, `prompt_ms`) and options (`option_text`, `option_text_ms`) are frozen immutably in question version and attempt snapshots.
 
 ---
 
-## 10. Email Design Contracts
+## 10. Technical Implementation Spikes
 
-All emails are dispatched through the verified Custom SMTP infrastructure (`smtp.gmail.com:465`, sender `BLS Course Companion`).
+Before implementation begins, two technical spikes must be executed:
 
-### Email Categories & Contracts:
+### Spike 1: Email Transport Implementation Spike
+- **Problem**: Supabase Auth Custom SMTP is owned by GoTrue and is not an open transactional email dispatch API for arbitrary application Edge Functions.
+- **Goal**: Determine the safest supported method for sending application-controlled 7-day invitations, existing-user cohort notifications, staff invitations, and resends.
+- **Criteria**:
+  1. Server-side execution only (within Supabase Edge Functions).
+  2. Zero secrets in repository or browser bundles.
+  3. Uses existing `BLS Course Companion` Gmail sender identity where practical (e.g. server-side SMTP library connecting to `smtp.gmail.com:465` using existing stored secret) or evaluates a dedicated mail provider HTTP API.
+  4. Supports dynamic bilingual HTML and text payloads with dynamic course lists.
+  5. Testable in local development and staging environments.
+  6. Failure modes return cleanly to client without leaking credentials.
 
-#### 1. New Learner Cohort Invitation
-- **Recipient**: Unregistered learner email.
-- **Language**: Bilingual (English & Bahasa Melayu).
-- **Subject**: `Invitation to Basic Life Support Course / Jemputan ke Kursus BLS`
-- **Dynamic Content**:
-  - Recipient email
-  - Cohort name
-  - List of attached courses (rendered dynamically from `cohort_courses`)
-  - Course date(s), start time, and venue
-  - Contact person / organizer name
-  - Notice: Valid for 7 days; personal and non-transferable
-- **Action CTA**: `Accept Invitation / Terima Jemputan` -> `https://dr-afif.github.io/bls/#/invite/accept?token={token}`
-
-#### 2. Existing Learner Cohort Addition
-- **Recipient**: Registered learner email.
-- **Language**: Recipient's stored `preferred_language` (fallback to English).
-- **Subject**: `New Course Cohort Assignment: {Cohort Name}`
-- **Dynamic Content**:
-  - Cohort name and attached courses
-  - Date, time, venue
-  - Direct login notice (clarifies that registration is NOT repeated)
-  - Optional password reset reminder link
-- **Action CTA**: `Open BLS Course Companion` -> `https://dr-afif.github.io/bls/#/invite/accept?token={token}`
-
-#### 3. Staff Bootstrap Invitation
-- **Recipient**: Invited Administrator or Instructor.
-- **Language**: English (with Malay option).
-- **Subject**: `Staff Invitation: BLS Course Companion ({Role})`
-- **Dynamic Content**:
-  - Assigned role (`Instructor` or `Administrator`)
-  - Organization name
-  - Security warning (privileged staff access)
-  - 7-day validity notice
-- **Action CTA**: `Setup Staff Account` -> `https://dr-afif.github.io/bls/#/invite/accept?token={token}`
-
-#### 4. Invitation Resend
-- **Recipient**: Pending invitee with expired or unredeemed invite.
-- **Subject**: `Reminder / Resend: Your BLS Course Companion Invitation`
-- **Content**: States clearly that a fresh 7-day invitation has been issued, replacing any previous links.
+### Spike 2: Supabase Auth Passwordless Return Link Spike
+- **Problem**: Existing learners clicking an application cohort invitation should enter the application without typing their password.
+- **Goal**: Validate the exact GoTrue admin API (`auth.admin.generateLink({ type: "magiclink", ... })`) and browser verification (`verifyOtp`) flow.
+- **Criteria**:
+  1. Server-side generation of short-lived verification token for existing confirmed user.
+  2. Client-side exchange establishing valid PKCE/session state.
+  3. Confirmation that existing password is not altered or reset.
 
 ---
 
-## 11. Audit Events & Security Invariants
+## 11. Effective Expiry & Token Security Invariants
 
-### New Audit Actions
-The system records structured audit events to `public.audit_events` for all lifecycle changes:
-- `roster.entry_added`: Email staged in cohort roster.
-- `roster.entry_removed`: Staged email removed from roster.
-- `invitation.sent`: 7-day invitation token generated and dispatched.
-- `invitation.resent`: Expired invitation replaced by fresh token.
-- `invitation.redeemed`: Invitation successfully consumed by user.
-- `learner.registered`: First-time registration completed (name, I.C., language set).
-- `cohort.membership_activated`: Learner added to `cohort_members`.
-- `cohort.learner_removed`: Learner removed from cohort.
-- `cohort.instructor_assigned`: Instructor linked to cohort.
-- `cohort.instructor_removed`: Instructor unlinked from cohort.
-- `cohort.access_closed`: Cohort learner access gated to `closed`.
-- `cohort.access_restored`: Cohort learner access restored to `open`.
-- `staff.invited`: Staff onboarding invite sent (super_admin -> admin/instructor; admin -> instructor).
-- `identity.updated`: Learner updated own legal profile details.
+### Server-Derived Effective Expiry
+Invitation validity does not rely on cron jobs:
+```sql
+-- Evaluated dynamically at redemption / query time
+effective_expired := (inv.status = 'sent' and inv.expires_at <= now());
+```
+- All redemption RPCs enforce `expires_at > now()`.
+- UI models display *Expired* whenever `expires_at <= now()` regardless of whether background cleanup has executed.
 
-### Strict Security Invariants:
-1. **No Sensitive Data in Audit**: Never write raw tokens, passwords, token hashes, or full I.C. numbers into `audit_events.metadata`.
-2. **Fixed Search Path**: All new database functions enforce `SET search_path = ''`.
-3. **Fail-Closed Gate**: If an invitation token is expired, tampered with, or already redeemed, the API rejects with HTTP 400/403 and zero session state is issued.
-4. **Idempotent Redemption**: Competing requests on the same invitation token are serialized via `SELECT ... FOR UPDATE`; subsequent callers fail cleanly.
-5. **No Cross-Tenant Provisioning**: Administrators and instructors cannot invite or manage users outside their assigned `organization_id`.
+### Cryptographic Token Security
+1. **High Entropy**: Generated using 32 bytes of cryptographically secure random data (`crypto.getRandomValues`), base64url-encoded.
+2. **One-Way Hash**: Database stores only the SHA-256 hash (`token_hash`). The raw secret exists only in the email link.
+3. **URL Scrubbing**: Browser scrubs the token from the address bar via `history.replaceState` immediately upon capturing it in client memory.
+4. **Intermediary Protection**: GET requests to the intermediary page never consume tokens. State mutation requires an explicit user POST.
+5. **Atomic Serialization**: Competing redemption attempts serialize via `SELECT ... FOR UPDATE`.
+6. **Superseding**: Resend operations mark prior invitations for that target as `superseded` atomically.
 
 ---
 
 ## 12. Phased Implementation Plan (Milestones 7.1 – 7.7)
 
-```mermaid
-gantt
-    title Milestone 7 Phased Implementation Sequence
-    dateFormat  X
-    axisFormat %s
-    section Core Infrastructure
-    Phase 7.1 Schema & Compatibility Foundation       :active, 0, 1
-    Phase 7.2 Bilingual Application Foundation        :1, 2
-    section Identity & Onboarding
-    Phase 7.3 Staff Bootstrap & Invitations           :2, 3
-    Phase 7.4 Cohort Roster & Invitation Engine       :3, 4
-    Phase 7.5 First-Time & Returning Registration     :4, 5
-    section Cohort Access & Polish
-    Phase 7.6 Multi-Course Access & Close/Restore     :5, 6
-    Phase 7.7 E2E Production Verification             :6, 7
-```
-
 ### Phase 7.1 — Schema & Compatibility Foundation
-- **Objectives**: Deploy core relational models and compatibility views without breaking existing functionality.
-- **Deliverables**:
-  - Migration creating `cohort_courses`, `cohort_learner_roster`, `access_invitations`, `learner_identities`.
-  - Add `learner_access_state` enum and column to `cohorts`.
-  - Add `pending_registration` to `account_status` enum.
-  - Drop `one_active_cohort_per_learner` partial unique index.
-  - Backfill `cohort_courses` from `cohorts.course_id`.
-  - Update `private.handle_auth_user_confirmed()` to transition first-time users to `pending_registration`.
-  - Regenerate TypeScript database types (`src/lib/supabase/database.types.ts`).
-  - Automated pgTAP tests verifying schema constraints, RLS policies, and backfill parity.
+- Deploy `cohort_courses` (with schedule overrides), `cohort_learner_roster`, `staff_access_entries`, `access_invitations` (with target FKs), `private.learner_identities`.
+- Correct all actor FKs to nullable `ON DELETE SET NULL`.
+- Add `learner_access_state` to `cohorts` and `pending_registration` to `account_status`.
+- Drop `one_active_cohort_per_learner` index.
+- Backfill `cohort_courses` from `cohorts.course_id`.
+- Update `handle_auth_user_confirmed`.
+- Regenerate TypeScript database types. pgTAP test coverage.
 
 ### Phase 7.2 — Bilingual Application Foundation
-- **Objectives**: Implement the client-side localization framework and bilingual data structures.
-- **Deliverables**:
-  - `src/lib/i18n/`: Context, provider, typed translation hook `useTranslation()`, and locale dictionaries (`en.ts`, `ms.ts`).
-  - Language switcher component in header / profile settings.
-  - Profile language persistence (`profiles.preferred_language`).
-  - Migration adding bilingual columns (`name_ms`, `prompt_ms`, `option_text_ms`).
-  - Unit tests verifying fallback to English for missing keys.
+- Implement `src/lib/i18n/` framework, locale dictionaries (`en.ts`, `ms.ts`), language switcher, profile language persistence (`profiles.preferred_language`), bilingual metadata schema.
 
 ### Phase 7.3 — Staff Bootstrap & Invitations
-- **Objectives**: Build the controlled staff onboarding engine adhering to the strict role hierarchy.
-- **Deliverables**:
-  - Edge Function / RPC `admin-invite-staff` enforcing:
-    - `super_admin` can invite `admin` and `instructor`.
-    - `admin` can invite `instructor`.
-    - Role escalation protection (no creating `super_admin`).
-  - Staff invitation acceptance and registration journey.
-  - Operations UI: Staff access list with pending invite status and resend action.
-  - Onboarding test suite verifying authorization boundaries.
+- Execute Email Transport Spike.
+- Implement `staff_access_entries` management.
+- Edge Function / RPC `admin-invite-staff` enforcing hierarchy (`super_admin` -> admin/instructor; `admin` -> instructor; no self-assignment; no super-admin in UI).
+- Staff invitation acceptance journey and first legitimate instructor onboarding.
 
 ### Phase 7.4 — Cohort Roster & Invitation Engine
-- **Objectives**: Build manual email entry, bulk import/paste validation, and 7-day invitation dispatch.
-- **Deliverables**:
-  - Cohort Roster UI: Email input and CSV/text paste parser.
-  - Pre-validation preview: valid new, existing user, duplicate, invalid, conflict.
-  - Separation of Roster Staging and "Send Invitations" actions.
-  - 7-day invitation generator with token hashing and superseding on resend.
-  - Contextual multi-course bilingual invitation email template.
-  - Instructor-scoped cohort roster permissions (assigned instructors only).
+- Cohort Roster UI with bulk email paste/CSV import preview (valid new, existing user, duplicate, invalid, conflict).
+- Separation of roster staging vs invitation dispatch.
+- Immediate activation of membership and entitlements upon sending invite to existing active user.
+- 7-day token lifecycle with superseding on resend.
+- Contextual multi-course bilingual email delivery.
 
 ### Phase 7.5 — First-Time & Returning User Registration
-- **Objectives**: Implement the secure redemption flows for new and existing participants.
-- **Deliverables**:
-  - Intermediary invitation landing page (`#/invite/accept?token=...`) with bot prefetch protection.
-  - New learner registration page (`#/auth/register`): full name, I.C., preferred language, password.
-  - Atomic RPC `complete_learner_registration`: writes profile, stores protected I.C. in `learner_identities`, activates role and memberships.
-  - Returning user fast path: recognizes account, confirms cohort enrollment, skips personal registration.
-  - Account-level password reset/recovery flow.
-  - RLS verification: instructors cannot read full I.C.
+- Execute Passwordless Return Link Spike.
+- Intermediary invitation landing page (anti-scanner defense).
+- New learner registration page (`#/auth/register`): full name, I.C., preferred language, password.
+- Atomic RPC `complete_learner_registration`: validates MyKad/passport normalization and uniqueness, writes `private.learner_identities`, updates profile, activates role.
+- Returning user fast path: one-time passwordless token exchange into app.
+- Instructor masked I.C. projection verification.
 
 ### Phase 7.6 — Multi-Course Access + Close/Restore
-- **Objectives**: Cut over the application to multi-course cohorts and enforce cohort learner access gating.
-- **Deliverables**:
-  - Update all course access RLS helpers to query `cohort_courses`.
-  - Update learner shell and guides to navigate across all courses in assigned cohort.
-  - Administrator cohort detail: attach/detach multiple courses.
-  - Reversible "Close cohort access" / "Restore cohort access" admin actions.
-  - Learner closed-state UI view.
-  - Individual learner removal and re-add workflows.
+- Cut over RLS helpers and queries to `cohort_courses` (resolving schedule overrides).
+- Attach/detach multiple courses per cohort.
+- Reversible cohort access close/restore admin actions.
+- Learner closed-state UI.
+- Individual learner removal and re-add workflows.
 
 ### Phase 7.7 — E2E Production Verification
-- **Objectives**: Comprehensive automated and browser verification of all Milestone 7 flows.
-- **Deliverables**:
-  - Vitest suite for all new components, hooks, and utilities.
-  - pgTAP regression suite covering multi-course RLS, I.C. masking, role escalation, and invitation expiry.
-  - Playwright E2E tests for:
-    - Super-admin inviting admin.
-    - Admin creating multi-course cohort and assigning instructor.
-    - Instructor bulk-importing learner emails and sending invitations.
-    - New learner 7-day invite redemption, registration with I.C., and course access.
-    - Existing learner cohort addition.
-    - Admin closing and restoring cohort access.
-    - Instructor viewing masked I.C. only.
+- Full automated test suite (Vitest, pgTAP, Playwright) validating all roles, multi-course access, I.C. masking, 7-day expiry, bilingual UI, and PWA shell integrity.
+
+### Release Gate — Pre-Launch Clean-Slate Reset
+- Controlled final production clean-slate reset immediately prior to first real participant launch.
 
 ---
 
 ## 13. Pre-Launch Clean-Slate Release Gate
 
-### Timing & Execution Invariant
-- The production clean-slate reset must **NOT** be executed during Milestone 7 planning or development.
-- The existing hosted test/demo data (`KTGS BANDAR SERI PUTRA`, `BLS-DEMO-01`, controlled learner probe `m***@upm.edu.my`) remains available for testing during Phases 7.1–7.7.
+- Retained test/demo data (`KTGS BANDAR SERI PUTRA`, `BLS-DEMO-01`, controlled learner probe `m***@upm.edu.my`) remains available for testing during Phases 7.1–7.7.
 - **Immediately prior to onboarding the first real physical course participants**, after Phase 7.7 passes, a controlled production clean-slate reset will be performed.
-
-### Reset Scope (Preserved vs. Purged):
-- **Purged**:
-  - All test cohorts (`KTGS BANDAR SERI PUTRA`, `BLS-DEMO-01`)
-  - All demonstration resources, PDFs, and resource versions
-  - All fictional quizzes, questions, and question versions
-  - All test memberships, entitlements, and roster entries
-  - All test attempts and scores
-  - Controlled learner probe (`m***@upm.edu.my`) and temporary test accounts
-- **Preserved**:
-  - Legitimate custodian accounts (`afif89@gmail.com`, `afif89+bls@gmail.com`)
-  - Organization record
-  - Complete database schema and all migrations
-  - Row Level Security policies and functions
-  - Supabase Edge Functions (`admin-invite-user`, `issue-resource-access`)
-  - Auth configuration and redirect allowlist (`https://dr-afif.github.io/bls/**`)
-  - Custom SMTP configuration (`smtp.gmail.com:465`)
-  - CI/CD workflows and deployment gates
-  - Private storage bucket configurations (`course-resources`)
-  - Required immutable system audit history
-
----
-
-## 14. Explicit Deferred & Non-Goals
-
-The following items are explicitly **excluded** from Milestone 7 to maintain strict delivery focus:
-- Open public self-registration.
-- Learner registration activation codes.
-- Per-learner selective course picker within a cohort (all cohort learners receive all cohort courses in M7).
-- Automatic cohort expiry based on course date.
-- Native mobile application wrapper (Android / iOS).
-- Multi-organization tenant switching.
-- Digital certificate generation and verification.
-- Practical skills physical sign-off.
-- Machine translation at runtime.
-- SMS / WhatsApp invitation channels.
-- Social authentication (Google/Apple login).
-- Replacing Supabase Auth or PostgreSQL.
+- Purges: test cohorts, demo resources, fictional quizzes/questions, test memberships/entitlements/attempts, test identities/rosters/invitations.
+- Preserves: custodian accounts, organization record, migrations (all 28+), RLS policies, Edge Functions, Auth URL configuration, Custom SMTP, CI/CD gates, storage configuration, immutable system audit history.

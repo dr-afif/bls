@@ -58,25 +58,26 @@ flowchart LR
 
 ### PostgreSQL
 
-- Profiles (with language preference and registration states)
-- Protected learner identities (isolated National Identity / I.C. records)
+- Profiles (`public.profiles` with language preference and `pending_registration` state)
+- Protected learner identities (`private.learner_identities` in isolated private schema boundary; no direct browser SELECT)
 - Roles and staff hierarchy
+- Durable staff authorization intent (`public.staff_access_entries`)
 - Organizations
 - Cohorts (with reversible `learner_access_state`)
-- Cohort courses (multi-course associations)
-- Cohort learner roster staging
-- Application-managed access invitations (7-day lifecycle)
+- Cohort courses (`public.cohort_courses` multi-course associations with optional schedule/venue overrides)
+- Cohort learner roster staging (`public.cohort_learner_roster`)
+- Application-managed access invitations (`public.access_invitations` referencing exactly one intent target with 7-day lifecycle)
 - Courses and entitlements
 - Resources and immutable versions
 - Quizzes, questions, and attempt snapshots
 - Audit logs
 
-### Row Level Security
+### Row Level Security & Schema Isolation
 
 - Restrict learners to their own records
 - Restrict course data to active entitlement and `learner_access_state = 'open'`
 - Restrict instructors to assigned cohorts
-- Strictly deny instructors direct SELECT on `learner_identities` (masked projection via secure view only)
+- Strictly deny browser roles direct SELECT on `private.learner_identities` (instructors receive server-derived masked projection `******-**-1234` via secure RPC only)
 - Restrict administrators to their organization scope
 - Prevent learners from reading correct-answer fields
 - Prevent learners from altering scores, roles, or entitlements
@@ -85,6 +86,7 @@ flowchart LR
 
 Use for transactional, data-centric operations such as:
 
+- Complete learner registration and atomic identity establishment
 - Start quiz attempt
 - Autosave answer
 - Submit quiz
@@ -99,9 +101,10 @@ Use when the operation requires:
 
 - Supabase Auth administration
 - Secret credentials
+- Application-controlled email dispatch (governed by Phase 7.3 Email Transport Spike)
+- One-time passwordless return link issuance for existing users (Phase 7.5 Spike)
 - Signed resource delivery
 - Certificate generation
-- Email invitation logic
 - Large report generation
 - External service integration
 - Additional rate limiting

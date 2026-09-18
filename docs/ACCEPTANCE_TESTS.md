@@ -198,33 +198,33 @@ Given pass, fail, warning, and completion states, then each state includes text 
 
 ### AT-ONBOARD-001 — Email-only learner roster entry
 
-Given an assigned instructor or administrator, when staging a learner into a cohort roster, then only a valid email address is required and no name, I.C., or password fields are requested.
+Given an assigned instructor or administrator, when staging a learner into `public.cohort_learner_roster`, then only a valid email address is required and no name, I.C., or password fields are requested. Staging records authorization intent only and grants no application or course access.
 
-### AT-ONBOARD-002 — 7-day invitation validity and anti-scanner defense
+### AT-ONBOARD-002 — 7-day invitation validity, effective expiry, and anti-scanner defense
 
-Given an invited learner, when opening the invitation email link, then an intermediary landing page displays cohort details and requires an explicit click on "Accept Invitation" before any one-time authentication action is redeemed, preventing automated email scanner bots from consuming the token.
+Given an invited learner, when opening the invitation email link, then an intermediary landing page displays cohort details and requires an explicit click on "Accept Invitation" before any one-time authentication action is redeemed, preventing automated email scanner bots from consuming the token. When `expires_at <= now()`, the invitation is evaluated dynamically as effectively expired on the server, rejecting redemption even if a background cron cleanup has not executed.
 
-### AT-ONBOARD-003 — Resend superseding
+### AT-ONBOARD-003 — Resend superseding and token scrubbing
 
-Given an expired or pending invitation, when staff clicks "Resend Invitation", then a fresh 7-day token is generated, the previous invitation is marked `superseded`, and attempts to use the previous link fail cleanly.
+Given an expired or pending invitation, when staff clicks "Resend Invitation", then a fresh 7-day high-entropy token is generated, the previous invitation is marked `superseded`, attempts to use the previous link fail cleanly, and upon browser receipt the raw token is scrubbed immediately from URL and history.
 
-### AT-ONBOARD-004 — First-time learner registration
+### AT-ONBOARD-004 — First-time learner registration and safe duplicate protection
 
-Given a new learner accepting a valid invitation, when submitting the registration form, then full name, I.C. number, preferred language (`en` or `ms`), and password are validated and stored atomically, moving the account status to `active` and granting access to the companion in the chosen language.
+Given a new learner accepting a valid invitation, when submitting the registration form, then full name, normalized I.C. number (12-digit MyKad or Passport), preferred language (`en` or `ms`), and password are validated and stored atomically via RPC. The identity is saved to `private.learner_identities`, the account moves to `active`, and course access is granted. If an identical I.C. number is already registered, the submission fails safely with a generic error message that prevents unauthorized identity enumeration.
 
-### AT-ONBOARD-005 — Returning learner cohort addition
+### AT-ONBOARD-005 — Returning learner instant enrollment & passwordless return link
 
-Given an existing registered learner invited to a new cohort, when accepting the invitation link, then the existing account is recognized, the new cohort membership and course entitlements are activated, and no personal data re-entry or password reset is required.
+Given an existing registered active learner, when staff dispatches a new cohort invitation, then cohort membership and multi-course entitlements are activated immediately upon send (the learner can access the cohort immediately if logging in directly). When the learner clicks the notification link and confirms on the intermediary page, the server exchanges the invitation for a fresh short-lived Supabase Auth token, admitting the learner into the application without entering their old password or modifying their stored password.
 
-### AT-ONBOARD-006 — Staff hierarchy enforcement
+### AT-ONBOARD-006 — Staff authorization intent & hierarchy enforcement
 
-Given an administrator, when attempting to invite an administrator or super-administrator role, then the operation is rejected; only super-administrators may invite administrators. Given an instructor, when attempting to invite staff or learners to unassigned cohorts, then the action is rejected.
+Given an organization administrator, when attempting to stage an administrator or super-administrator role in `public.staff_access_entries`, then the operation is rejected; only super-administrators may stage administrators. Given an instructor, when attempting to stage staff or learners to unassigned cohorts, then the action is rejected. When a staff intent entry is removed, its status transitions to `removed` without deleting the user's established account.
 
 ## Multi-Course Cohorts and Access Gating (Milestone 7)
 
-### AT-COHORT-001 — Multi-course cohort enrollment
+### AT-COHORT-001 — Multi-course cohort enrollment and schedule overrides
 
-Given a cohort with multiple attached courses in `cohort_courses`, when a learner's membership is activated, then the learner receives active course entitlements for every course attached to that cohort.
+Given a cohort with multiple attached courses in `cohort_courses`, when a learner's membership is activated, then the learner receives active course entitlements for every course attached to that cohort. When specific courses define schedule or venue overrides (`start_at`, `end_at`, `venue`), the itinerary displays the override values; when null, the parent cohort values are cleanly inherited.
 
 ### AT-COHORT-002 — Reversible cohort learner-access gate
 
@@ -238,15 +238,15 @@ Given an enrolled learner, when removed from a cohort, then cohort access is rev
 
 ### AT-PRIVACY-001 — Instructor masked I.C. projection
 
-Given an assigned instructor viewing the cohort roster, then learner identity numbers are displayed strictly in masked format (`******-**-1234`) and full values are never exposed in network payloads or client state.
+Given an assigned instructor viewing the cohort roster, then learner identity numbers are displayed strictly in server-derived masked format (`******-**-1234`) and full values are never exposed in network payloads or client state.
 
 ### AT-PRIVACY-002 — Administrator full I.C. access
 
-Given an authorized administrator viewing a learner's detailed profile within their organization, then the full National Identity Card number is accessible for operational validation and the access is audited.
+Given an authorized administrator viewing a learner's detailed profile within their organization, then the full National Identity Card number is accessible via authorized RPC for operational validation and the access is audited.
 
-### AT-PRIVACY-003 — Direct RLS denial to instructors
+### AT-PRIVACY-003 — Direct schema denial to browser roles
 
-Given an authenticated instructor session, when executing a direct SQL query or PostgREST request against `public.learner_identities`, then RLS denies SELECT access and zero rows are returned.
+Given an authenticated instructor or public browser session, when executing a direct SQL query or PostgREST request against `private.learner_identities`, then access is denied at the schema permission boundary and zero rows are returned.
 
 ## Bilingual Experience (Milestone 7)
 
