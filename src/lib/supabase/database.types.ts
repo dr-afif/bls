@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -39,6 +34,112 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_invitations: {
+        Row: {
+          cohort_roster_entry_id: string | null
+          created_at: string
+          email: string
+          expires_at: string | null
+          id: string
+          intended_role: Database["public"]["Enums"]["app_role"]
+          invitation_type: string
+          invited_by: string | null
+          metadata: Json
+          organization_id: string
+          redeemed_at: string | null
+          redeemed_by_user_id: string | null
+          sent_at: string | null
+          staff_access_entry_id: string | null
+          status: string
+          supersedes_invitation_id: string | null
+          token_hash: string | null
+          updated_at: string
+        }
+        Insert: {
+          cohort_roster_entry_id?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string | null
+          id?: string
+          intended_role: Database["public"]["Enums"]["app_role"]
+          invitation_type: string
+          invited_by?: string | null
+          metadata?: Json
+          organization_id: string
+          redeemed_at?: string | null
+          redeemed_by_user_id?: string | null
+          sent_at?: string | null
+          staff_access_entry_id?: string | null
+          status?: string
+          supersedes_invitation_id?: string | null
+          token_hash?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cohort_roster_entry_id?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string | null
+          id?: string
+          intended_role?: Database["public"]["Enums"]["app_role"]
+          invitation_type?: string
+          invited_by?: string | null
+          metadata?: Json
+          organization_id?: string
+          redeemed_at?: string | null
+          redeemed_by_user_id?: string | null
+          sent_at?: string | null
+          staff_access_entry_id?: string | null
+          status?: string
+          supersedes_invitation_id?: string | null
+          token_hash?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_invitations_cohort_roster_entry_id_fkey"
+            columns: ["cohort_roster_entry_id"]
+            isOneToOne: false
+            referencedRelation: "cohort_learner_roster"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_invitations_redeemed_by_user_id_fkey"
+            columns: ["redeemed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_invitations_staff_access_entry_id_fkey"
+            columns: ["staff_access_entry_id"]
+            isOneToOne: false
+            referencedRelation: "staff_access_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_invitations_supersedes_invitation_id_fkey"
+            columns: ["supersedes_invitation_id"]
+            isOneToOne: false
+            referencedRelation: "access_invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attempt_answers: {
         Row: {
           attempt_question_id: string
@@ -264,6 +365,126 @@ export type Database = {
           },
         ]
       }
+      cohort_courses: {
+        Row: {
+          cohort_id: string
+          course_id: string
+          created_at: string
+          created_by: string | null
+          display_order: number
+          end_at: string | null
+          start_at: string | null
+          venue: string | null
+        }
+        Insert: {
+          cohort_id: string
+          course_id: string
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          end_at?: string | null
+          start_at?: string | null
+          venue?: string | null
+        }
+        Update: {
+          cohort_id?: string
+          course_id?: string
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          end_at?: string | null
+          start_at?: string | null
+          venue?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cohort_courses_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cohort_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cohort_courses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cohort_learner_roster: {
+        Row: {
+          added_by: string | null
+          cohort_id: string
+          created_at: string
+          email: string
+          id: string
+          organization_id: string
+          roster_status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          added_by?: string | null
+          cohort_id: string
+          created_at?: string
+          email: string
+          id?: string
+          organization_id: string
+          roster_status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          added_by?: string | null
+          cohort_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          organization_id?: string
+          roster_status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cohort_learner_roster_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cohort_learner_roster_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cohort_learner_roster_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cohort_learner_roster_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cohort_members: {
         Row: {
           added_by: string | null
@@ -386,6 +607,7 @@ export type Database = {
           description: string | null
           end_at: string
           id: string
+          learner_access_state: Database["public"]["Enums"]["learner_access_state"]
           name: string
           organization_id: string
           preparation_notes: string | null
@@ -404,6 +626,7 @@ export type Database = {
           description?: string | null
           end_at: string
           id?: string
+          learner_access_state?: Database["public"]["Enums"]["learner_access_state"]
           name: string
           organization_id: string
           preparation_notes?: string | null
@@ -422,6 +645,7 @@ export type Database = {
           description?: string | null
           end_at?: string
           id?: string
+          learner_access_state?: Database["public"]["Enums"]["learner_access_state"]
           name?: string
           organization_id?: string
           preparation_notes?: string | null
@@ -1628,6 +1852,64 @@ export type Database = {
           },
         ]
       }
+      staff_access_entries: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          email: string
+          id: string
+          intended_role: Database["public"]["Enums"]["app_role"]
+          organization_id: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          intended_role: Database["public"]["Enums"]["app_role"]
+          organization_id: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          intended_role?: Database["public"]["Enums"]["app_role"]
+          organization_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_access_entries_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_access_entries_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_access_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teaching_stages: {
         Row: {
           active: boolean
@@ -1974,6 +2256,7 @@ export type Database = {
         | "suspended"
         | "expired"
         | "archived"
+        | "pending_registration"
       app_role: "learner" | "instructor" | "admin" | "super_admin"
       cohort_member_role: "learner" | "instructor"
       cohort_status:
@@ -1986,6 +2269,7 @@ export type Database = {
       course_status: "draft" | "published" | "retired" | "archived"
       entitlement_access_type: "permanent" | "fixed_window"
       entitlement_status: "pending" | "active" | "expired" | "revoked"
+      learner_access_state: "open" | "closed"
       membership_status: "active" | "completed" | "removed"
       question_type: "single_best_answer" | "true_false"
       question_version_status: "draft" | "approved" | "published" | "retired"
@@ -2142,6 +2426,7 @@ export const Constants = {
         "suspended",
         "expired",
         "archived",
+        "pending_registration",
       ],
       app_role: ["learner", "instructor", "admin", "super_admin"],
       cohort_member_role: ["learner", "instructor"],
@@ -2156,6 +2441,7 @@ export const Constants = {
       course_status: ["draft", "published", "retired", "archived"],
       entitlement_access_type: ["permanent", "fixed_window"],
       entitlement_status: ["pending", "active", "expired", "revoked"],
+      learner_access_state: ["open", "closed"],
       membership_status: ["active", "completed", "removed"],
       question_type: ["single_best_answer", "true_false"],
       question_version_status: ["draft", "approved", "published", "retired"],

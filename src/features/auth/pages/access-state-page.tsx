@@ -26,6 +26,11 @@ const statusCopy: Record<AccountStatus, { title: string; description: string; ki
     description: "Your account is waiting for approval from your course organization.",
     kind: "denied",
   },
+  pending_registration: {
+    title: "Registration pending",
+    description: "Complete your registration to access the companion.",
+    kind: "denied",
+  },
   pending_verification: {
     title: "Email verification pending",
     description: "Follow the verification instructions sent to your invited email address.",

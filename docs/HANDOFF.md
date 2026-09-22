@@ -2,14 +2,15 @@
 
 ## Last updated
 
-2026-09-18
+2026-09-22
 
 ## Current milestone
 
 - Milestone 6 (Phases 6.1, 6.2, 6.3, 6.4, 6.5) — COMPLETE & FORMALLY CLOSED (TECHNICAL PRODUCTION READINESS: PASS; FINAL CLEAN-SLATE RESET: REQUIRED BEFORE REAL PARTICIPANT LAUNCH).
-- Milestone 7 (Controlled Onboarding, Multi-Course Cohorts & Bilingual Foundation) — CURRENT:
-  - Architecture & Documentation Phase — COMPLETE & REFINED (Architecture plan detailed in [`docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md`](MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md) and ADRs 017–022 recorded in [`docs/DECISIONS.md`](DECISIONS.md); incorporating all 10 architecture review corrections; awaiting user review before beginning Phase 7.1 implementation).
-  - Phase 7.1: Schema & Compatibility Foundation — PLANNED.
+- Milestone 7 (Controlled Onboarding, Multi-Course Cohorts & Bilingual Foundation) — ACTIVE:
+  - Architecture & Documentation Phase — COMPLETE & REFINED.
+  - Phase 7.1: Schema & Compatibility Foundation:
+    * Phase 7.1A: Local/CI Database Schema & Compatibility Foundation — COMPLETE (PASS; HOSTED_SUPABASE_MUTATIONS = ZERO).
   - Phase 7.2: Bilingual Application Foundation — PLANNED.
   - Phase 7.3: Email Transport Spike & Staff Bootstrap — PLANNED.
   - Phase 7.4: Cohort Roster & Invitation Engine — PLANNED.
@@ -18,30 +19,25 @@
   - Phase 7.7: E2E Production Verification — PLANNED.
   - Final Release Gate: Controlled Production Clean-Slate Reset — REQUIRED immediately prior to first real participant launch.
 
-
-
-## Current repository state
-
-- React, TypeScript, Vite, Tailwind, React Router, and Vitest frontend.
-- Distinct learner, instructor, and administrator route trees and shells.
-- Fictional local data remains visible for quizzes, results, analytics, and all
-  `/demo` routes. Authenticated People/Cohorts, learner Guides, instructor
-  Teaching Kit, administrator Resources, structured resource viewing, and
-  protected fictional PDFs now use Supabase through typed repositories and
-  server-enforced access.
-- Clinical Field Guide styling for learner and instructor screens.
-- Compact Operational Course Companion density for administrator screens.
-- Hosted Supabase development database with the initial identity/access schema,
-  explicit grants, RLS policies, fictional organization seed, and generated
-  TypeScript types. The frontend now connects through validated public
-  configuration for invite-only sign-in, recovery, session restoration, and
-  RLS-backed profile/role checks. The hosted project now also contains a
-  private fictional PDF bucket and JWT-protected signed-access function. There
-  are no real users, clinical documents, approved clinical quiz questions, or
-  real exports. Secure quiz attempts and scoring now exist only for fictional,
-  non-clinical fixtures and are not yet wired to the production route UI.
-
 ## Work completed
+
+- Implemented Milestone 7 Phase 7.1A: Schema & Compatibility Foundation (Local/CI Implementation Only) — COMPLETE (PASS):
+  - Created Local/CI Database Migrations:
+    * `20260922010000_milestone_7_enums.sql`: Safely added `'pending_registration'` to `public.account_status` and created `public.learner_access_state` enum (`'open'`, `'closed'`). Separated into dedicated migration for PostgreSQL transaction safety.
+    * `20260922020000_milestone_7_schema_foundation.sql`: Created `public.cohort_courses` join table with schedule overrides, backfilled from `cohorts.course_id`, added compatibility mirroring trigger `private.sync_cohort_legacy_course()`; created `public.cohort_learner_roster` with normalized email and org consistency; created `public.staff_access_entries` with durable uniqueness `(organization_id, email, intended_role)`; created `public.access_invitations` with exclusive target CHECK, 7-day validity from `sent_at`, active-attempt uniqueness, and dispatch field checks; created `private.learner_identities` in `private` schema with canonical MyKad/passport format validation and explicit privilege revocation from browser roles (`public`, `anon`, `authenticated`); added `cohorts.learner_access_state` NOT NULL default `'open'`; enabled fail-closed RLS on all new public tables.
+  - Preserved Backward Compatibility & Sequencing Safeguards:
+    * Safeguard A: Preserved existing `private.handle_auth_user_confirmed()` email confirmation behavior (transitions unconfirmed users to `'active'`, not `'pending_registration'`), keeping current invitation flow intact until Phase 7.5.
+    * Safeguard B: Preserved `cohorts.course_id` (NOT NULL) and installed compatibility mirroring trigger so existing frontend course writes populate `cohort_courses`.
+    * Safeguard C: Preserved `one_active_cohort_per_learner` partial index until Phase 7.6 application multi-cohort cutover.
+  - Automated Testing & Verification:
+    * Added comprehensive pgTAP test suite `supabase/tests/milestone_7_schema_foundation_test.sql` (52 assertions).
+    * Total pgTAP suites: 14 files, 410 assertions — 100% PASS.
+    * Database schema lint (`supabase db lint --local --schema public`): 0 errors.
+    * Migrations from zero + seed (`supabase db reset`): 30 migrations applied cleanly.
+    * Generated TypeScript types: `src/lib/supabase/database.types.ts` regenerated from local database.
+    * Frontend typecheck (`tsc -b`), lint (`eslint .`), unit/component tests (Vitest: 33 files, 189 tests), and production build (`vite build`): 100% PASS.
+  - Hosted Protection:
+    * Confirmed `HOSTED_SUPABASE_MUTATIONS = ZERO`. Zero remote database pushes, zero remote SQL executed, zero auth/SMTP updates, zero Edge Function deploys.
 
 - Implemented Milestone 7: Controlled Onboarding, Multi-Course Cohorts & Bilingual Foundation (Architecture & Documentation Phase) — COMPLETE & REFINED:
   - Produced canonical architecture specification: [`docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md`](MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md).

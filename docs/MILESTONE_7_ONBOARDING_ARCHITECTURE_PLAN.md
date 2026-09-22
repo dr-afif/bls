@@ -431,7 +431,7 @@ All sensitive identity card numbers reside in `private.learner_identities`. Dire
 
 ## 10. Technical Implementation Spikes
 
-Before implementation begins, two technical spikes must be executed:
+Before dependent feature implementation begins, two technical spikes must be executed (Spike 1 prior to Phase 7.3 invitation dispatch; Spike 2 prior to Phase 7.5 registration). Unrelated schema foundation in Phase 7.1 is not blocked by these spikes:
 
 ### Spike 1: Email Transport Implementation Spike
 - **Problem**: Supabase Auth Custom SMTP is owned by GoTrue and is not an open transactional email dispatch API for arbitrary application Edge Functions.
@@ -478,13 +478,11 @@ effective_expired := (inv.status = 'sent' and inv.expires_at <= now());
 ## 12. Phased Implementation Plan (Milestones 7.1 – 7.7)
 
 ### Phase 7.1 — Schema & Compatibility Foundation
-- Deploy `cohort_courses` (with schedule overrides), `cohort_learner_roster`, `staff_access_entries`, `access_invitations` (with target FKs), `private.learner_identities`.
-- Correct all actor FKs to nullable `ON DELETE SET NULL`.
+- **Phase 7.1A (Local/CI Foundation — CURRENT)**: Deploy `cohort_courses` (with schedule overrides and legacy mirror trigger), `cohort_learner_roster`, `staff_access_entries`, `access_invitations` (attempt history referencing exactly one intent target, token_hash/sent_at/expires_at dispatch lifecycle, and active attempt uniqueness), `private.learner_identities` (browser access revoked).
 - Add `learner_access_state` to `cohorts` and `pending_registration` to `account_status`.
-- Drop `one_active_cohort_per_learner` index.
 - Backfill `cohort_courses` from `cohorts.course_id`.
-- Update `handle_auth_user_confirmed`.
-- Regenerate TypeScript database types. pgTAP test coverage.
+- **Sequencing Safeguards**: Retain `one_active_cohort_per_learner` index until Phase 7.6 when multi-cohort UI exists. Retain `cohorts.course_id` (NOT NULL) until Phase 7.6 cutover. Retain existing `private.handle_auth_user_confirmed` lifecycle (confirmations route to `active`, not `pending_registration`) until Phase 7.5 registration UI exists.
+- Regenerate TypeScript database types. Comprehensive pgTAP test coverage.
 
 ### Phase 7.2 — Bilingual Application Foundation
 - Implement `src/lib/i18n/` framework, locale dictionaries (`en.ts`, `ms.ts`), language switcher, profile language persistence (`profiles.preferred_language`), bilingual metadata schema.

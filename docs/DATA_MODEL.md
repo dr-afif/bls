@@ -147,28 +147,27 @@ Unique constraint: `(cohort_id, email)`.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | Primary key |
-| `organization_id` | uuid | References `public.organizations(id)` on delete cascade |
+| `organization_id` | uuid | References `public.organizations(id)` on delete restrict |
 | `cohort_roster_entry_id` | uuid | Nullable reference to `public.cohort_learner_roster(id)` on delete cascade |
 | `staff_access_entry_id` | uuid | Nullable reference to `public.staff_access_entries(id)` on delete cascade |
 | `invitation_type` | text | `new_learner_cohort`, `existing_learner_cohort`, `staff_bootstrap` |
-| `cohort_id` | uuid | Nullable reference to `public.cohorts(id)` on delete cascade |
 | `email` | text | Normalized invitee email |
 | `intended_role` | text | `learner`, `instructor`, `admin` |
 | `status` | text | `prepared`, `sent`, `redeemed`, `expired`, `failed`, `superseded` |
-| `token_hash` | text | Unique SHA-256 hash of one-time application invite secret |
-| `sent_at` | timestamptz | Timestamp of last email dispatch |
-| `expires_at` | timestamptz | 7-day validity timestamp (`now() + interval '7 days'`) |
-| `last_resent_at` | timestamptz | Timestamp of resend (if applicable) |
-| `resend_count` | integer | Number of resend operations |
+| `token_hash` | text | Unique SHA-256 hash of one-time application invite secret (nullable when prepared) |
+| `sent_at` | timestamptz | Timestamp of actual dispatch (nullable when prepared) |
+| `expires_at` | timestamptz | 7-day validity timestamp from actual send (`sent_at + interval '7 days'`) |
 | `redeemed_at` | timestamptz | Timestamp of successful consumption |
 | `redeemed_by_user_id` | uuid | User who redeemed the invitation (on delete set null) |
 | `invited_by` | uuid | Actor who issued the invitation (on delete set null) |
+| `supersedes_invitation_id` | uuid | Self-reference to previous attempt superseded by a resend |
 | `metadata` | jsonb | Operational context (no secrets) |
 | `created_at` | timestamptz | Required |
 | `updated_at` | timestamptz | Required |
 
 - **Target Referential Integrity**: `CHECK ((cohort_roster_entry_id IS NOT NULL AND staff_access_entry_id IS NULL) OR (cohort_roster_entry_id IS NULL AND staff_access_entry_id IS NOT NULL))` ensures every invitation attempt links to exactly one durable authorization intent target.
-- **Effective Expiry**: Invariant `effective_expired = (status = 'sent' AND expires_at <= now())` is enforced dynamically by all verification and redemption functions without dependency on cron jobs.
+- **Dispatch Timing & Expiry**: Validity begins strictly upon actual dispatch (`sent_at`). Prepared rows do not run down the 7-day clock. Invariant `effective_expired = (status = 'sent' AND expires_at <= now())` is enforced dynamically by all verification and redemption functions without dependency on cron jobs.
+- **Resend Lineage**: Resends create a fresh invitation attempt row referencing `supersedes_invitation_id` rather than updating mutable counters. Partial unique indexes ensure at most one active (`prepared` or `sent`) attempt per intent target.
 - **Token Security**: The raw invitation secret is generated with high cryptographic entropy, delivered only in the transient invitation link, and immediately scrubbed from the browser URL/history via `history.replaceState`. Only the SHA-256 hash is persisted in `token_hash`.
 
 ### `cohort_members`
@@ -181,7 +180,7 @@ Unique constraint: `(cohort_id, email)`.
 - `completed_at`
 - `added_by` (references `public.profiles(id)` on delete set null)
 
-Primary key: `(cohort_id, user_id)`. The previous `one_active_cohort_per_learner` partial index is removed in Milestone 7 to support multi-cohort learning over time. Assigned instructors may read the cohort roster with masked I.C.s; learners read only their own membership.
+Primary key: `(cohort_id, user_id)`. The legacy `one_active_cohort_per_learner` partial index is preserved throughout Phase 7.1A and will be removed at the Phase 7.6 application cutover once multi-cohort UI and switcher workflows exist. Assigned instructors may read the cohort roster with masked I.C.s; learners read only their own membership.
 
 
 ## Courses and access
