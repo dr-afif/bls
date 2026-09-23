@@ -46,9 +46,9 @@
   - `get_learner_identity_for_admin(...)`: administrator reads full identity within organization scope.
   - `get_cohort_roster_for_instructor(...)`: instructor reads cohort roster with server-derived masked identifier (`******-**-1234`). Full values never appear in network payloads.
 - **Server-Derived Masking**: Masked strings are computed dynamically on the server (`'******-**-' || right(id_number, 4)` for MyKad). No mutable redundant column is stored.
-- **Normalization & Uniqueness**:
-  - `mykad`: normalized to strictly 12 digits (`^\d{12}$`), stripping all hyphens and whitespace.
-  - `passport`: normalized to trimmed uppercase alphanumeric (`^[A-Z0-9-]{6,20}$`).
+- **Database Shape Validation vs Semantic Validation**:
+  - `mykad`: Canonical database shape validation verifies strictly 12 numeric digits (`^[0-9]{12}$`). Semantic calendar DOB, Malaysian state codes, and checksum verification are deferred to the trusted Phase 7.5 registration validation layer.
+  - `passport`: Canonical database shape validation verifies uppercase trimmed alphanumeric representation 6–20 characters (`^[A-Z0-9]{6,20}$`). Universal international passport format validation is not claimed.
   - Constraint: `UNIQUE (id_type, id_number)`. Duplicate registration fails safely with generic error messaging to prevent identity enumeration. Full IDs are never logged.
 
 ### `user_roles`
@@ -88,7 +88,7 @@
 - `created_by` (uuid references `public.profiles(id)` on delete set null)
 - `created_at`
 - `updated_at`
-- *Legacy `course_id` made nullable in Phase 7.1 and superseded by `cohort_courses`.*
+- *Legacy `course_id` is preserved as `NOT NULL` in Phase 7.1A with automatic mirroring to `cohort_courses` (with NULL schedule/venue overrides so parent cohort values are dynamically inherited). It will be retired / made nullable during the Phase 7.6 multi-course write cutover.*
 
 ### `cohort_courses` (Milestone 7 — Multi-Course Join Model & Schedule Overrides)
 
@@ -105,14 +105,14 @@
 
 - Primary key: `(cohort_id, course_id)`. Every learner enrolled in the cohort receives entitlements to all attached courses.
 - Schedule Constraint: `CHECK (end_at IS NULL OR start_at IS NULL OR end_at > start_at)`.
-- Inheritance Semantics: When override fields are NULL, applications and invitation emails resolve the parent cohort's values.
+- Inheritance Semantics: When override fields are NULL, applications and invitation emails dynamically resolve the parent cohort's values via `coalesce(...)`. Legacy mirroring and backfill insert NULL overrides so parent schedule/venue updates are never shadowed. The legacy compatibility trigger will be retired during the Phase 7.6 multi-course write cutover.
 
 ### `cohort_learner_roster` (Milestone 7 — Pre-Invitation Learner Roster Staging)
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | Primary key |
-| `organization_id` | uuid | References `public.organizations(id)` on delete cascade |
+| `organization_id` | uuid | References `public.organizations(id)` on delete restrict |
 | `cohort_id` | uuid | References `public.cohorts(id)` on delete cascade |
 | `email` | text | Normalized lowercase email address |
 | `roster_status` | text | `staged`, `invited`, `activated`, `removed` |
@@ -128,7 +128,7 @@ Unique constraint: `(cohort_id, email)`.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid | Primary key |
-| `organization_id` | uuid | References `public.organizations(id)` on delete cascade |
+| `organization_id` | uuid | References `public.organizations(id)` on delete restrict |
 | `email` | text | Normalized lowercase staff email address |
 | `intended_role` | text | `admin`, `instructor` (check constraint) |
 | `status` | text | `staged`, `activated`, `removed` (check constraint) |
@@ -139,7 +139,7 @@ Unique constraint: `(cohort_id, email)`.
 
 - **Purpose**: Durable organizational intent for administrative and teaching staff before `auth.users` exists.
 - **Hierarchy Rules**: `super_admin` may stage `admin` or `instructor`; `admin` may stage `instructor` only; no workflow may stage `super_admin`.
-- **Constraint**: Partial unique index `UNIQUE (organization_id, email, intended_role) WHERE status IN ('staged', 'activated')` prevents duplicate active/staged intent.
+- **Constraint**: Table-level `UNIQUE (organization_id, email, intended_role)` prevents duplicate active/staged intent while allowing soft-removed records to be restored.
 - **Account Safety**: Removal transitions `status` to `removed` and never deletes established user accounts.
 
 ### `access_invitations` (Milestone 7 — 7-Day Invitation Engine & Attempt Log)
@@ -148,27 +148,27 @@ Unique constraint: `(cohort_id, email)`.
 |---|---|---|
 | `id` | uuid | Primary key |
 | `organization_id` | uuid | References `public.organizations(id)` on delete restrict |
-| `cohort_roster_entry_id` | uuid | Nullable reference to `public.cohort_learner_roster(id)` on delete cascade |
-| `staff_access_entry_id` | uuid | Nullable reference to `public.staff_access_entries(id)` on delete cascade |
+| `cohort_roster_entry_id` | uuid | Nullable reference to `public.cohort_learner_roster(id)` on delete restrict |
+| `staff_access_entry_id` | uuid | Nullable reference to `public.staff_access_entries(id)` on delete restrict |
 | `invitation_type` | text | `new_learner_cohort`, `existing_learner_cohort`, `staff_bootstrap` |
 | `email` | text | Normalized invitee email |
 | `intended_role` | text | `learner`, `instructor`, `admin` |
 | `status` | text | `prepared`, `sent`, `redeemed`, `expired`, `failed`, `superseded` |
-| `token_hash` | text | Unique SHA-256 hash of one-time application invite secret (nullable when prepared) |
+| `token_hash` | text | Unique SHA-256 hash (64-char lowercase hex) of one-time application invite secret (nullable when prepared) |
 | `sent_at` | timestamptz | Timestamp of actual dispatch (nullable when prepared) |
-| `expires_at` | timestamptz | 7-day validity timestamp from actual send (`sent_at + interval '7 days'`) |
+| `expires_at` | timestamptz | Exact 7-day validity timestamp from actual send (`sent_at + interval '7 days'`) |
 | `redeemed_at` | timestamptz | Timestamp of successful consumption |
 | `redeemed_by_user_id` | uuid | User who redeemed the invitation (on delete set null) |
 | `invited_by` | uuid | Actor who issued the invitation (on delete set null) |
-| `supersedes_invitation_id` | uuid | Self-reference to previous attempt superseded by a resend |
-| `metadata` | jsonb | Operational context (no secrets) |
+| `supersedes_invitation_id` | uuid | Reference to previous attempt superseded by a resend (on delete restrict) |
 | `created_at` | timestamptz | Required |
 | `updated_at` | timestamptz | Required |
 
-- **Target Referential Integrity**: `CHECK ((cohort_roster_entry_id IS NOT NULL AND staff_access_entry_id IS NULL) OR (cohort_roster_entry_id IS NULL AND staff_access_entry_id IS NOT NULL))` ensures every invitation attempt links to exactly one durable authorization intent target.
-- **Dispatch Timing & Expiry**: Validity begins strictly upon actual dispatch (`sent_at`). Prepared rows do not run down the 7-day clock. Invariant `effective_expired = (status = 'sent' AND expires_at <= now())` is enforced dynamically by all verification and redemption functions without dependency on cron jobs.
-- **Resend Lineage**: Resends create a fresh invitation attempt row referencing `supersedes_invitation_id` rather than updating mutable counters. Partial unique indexes ensure at most one active (`prepared` or `sent`) attempt per intent target.
-- **Token Security**: The raw invitation secret is generated with high cryptographic entropy, delivered only in the transient invitation link, and immediately scrubbed from the browser URL/history via `history.replaceState`. Only the SHA-256 hash is persisted in `token_hash`.
+- **Target Referential Integrity**: `CHECK ((cohort_roster_entry_id IS NOT NULL AND staff_access_entry_id IS NULL) OR (cohort_roster_entry_id IS NULL AND staff_access_entry_id IS NOT NULL))` ensures every invitation attempt links to exactly one durable authorization intent target. Targets and superseded attempts are protected against deletion (`ON DELETE RESTRICT`).
+- **Dispatch Timing & Expiry**: Validity begins strictly upon actual dispatch (`sent_at`). Prepared rows do not run down the 7-day clock. Exact 7-day validity is enforced by database constraint `CHECK (expires_at = sent_at + interval '7 days')`. Invariant `effective_expired = (status = 'sent' AND expires_at <= now())` is enforced dynamically without dependency on cron jobs.
+- **Token Hash Format**: Verified via check constraint `CHECK (token_hash IS NULL OR token_hash ~ '^[0-9a-f]{64}$')`. Raw invitation tokens are never stored.
+- **Status Lifecycle & Historical Preservation**: Database constraints require `token_hash`, `sent_at`, and `expires_at` on all `sent`, `redeemed`, `expired`, and `superseded` rows. Changing status from `sent` to `expired`/`superseded`/`redeemed` cannot null historical send fields.
+- **Supersession Lineage**: A new attempt can only supersede a prior attempt for the same authorization intent target (same roster entry or same staff access entry). Resends create a fresh attempt row referencing `supersedes_invitation_id`. Partial unique indexes ensure at most one active (`prepared` or `sent`) attempt per intent target.
 
 ### `cohort_members`
 

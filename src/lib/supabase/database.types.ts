@@ -44,7 +44,6 @@ export type Database = {
           intended_role: Database["public"]["Enums"]["app_role"]
           invitation_type: string
           invited_by: string | null
-          metadata: Json
           organization_id: string
           redeemed_at: string | null
           redeemed_by_user_id: string | null
@@ -64,7 +63,6 @@ export type Database = {
           intended_role: Database["public"]["Enums"]["app_role"]
           invitation_type: string
           invited_by?: string | null
-          metadata?: Json
           organization_id: string
           redeemed_at?: string | null
           redeemed_by_user_id?: string | null
@@ -84,7 +82,6 @@ export type Database = {
           intended_role?: Database["public"]["Enums"]["app_role"]
           invitation_type?: string
           invited_by?: string | null
-          metadata?: Json
           organization_id?: string
           redeemed_at?: string | null
           redeemed_by_user_id?: string | null

@@ -31,7 +31,7 @@ create index if not exists cohort_courses_course_idx on public.cohort_courses (c
 create index if not exists cohort_courses_cohort_order_idx on public.cohort_courses (cohort_id, display_order);
 
 comment on table public.cohort_courses is
-  'Multi-course assignment join table for cohorts with optional course-specific schedule and venue overrides.';
+  'Multi-course assignment join table for cohorts with optional course-specific schedule and venue overrides. NULL start_at, end_at, or venue inherits parent cohort values.';
 
 -- Trigger function: Validate cohort_courses parentage (organization consistency)
 create or replace function private.validate_cohort_course_parentage()
@@ -69,17 +69,19 @@ create trigger trg_validate_cohort_course_parentage
   before insert or update on public.cohort_courses
   for each row execute function private.validate_cohort_course_parentage();
 
--- Backfill existing cohorts into cohort_courses
+-- Backfill existing cohorts into cohort_courses with NULL overrides (inheriting cohort values)
 insert into public.cohort_courses (
   cohort_id, course_id, display_order, start_at, end_at, venue, created_at, created_by
 )
 select
-  id, course_id, 0, start_at, end_at, venue, created_at, created_by
+  id, course_id, 0, null, null, null, created_at, created_by
 from public.cohorts
 where course_id is not null
 on conflict (cohort_id, course_id) do nothing;
 
 -- Mirroring trigger function: Maintain legacy cohorts.course_id compatibility
+-- Note: This compatibility trigger must be removed/retired during the Phase 7.6
+-- multi-course write cutover before administrators can freely manage multiple course relationships.
 create or replace function private.sync_cohort_legacy_course()
 returns trigger
 language plpgsql
@@ -112,10 +114,11 @@ begin
       end if;
     end if;
 
+    -- Mirror legacy relationship with NULL schedule/venue overrides so parent cohort values are inherited
     insert into public.cohort_courses (
       cohort_id, course_id, display_order, start_at, end_at, venue, created_at, created_by
     ) values (
-      new.id, new.course_id, 0, new.start_at, new.end_at, new.venue, coalesce(new.created_at, now()), new.created_by
+      new.id, new.course_id, 0, null, null, null, coalesce(new.created_at, now()), new.created_by
     )
     on conflict (cohort_id, course_id) do nothing;
   end if;
@@ -272,8 +275,8 @@ alter table public.staff_access_entries enable row level security;
 create table if not exists public.access_invitations (
   id uuid primary key default gen_random_uuid(),
   organization_id uuid not null references public.organizations (id) on delete restrict,
-  cohort_roster_entry_id uuid references public.cohort_learner_roster (id) on delete cascade,
-  staff_access_entry_id uuid references public.staff_access_entries (id) on delete cascade,
+  cohort_roster_entry_id uuid references public.cohort_learner_roster (id) on delete restrict,
+  staff_access_entry_id uuid references public.staff_access_entries (id) on delete restrict,
   invitation_type text not null check (
     invitation_type in ('new_learner_cohort', 'existing_learner_cohort', 'staff_bootstrap')
   ),
@@ -294,27 +297,60 @@ create table if not exists public.access_invitations (
   redeemed_at timestamptz,
   redeemed_by_user_id uuid references public.profiles (id) on delete set null,
   invited_by uuid references public.profiles (id) on delete set null,
-  supersedes_invitation_id uuid references public.access_invitations (id) on delete set null,
-  metadata jsonb not null default '{}'::jsonb check (jsonb_typeof(metadata) = 'object'),
+  supersedes_invitation_id uuid references public.access_invitations (id) on delete restrict,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint invitation_target_exclusive check (
     (cohort_roster_entry_id is not null and staff_access_entry_id is null) or
     (cohort_roster_entry_id is null and staff_access_entry_id is not null)
   ),
-  constraint invitation_sent_fields check (
-    status <> 'sent' or (
-      token_hash is not null and
-      sent_at is not null and
-      expires_at is not null and
-      expires_at > sent_at
-    )
+  constraint invitation_token_hash_format_check check (
+    token_hash is null or token_hash ~ '^[0-9a-f]{64}$'
   ),
-  constraint invitation_redeemed_fields check (
-    status <> 'redeemed' or (
-      redeemed_at is not null and
-      token_hash is not null
-    )
+  constraint invitation_status_lifecycle_check check (
+    case status
+      when 'prepared' then
+        token_hash is null and
+        sent_at is null and
+        expires_at is null and
+        redeemed_at is null and
+        redeemed_by_user_id is null
+      when 'sent' then
+        token_hash is not null and
+        sent_at is not null and
+        expires_at is not null and
+        redeemed_at is null and
+        redeemed_by_user_id is null
+      when 'redeemed' then
+        token_hash is not null and
+        sent_at is not null and
+        expires_at is not null and
+        redeemed_at is not null and
+        redeemed_by_user_id is not null
+      when 'expired' then
+        token_hash is not null and
+        sent_at is not null and
+        expires_at is not null and
+        redeemed_at is null and
+        redeemed_by_user_id is null
+      when 'superseded' then
+        token_hash is not null and
+        sent_at is not null and
+        expires_at is not null and
+        redeemed_at is null and
+        redeemed_by_user_id is null
+      when 'failed' then
+        redeemed_at is null and
+        redeemed_by_user_id is null and
+        (
+          (token_hash is null and sent_at is null and expires_at is null) or
+          (token_hash is not null and sent_at is not null and expires_at is not null)
+        )
+      else false
+    end
+  ),
+  constraint invitation_exact_seven_day_expiry_check check (
+    sent_at is null or expires_at is null or (expires_at = sent_at + interval '7 days')
   )
 );
 
@@ -349,7 +385,7 @@ as $$
 declare
   v_roster record;
   v_staff record;
-  v_superseded_org uuid;
+  v_superseded record;
 begin
   if new.cohort_roster_entry_id is not null then
     select organization_id, email into v_roster
@@ -407,16 +443,28 @@ begin
     if new.id is not null and new.supersedes_invitation_id = new.id then
       raise exception 'Invitation cannot supersede itself' using errcode = 'P0001';
     end if;
-    select organization_id into v_superseded_org
+
+    select organization_id, cohort_roster_entry_id, staff_access_entry_id
+    into v_superseded
     from public.access_invitations
     where id = new.supersedes_invitation_id;
 
-    if v_superseded_org is null then
+    if v_superseded.organization_id is null then
       raise exception 'Superseded invitation % does not exist', new.supersedes_invitation_id using errcode = '23503';
     end if;
 
-    if v_superseded_org <> new.organization_id then
+    if v_superseded.organization_id <> new.organization_id then
       raise exception 'Superseded invitation belongs to different organization' using errcode = 'P0001';
+    end if;
+
+    if new.cohort_roster_entry_id is not null then
+      if v_superseded.cohort_roster_entry_id is null or v_superseded.cohort_roster_entry_id <> new.cohort_roster_entry_id or v_superseded.staff_access_entry_id is not null then
+        raise exception 'Superseded invitation must target the same cohort roster entry' using errcode = 'P0001';
+      end if;
+    elsif new.staff_access_entry_id is not null then
+      if v_superseded.staff_access_entry_id is null or v_superseded.staff_access_entry_id <> new.staff_access_entry_id or v_superseded.cohort_roster_entry_id is not null then
+        raise exception 'Superseded invitation must target the same staff access entry' using errcode = 'P0001';
+      end if;
     end if;
   end if;
 
@@ -447,7 +495,7 @@ create table if not exists private.learner_identities (
   constraint learner_identities_id_type_number_key unique (id_type, id_number),
   constraint learner_identities_format_check check (
     (id_type = 'mykad' and id_number ~ '^[0-9]{12}$') or
-    (id_type = 'passport' and id_number ~ '^[A-Z0-9]{6,20}$' and id_number = upper(trim(id_number)))
+    (id_type = 'passport' and id_number ~ '^[A-Z0-9]{6,20}$')
   )
 );
 

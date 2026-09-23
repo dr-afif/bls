@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-09-22
+2026-09-23
 
 ## Current milestone
 
@@ -10,7 +10,7 @@
 - Milestone 7 (Controlled Onboarding, Multi-Course Cohorts & Bilingual Foundation) — ACTIVE:
   - Architecture & Documentation Phase — COMPLETE & REFINED.
   - Phase 7.1: Schema & Compatibility Foundation:
-    * Phase 7.1A: Local/CI Database Schema & Compatibility Foundation — COMPLETE (PASS; HOSTED_SUPABASE_MUTATIONS = ZERO).
+    * Phase 7.1A / 7.1A.1: Local/CI Database Schema Foundation & Hardening Pass — COMPLETE (PASS; HOSTED_SUPABASE_MUTATIONS = ZERO).
   - Phase 7.2: Bilingual Application Foundation — PLANNED.
   - Phase 7.3: Email Transport Spike & Staff Bootstrap — PLANNED.
   - Phase 7.4: Cohort Roster & Invitation Engine — PLANNED.
@@ -20,6 +20,30 @@
   - Final Release Gate: Controlled Production Clean-Slate Reset — REQUIRED immediately prior to first real participant launch.
 
 ## Work completed
+
+- Implemented Milestone 7 Phase 7.1A.1: Local Schema Hardening & Correction Pass — COMPLETE (PASS):
+  - Hardened Local/CI Database Migrations (Pre-Hosted Direct Modification):
+    * `cohort_courses` Dynamic Inheritance: Backfilled legacy relationships and compatibility trigger (`private.sync_cohort_legacy_course()`) populate NULL overrides for `start_at`, `end_at`, and `venue`, ensuring parent cohort values are dynamically inherited via `coalesce(...)` and updates are not shadowed. Documented retirement of compatibility trigger during Phase 7.6 multi-course write cutover.
+    * Supersession Lineage Hardening: Hardened `private.validate_access_invitation()` to enforce that a new invitation attempt may supersede only a previous attempt for the same authorization intent target (same roster entry or same staff access entry). Rejected cross-target supersession even within the same organization.
+    * Status Lifecycle Constraints & Historical Field Immutability: Added `invitation_status_lifecycle_check` on `public.access_invitations` ensuring `token_hash`, `sent_at`, and `expires_at` are required and immutable on all `sent`, `redeemed`, `expired`, and `superseded` rows. Changing status from `sent` cannot null historical send fields.
+    * Exact 7-Day Product Validity: Enforced `CHECK (sent_at IS NULL OR expires_at IS NULL OR expires_at = sent_at + interval '7 days')` on `access_invitations`, locking exact 7-day validity from dispatch time.
+    * Token Hash Format Enforcement: Added `CHECK (token_hash IS NULL OR token_hash ~ '^[0-9a-f]{64}$')`, guaranteeing lowercase 64-char hexadecimal SHA-256 hash representation.
+    * Removed Generic Metadata: Removed unjustified `metadata jsonb` container from `access_invitations` and generated database types.
+    * Preserved Invitation History on Target Deletion: Changed target FKs `cohort_roster_entry_id`, `staff_access_entry_id`, and `supersedes_invitation_id` from cascading delete to `ON DELETE RESTRICT`, preventing accidental destruction of historical attempt records.
+    * Aligned National Identity Format & Documentation: Standardized Passport canonical shape to uppercase trimmed alphanumeric 6–20 characters (`^[A-Z0-9]{6,20}$`) and MyKad to 12 numeric digits (`^[0-9]{12}$`). Clarified in canonical docs that database validates shape only, while semantic validation (calendar DOB, Malaysian state code, checksum) is deferred to the trusted Phase 7.5 registration layer.
+  - Preserved Backward Compatibility & Sequencing Safeguards:
+    * Safeguard A: Preserved existing `private.handle_auth_user_confirmed()` email confirmation behavior (transitions unconfirmed users to `'active'`, not `'pending_registration'`).
+    * Safeguard B: Preserved `cohorts.course_id` (NOT NULL) and installed compatibility mirroring trigger.
+    * Safeguard C: Preserved `one_active_cohort_per_learner` partial index until Phase 7.6 application multi-cohort cutover.
+  - Automated Testing & Verification:
+    * Updated pgTAP test suite `supabase/tests/milestone_7_schema_foundation_test.sql` to **82 assertions** covering all 10 hardening requirements.
+    * Total pgTAP suites: **14 test suites, 440 total assertions — 100% PASS**.
+    * Database schema lint (`supabase db lint --local --schema public`): 0 errors.
+    * Migrations from zero + seed (`supabase db reset`): 30 migrations applied cleanly.
+    * Generated TypeScript types: `src/lib/supabase/database.types.ts` regenerated from local database.
+    * Frontend quality: typecheck (`tsc -b`), lint (`eslint .`), Vitest (33 files, 189 tests), and production build (`vite build`) all 100% PASS.
+  - Hosted Protection:
+    * Confirmed `HOSTED_SUPABASE_MUTATIONS = ZERO`. Zero remote database pushes, zero remote SQL executed, zero auth/SMTP updates, zero Edge Function deploys.
 
 - Implemented Milestone 7 Phase 7.1A: Schema & Compatibility Foundation (Local/CI Implementation Only) — COMPLETE (PASS):
   - Created Local/CI Database Migrations:

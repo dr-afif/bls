@@ -188,40 +188,42 @@ Tracks durable organizational authorization intent for administrators and instru
 Manages transient invitation tokens and lifecycle attempts with strict referential integrity to authorization intent.
 - `id uuid primary key default gen_random_uuid()`
 - `organization_id uuid not null references public.organizations(id) on delete restrict`
-- `cohort_roster_entry_id uuid references public.cohort_learner_roster(id) on delete cascade`
-- `staff_access_entry_id uuid references public.staff_access_entries(id) on delete cascade`
+- `cohort_roster_entry_id uuid references public.cohort_learner_roster(id) on delete restrict`
+- `staff_access_entry_id uuid references public.staff_access_entries(id) on delete restrict`
 - `invitation_type text not null check (invitation_type in ('new_learner_cohort', 'existing_learner_cohort', 'staff_bootstrap'))`
 - `email text not null check (email = lower(trim(email)))`
 - `intended_role public.app_role not null check (intended_role in ('learner', 'instructor', 'admin'))`
 - `status text not null default 'prepared' check (status in ('prepared', 'sent', 'redeemed', 'expired', 'failed', 'superseded'))`
-- `token_hash text not null unique` (SHA-256 cryptographic hash of the high-entropy one-time application invite secret)
+- `token_hash text unique` (SHA-256 cryptographic hash formatted as 64-char lowercase hex `^[0-9a-f]{64}$`; nullable when prepared, required when sent/redeemed/expired/superseded)
 - `sent_at timestamptz`
-- `expires_at timestamptz not null` (Default: `now() + interval '7 days'`)
-- `last_resent_at timestamptz`
-- `resend_count integer not null default 0 check (resend_count >= 0)`
+- `expires_at timestamptz` (Exact 7-day validity timestamp from actual send: `expires_at = sent_at + interval '7 days'`)
 - `redeemed_at timestamptz`
 - `redeemed_by_user_id uuid references public.profiles(id) on delete set null`
 - `invited_by uuid references public.profiles(id) on delete set null` (Nullable actor FK)
-- `metadata jsonb not null default '{}'::jsonb`
+- `supersedes_invitation_id uuid references public.access_invitations(id) on delete restrict` (Self-reference preserving immutable lineage on resend; mutable resend counters removed)
 - `created_at timestamptz not null default now()`
 - `updated_at timestamptz not null default now()`
 - **Target Integrity Constraint**:
   `constraint invitation_target_exactly_one check ((cohort_roster_entry_id is not null and staff_access_entry_id is null) or (cohort_roster_entry_id is null and staff_access_entry_id is not null))`
+- **Target Deletion Restriction**: Intent targets (`cohort_learner_roster`, `staff_access_entries`) and superseded invitations are protected with `ON DELETE RESTRICT` to preserve historical attempt records.
+- **Status Lifecycle Constraints**: Enforce presence and immutability of `token_hash`, `sent_at`, and `expires_at` across `sent`, `redeemed`, `expired`, and `superseded` states.
+- **Supersession Lineage Validation**: A new attempt can only supersede a prior attempt for the same authorization intent target (same roster entry or same staff access entry).
 - **Indexes**:
-  - `invitations_target_learner_idx on (cohort_roster_entry_id)`
-  - `invitations_target_staff_idx on (staff_access_entry_id)`
-  - `invitations_token_hash_idx on (token_hash)`
-  - `invitations_expires_idx on (expires_at) where status = 'sent'`
+  - `access_invitations_active_roster_attempt_idx on (cohort_roster_entry_id) where status in ('prepared', 'sent')`
+  - `access_invitations_active_staff_attempt_idx on (staff_access_entry_id) where status in ('prepared', 'sent')`
+  - `access_invitations_token_hash_idx on (token_hash) where token_hash is not null`
+  - `access_invitations_expires_idx on (expires_at) where status = 'sent'`
 
 #### 6. `private.learner_identities` (New — Sensitive Data Boundary in Private Schema)
 Physically isolated in the `private` PostgreSQL schema. **Browser roles (`anon`, `authenticated`) receive ZERO direct SELECT/INSERT/UPDATE grants.**
 - `user_id uuid primary key references public.profiles(id) on delete cascade`
 - `id_type text not null check (id_type in ('mykad', 'passport'))`
-- `id_number text not null` (Normalized stored format: 12 numeric digits for MyKad; trimmed uppercase alphanumeric for passport)
+- `id_number text not null` (Normalized stored format: strictly 12 numeric digits for MyKad; trimmed uppercase alphanumeric 6–20 characters for passport)
 - `verified_at timestamptz`
 - `created_at timestamptz not null default now()`
 - `updated_at timestamptz not null default now()`
 - **Unique Constraint**: `unique (id_type, id_number)` (Prevents duplicate learner identities across accounts)
+- **Database Shape Validation vs Semantic Validation**: The database validates canonical shape (`^[0-9]{12}$` for MyKad; `^[A-Z0-9]{6,20}$` for Passport). Semantic checks (calendar DOB, Malaysian state code, checksum) are deferred to trusted Phase 7.5 registration RPCs. Universal passport validation is not claimed.
 - **Controlled Access Interfaces (SECURITY DEFINER RPCs with `SET search_path = ''`)**:
   1. `get_my_learner_identity()`: Learner reads own identity record.
   2. `update_my_learner_identity(id_type, id_number)`: Learner updates own identity with validation.
@@ -405,10 +407,12 @@ All sensitive identity card numbers reside in `private.learner_identities`. Dire
 
 ### Normalization & Uniqueness Rules
 - **MyKad (`id_type = 'mykad'`)**:
-  - Normalized stored representation: strictly 12 numeric digits without punctuation, spaces, or hyphens (`^\d{12}$`).
-  - Validation: verifies 12 digits, valid date of birth prefix (`YYMMDD`), valid Malaysian place of birth code.
+  - Normalized stored representation: strictly 12 numeric digits without punctuation, spaces, or hyphens (`^[0-9]{12}$`).
+  - Database responsibility: canonical shape validation only (`id_number ~ '^[0-9]{12}$'`).
+  - Trusted RPC validation (Phase 7.5): verifies 12 digits, valid date of birth prefix (`YYMMDD`), valid Malaysian place of birth code, and checksum.
 - **Passport (`id_type = 'passport'`)**:
-  - Normalized stored representation: uppercase, trimmed alphanumeric string with permissible hyphens (`^[A-Z0-9-]{6,20}$`).
+  - Normalized stored representation: uppercase, trimmed alphanumeric string (`^[A-Z0-9]{6,20}$`).
+  - Database responsibility: canonical shape validation only (`id_number ~ '^[A-Z0-9]{6,20}$'`). Universal international format validation is not claimed.
 - **Uniqueness Invariant**:
   - `unique (id_type, id_number)` in `private.learner_identities`.
   - Duplicate registration attempts fail safely with a generic error ("Unable to complete registration. If you already have an account, please sign in."). No specific details are reflected to prevent identity enumeration.
