@@ -23,7 +23,7 @@
 | `profession` | text | Optional |
 | `organization_id` | uuid | Required organization scope |
 | `department` | text | Optional |
-| `preferred_language` | text | `en` (default/fallback) or `ms` |
+| `preferred_language` | text | `en` (default/fallback) or `ms`. In client runtime, availability is explicitly signaled via `preferredLanguageAvailable: boolean` to distinguish unmigrated Phase 7.1 environments from explicit English choice. |
 | `account_status` | enum | `pending_verification`, `pending_registration`, `pending_approval`, `active`, `suspended`, `expired`, `archived` |
 | `created_at` | timestamptz | Required |
 | `updated_at` | timestamptz | Required |
@@ -74,9 +74,9 @@
 - `organization_id`
 - `code`
 - `name`
-- `name_ms` (Optional localized name)
+- `name_ms` (Optional localized name; check constraint between 2 and 160 characters matching English `name`)
 - `description`
-- `description_ms` (Optional localized description)
+- `description_ms` (Optional localized description; nullable text matching English `description`)
 - `venue`
 - `start_at`
 - `end_at`
@@ -191,9 +191,9 @@ Primary key: `(cohort_id, user_id)`. The legacy `one_active_cohort_per_learner` 
 - `organization_id`
 - `slug`
 - `title`
-- `title_ms` (Optional localized title)
+- `title_ms` (Optional localized title; check constraint between 2 and 160 characters matching English `title`)
 - `description`
-- `description_ms` (Optional localized description)
+- `description_ms` (Optional localized description; nullable text matching English `description`)
 - `status`
 - `created_by`
 - `updated_by`

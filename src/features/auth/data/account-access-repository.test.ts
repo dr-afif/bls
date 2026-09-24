@@ -43,6 +43,7 @@ describe('account-access-repository', () => {
     const access = await getAccountAccess(mockClient, userId);
 
     expect(access.profile?.preferredLanguage).toBe('ms');
+    expect(access.profile?.preferredLanguageAvailable).toBe(true);
     expect(access.profile?.fullName).toBe('Siti Aminah');
     expect(access.roles).toEqual(['learner']);
   });
@@ -97,6 +98,7 @@ describe('account-access-repository', () => {
     expect(profileCallCount).toBe(2);
     expect(access.profile?.fullName).toBe('Legacy User');
     expect(access.profile?.preferredLanguage).toBe('en'); // Safe fallback
+    expect(access.profile?.preferredLanguageAvailable).toBe(false); // Explicit compatibility signal
     expect(access.roles).toEqual(['instructor']);
   });
 
@@ -114,11 +116,12 @@ describe('account-access-repository', () => {
     const result = await updatePreferredLanguage(mockClient, userId, 'ms');
 
     expect(result.success).toBe(true);
+    expect(result.persisted).toBe(true);
     expect(updateSpy).toHaveBeenCalledWith({ preferred_language: 'ms' });
     expect(eqSpy).toHaveBeenCalledWith('id', userId);
   });
 
-  it('updatePreferredLanguage treats missing remote column as non-fatal success', async () => {
+  it('updatePreferredLanguage treats missing remote column as non-fatal local-only', async () => {
     const mockClient = {
       from: vi.fn(() => ({
         update: vi.fn().mockReturnThis(),
@@ -134,6 +137,7 @@ describe('account-access-repository', () => {
     const result = await updatePreferredLanguage(mockClient, userId, 'ms');
 
     expect(result.success).toBe(true);
+    expect(result.persisted).toBe(false);
   });
 
   it('updatePreferredLanguage returns failure when unexpected database error occurs', async () => {

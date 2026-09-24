@@ -12,6 +12,7 @@ export type AccountAccess = {
     fullName: string;
     organizationId: string | null;
     preferredLanguage: AppLocale;
+    preferredLanguageAvailable: boolean;
   } | null;
   roles: AppRole[];
 };

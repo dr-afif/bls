@@ -106,9 +106,136 @@ describe('I18nContext and Provider', () => {
     expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('ms');
   });
 
-  it('signed-in profile language overrides local pre-auth preference', () => {
-    localStorage.setItem(LOCALE_STORAGE_KEY, 'en');
+  it('signed-in profile language en overrides pre-auth selection of ms (Correction 1 regression test)', async () => {
+    let authStateValue = { status: 'signed_out' as const };
+    let accountAccessValue: ReturnType<typeof accountAccessHook.useAccountAccess> = {
+      data: undefined,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof accountAccessHook.useAccountAccess>;
 
+    vi.spyOn(authContext, 'useAuth').mockImplementation(() => ({
+      client: mockClient,
+      state: authStateValue,
+      requestPasswordReset: vi.fn(),
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+      updatePassword: vi.fn(),
+      verifyOtp: vi.fn(),
+    }));
+
+    vi.spyOn(accountAccessHook, 'useAccountAccess').mockImplementation(
+      () => accountAccessValue,
+    );
+
+    // 1. User starts signed out
+    const { result, rerender } = renderHook(() => useI18n(), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.locale).toBe('en');
+
+    // 2. Selects ms while signed out
+    await act(async () => {
+      await result.current.setLocale('ms');
+    });
+    expect(result.current.locale).toBe('ms');
+    expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('ms');
+
+    // 3 & 4. Account signs in with profile preference = en
+    authStateValue = {
+      status: 'signed_in',
+      session: { user: { id: userId } } as unknown as Session,
+      user: { id: userId } as unknown as User,
+    } as unknown as typeof authStateValue;
+
+    accountAccessValue = {
+      data: {
+        profile: {
+          accountStatus: 'active',
+          fullName: 'Dr Afif',
+          organizationId: null,
+          preferredLanguage: 'en',
+          preferredLanguageAvailable: true,
+        },
+        roles: ['learner'],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as typeof accountAccessValue;
+
+    rerender();
+
+    // 5. Resulting signed-in locale MUST be en (profile takes authority!)
+    expect(result.current.locale).toBe('en');
+    expect(document.documentElement.lang).toBe('en');
+    expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('en');
+  });
+
+  it('signed-in profile language ms overrides pre-auth selection of en (Inverse test)', async () => {
+    let authStateValue = { status: 'signed_out' as const };
+    let accountAccessValue: ReturnType<typeof accountAccessHook.useAccountAccess> = {
+      data: undefined,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof accountAccessHook.useAccountAccess>;
+
+    vi.spyOn(authContext, 'useAuth').mockImplementation(() => ({
+      client: mockClient,
+      state: authStateValue,
+      requestPasswordReset: vi.fn(),
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+      updatePassword: vi.fn(),
+      verifyOtp: vi.fn(),
+    }));
+
+    vi.spyOn(accountAccessHook, 'useAccountAccess').mockImplementation(
+      () => accountAccessValue,
+    );
+
+    // 1. User starts signed out with English
+    const { result, rerender } = renderHook(() => useI18n(), {
+      wrapper: createWrapper(),
+    });
+
+    expect(result.current.locale).toBe('en');
+
+    // 2. Account signs in with profile preference = ms
+    authStateValue = {
+      status: 'signed_in',
+      session: { user: { id: userId } } as unknown as Session,
+      user: { id: userId } as unknown as User,
+    } as unknown as typeof authStateValue;
+
+    accountAccessValue = {
+      data: {
+        profile: {
+          accountStatus: 'active',
+          fullName: 'Dr Afif',
+          organizationId: null,
+          preferredLanguage: 'ms',
+          preferredLanguageAvailable: true,
+        },
+        roles: ['learner'],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as typeof accountAccessValue;
+
+    rerender();
+
+    // 3. Resulting signed-in locale MUST be ms
+    expect(result.current.locale).toBe('ms');
+    expect(document.documentElement.lang).toBe('ms');
+    expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('ms');
+  });
+
+  it('persists preferred language to profile when signed in and profile preference is available', async () => {
     vi.spyOn(authContext, 'useAuth').mockReturnValue({
       client: mockClient,
       state: {
@@ -129,7 +256,8 @@ describe('I18nContext and Provider', () => {
           accountStatus: 'active',
           fullName: 'Test User',
           organizationId: null,
-          preferredLanguage: 'ms',
+          preferredLanguage: 'en',
+          preferredLanguageAvailable: true,
         },
         roles: ['learner'],
       },
@@ -138,33 +266,9 @@ describe('I18nContext and Provider', () => {
       error: null,
     } as unknown as ReturnType<typeof accountAccessHook.useAccountAccess>);
 
-    const { result } = renderHook(() => useI18n(), {
-      wrapper: createWrapper(),
-    });
-
-    expect(result.current.locale).toBe('ms');
-    expect(document.documentElement.lang).toBe('ms');
-    expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('ms');
-  });
-
-  it('persists preferred language to profile and localStorage when signed in', async () => {
-    vi.spyOn(authContext, 'useAuth').mockReturnValue({
-      client: mockClient,
-      state: {
-        status: 'signed_in',
-        session: { user: { id: userId } } as unknown as Session,
-        user: { id: userId } as unknown as User,
-      },
-      requestPasswordReset: vi.fn(),
-      signIn: vi.fn(),
-      signOut: vi.fn(),
-      updatePassword: vi.fn(),
-      verifyOtp: vi.fn(),
-    });
-
     const updateSpy = vi
       .spyOn(accountAccessRepo, 'updatePreferredLanguage')
-      .mockResolvedValue({ success: true });
+      .mockResolvedValue({ success: true, persisted: true });
 
     const { result } = renderHook(() => useI18n(), {
       wrapper: createWrapper(),
@@ -180,7 +284,7 @@ describe('I18nContext and Provider', () => {
     expect(result.current.preferenceError).toBeNull();
   });
 
-  it('handles failed profile persistence safely without crashing or signing out', async () => {
+  it('reverts optimistic locale and restores localStorage on persistence failure without signing out', async () => {
     vi.spyOn(authContext, 'useAuth').mockReturnValue({
       client: mockClient,
       state: {
@@ -195,8 +299,25 @@ describe('I18nContext and Provider', () => {
       verifyOtp: vi.fn(),
     });
 
+    vi.spyOn(accountAccessHook, 'useAccountAccess').mockReturnValue({
+      data: {
+        profile: {
+          accountStatus: 'active',
+          fullName: 'Test User',
+          organizationId: null,
+          preferredLanguage: 'en',
+          preferredLanguageAvailable: true,
+        },
+        roles: ['learner'],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof accountAccessHook.useAccountAccess>);
+
     vi.spyOn(accountAccessRepo, 'updatePreferredLanguage').mockResolvedValue({
       success: false,
+      persisted: false,
       error: 'Network timeout',
     });
 
@@ -208,10 +329,59 @@ describe('I18nContext and Provider', () => {
       await result.current.setLocale('ms');
     });
 
-    // Locale still switches in local session
+    // Reverted back to persisted profile preference 'en'
+    expect(result.current.locale).toBe('en');
+    expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('en');
+    // Error recorded safely as semantic translation key
+    expect(result.current.preferenceError).toBe('profile.languageUpdateFailed');
+  });
+
+  it('when preferredLanguageAvailable is false (hosted 7.1), selection remains local without calling db or showing error', async () => {
+    vi.spyOn(authContext, 'useAuth').mockReturnValue({
+      client: mockClient,
+      state: {
+        status: 'signed_in',
+        session: { user: { id: userId } } as unknown as Session,
+        user: { id: userId } as unknown as User,
+      },
+      requestPasswordReset: vi.fn(),
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+      updatePassword: vi.fn(),
+      verifyOtp: vi.fn(),
+    });
+
+    vi.spyOn(accountAccessHook, 'useAccountAccess').mockReturnValue({
+      data: {
+        profile: {
+          accountStatus: 'active',
+          fullName: 'Legacy User',
+          organizationId: null,
+          preferredLanguage: 'en',
+          preferredLanguageAvailable: false, // Hosted schema fallback
+        },
+        roles: ['learner'],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof accountAccessHook.useAccountAccess>);
+
+    const updateSpy = vi.spyOn(accountAccessRepo, 'updatePreferredLanguage');
+
+    const { result } = renderHook(() => useI18n(), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await result.current.setLocale('ms');
+    });
+
+    // Language switches locally
     expect(result.current.locale).toBe('ms');
     expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('ms');
-    // Error recorded safely
-    expect(result.current.preferenceError).toBe('Network timeout');
+    // DB update not called, no false error shown
+    expect(updateSpy).not.toHaveBeenCalled();
+    expect(result.current.preferenceError).toBeNull();
   });
 });

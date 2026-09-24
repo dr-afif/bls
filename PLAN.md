@@ -382,10 +382,21 @@ authenticated learner journey is not yet implemented.
     - Safe authored bilingual database field helper `localizedText({ en, ms, locale })` falling back to English when BM is null, empty, or whitespace-only.
     - Additive database migration `20260924010000_milestone_7_bilingual_foundation.sql`: `profiles.preferred_language text not null default 'en'`, `courses.title_ms text null`, `courses.description_ms text null`, `cohorts.name_ms text null`, `cohorts.description_ms text null`, `public.resource_language` enum, `resources.content_language resource_language not null default 'en'`.
     - Active profile self-update privilege granted strictly on `preferred_language`.
-    - Tested via 21 pgTAP assertions (15 total suites, 461 tests) and 39 frontend test suites (221 tests) — 100% PASS.
+    - Tested via 21 pgTAP assertions (15 total suites, 461 tests) and 39 frontend test suites (224 tests) — 100% PASS.
     - Zero hosted migrations deployed (`HOSTED_SUPABASE_MUTATIONS = ZERO`).
     - Robust production backward-compatibility adapter: missing remote `preferred_language` column (PostgREST error 42703) is gracefully caught, allowing production GitHub Pages builds to run uninterrupted against the unmigrated hosted schema.
-  - **Phase 7.2B (Assessment & Content Localization + Hosted Deployment — PLANNED)**:
+  - **Phase 7.2A.1 (i18n Foundation Correction Pass — LOCAL/CI ONLY — COMPLETE)**:
+    - Corrected precedence semantics: authenticated profile preference strictly outranks pre-auth manual selection; on sign-out, last safe locale is preserved in `localStorage`. Regression tests verify pre-auth `ms` -> signed-in `en` => `en`, and pre-auth `en` -> signed-in `ms` => `ms`.
+    - Explicit compatibility signal: `AccountAccess['profile']` explicitly models `preferredLanguageAvailable: boolean` (true on local Phase 7.2 schema, false on unmigrated Phase 7.1 hosted schema) to distinguish explicit English selection from missing-column state.
+    - Optimistic persistence model: signed-in updates reflect immediately; temporary optimistic state clears once refetched profile matches requested locale. On persistence failure, reverts to persisted profile preference, restores `localStorage`, and exposes localized non-sensitive error without signing out.
+    - Localized error announcement: replaced raw English error string with translation key `profile.languageUpdateFailed` rendered in `LanguageSwitcher` with `role="alert"` and `aria-live="polite"`.
+    - Core translation scope completed: removed hard-coded English in `AuthLayout`, `OperationsShell`, `FieldShell`, `DemoBanner`, and `AppLogo` while preserving 100% EN/MS dictionary key parity. Prototype clinical/assessment content intentionally remains in English until Phase 7.2B.
+    - Accessibility correction (Option B): implemented accessible `role="group"` with native buttons using `aria-pressed`, official translated labels ("English", "Bahasa Melayu"), and localized error message.
+    - Schema constraint & policy documentation alignment: verified actual SQL constraints (`title_ms` 2–160 chars, `name_ms` 2–160 chars, unconstrained nullable description text); corrected references to consolidated `profiles_update_authorized` policy.
+    - Profile update authorization checkpoint: reconfirmed active user self-update, learner-to-learner denial, and suspended denial. Recorded product/security checkpoint that same-org administrators can update other profiles via existing `profiles_update_authorized` policy.
+    - Project-local development ports: documented intentional 5332x ports in `supabase/config.toml` to avoid Windows host port conflicts.
+  - **Phase 7.2 overall status**: NOT COMPLETE (7.2A and 7.2A.1 complete; 7.2B NOT started).
+  - **Phase 7.2B (Assessment & Content Localization + Hosted Deployment — PLANNED / NOT STARTED)**:
     - Remaining feature-page UI translation (Learner Guides, Quiz Views, Profile Page, Instructor Teaching Kit, Admin Management forms).
     - Bilingual quiz question/option schema (`prompt_ms`, `option_text_ms`).
     - Bilingual immutable attempt snapshots and question versions.

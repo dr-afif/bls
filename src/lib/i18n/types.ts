@@ -99,6 +99,22 @@ export type TranslationKey =
   | 'profile.languageDesc'
   | 'profile.languageUpdated'
   | 'profile.languageUpdateFailed'
+  | 'auth.layout.tagline'
+  | 'auth.layout.description'
+  | 'auth.layout.securityNote'
+  | 'auth.layout.viewDemo'
+  | 'auth.layout.footer'
+  | 'shell.liveDevelopmentData'
+  | 'shell.workspace'
+  | 'shell.mobileNavigation'
+  | 'shell.companion'
+  | 'shell.statePatterns'
+  | 'shell.demoExperience'
+  | 'shell.changeDemoRole'
+  | 'shell.prototype'
+  | 'shell.demoData'
+  | 'shell.prototypeTitle'
+  | 'shell.openProfile'
   | 'role.learner'
   | 'role.instructor'
   | 'role.admin'
@@ -117,5 +133,5 @@ export interface I18nContextValue {
   formatDateTime: (date: Date | string | number, options?: Intl.DateTimeFormatOptions) => string;
   formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string;
   isUpdatingPreference: boolean;
-  preferenceError: string | null;
+  preferenceError: TranslationKey | null;
 }

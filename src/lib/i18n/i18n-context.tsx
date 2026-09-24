@@ -50,22 +50,36 @@ export interface I18nProviderProps {
 }
 
 export function I18nProvider({ children }: I18nProviderProps) {
-  const [manualLocale, setManualLocale] = useState<AppLocale | null>(null);
+  const [localLocale, setLocalLocale] = useState<AppLocale | null>(null);
+  const [optimisticLocale, setOptimisticLocale] = useState<AppLocale | null>(null);
   const [isUpdatingPreference, setIsUpdatingPreference] = useState(false);
-  const [preferenceError, setPreferenceError] = useState<string | null>(null);
+  const [preferenceError, setPreferenceError] = useState<TranslationKey | null>(null);
 
   const { client, state: authState } = useAuth();
   const accountAccess = useAccountAccess();
 
-  const profilePreference = accountAccess.data?.profile?.preferredLanguage;
-  const validProfileLocale: AppLocale | null =
-    profilePreference === 'en' || profilePreference === 'ms'
-      ? profilePreference
+  const profile = accountAccess.data?.profile;
+  const isProfileAvailable =
+    authState.status === 'signed_in' &&
+    profile != null &&
+    profile.preferredLanguageAvailable &&
+    (profile.preferredLanguage === 'en' || profile.preferredLanguage === 'ms');
+
+  // Once persisted profile matches requested locale, clear temporary optimistic state.
+  // While saving or awaiting refetch, activeOptimistic keeps the UI on the requested locale.
+  const activeOptimistic =
+    optimisticLocale != null && profile?.preferredLanguage !== optimisticLocale
+      ? optimisticLocale
       : null;
 
-  // Precedence: manual choice during active session -> profile preference when signed in -> stored local choice -> default English
-  const locale: AppLocale =
-    manualLocale ?? validProfileLocale ?? readStoredLocale();
+  // Precedence rule:
+  // SIGNED IN & PROFILE PREFERENCE AVAILABLE:
+  //   optimistic update if actively saving -> persisted profile preferred_language -> localStorage fallback -> English
+  // SIGNED OUT OR PROFILE PREFERENCE UNAVAILABLE (e.g. hosted Phase 7.1):
+  //   local choice -> localStorage stored choice -> English
+  const locale: AppLocale = isProfileAvailable
+    ? (activeOptimistic ?? profile.preferredLanguage)
+    : (localLocale ?? readStoredLocale());
 
   // Keep <html lang="..."> attribute and localStorage in sync
   useEffect(() => {
@@ -77,35 +91,48 @@ export function I18nProvider({ children }: I18nProviderProps) {
 
   const setLocale = useCallback(
     async (nextLocale: AppLocale) => {
-      // 1. Update UI and local storage immediately
-      setManualLocale(nextLocale);
-      writeStoredLocale(nextLocale);
       setPreferenceError(null);
 
-      // 2. If signed in, persist to profile in background
-      if (authState.status === 'signed_in' && client) {
+      // If signed in and profile preference is available, perform optimistic persistence
+      if (authState.status === 'signed_in' && isProfileAvailable && client && profile) {
+        setOptimisticLocale(nextLocale);
+        writeStoredLocale(nextLocale);
         setIsUpdatingPreference(true);
+
         try {
           const result = await updatePreferredLanguage(
             client,
             authState.user.id,
             nextLocale,
           );
+
           if (!result.success) {
-            setPreferenceError(result.error ?? 'Failed to update preference');
+            // Revert optimistic update to persisted profile preference
+            setOptimisticLocale(null);
+            writeStoredLocale(profile.preferredLanguage);
+            setPreferenceError('profile.languageUpdateFailed');
           } else {
-            void queryClient.invalidateQueries({
+            // Invalidate to trigger profile refetch; activeOptimistic clears once profile updates
+            await queryClient.invalidateQueries({
               queryKey: ['account-access', authState.user.id],
             });
           }
         } catch {
-          setPreferenceError('Failed to update preference');
+          // Revert optimistic update to persisted profile preference
+          setOptimisticLocale(null);
+          writeStoredLocale(profile.preferredLanguage);
+          setPreferenceError('profile.languageUpdateFailed');
         } finally {
           setIsUpdatingPreference(false);
         }
+      } else {
+        // Signed out OR hosted database does not have preferred_language column yet (Phase 7.1)
+        // Selection remains local-only without false persistence failure
+        setLocalLocale(nextLocale);
+        writeStoredLocale(nextLocale);
       }
     },
-    [authState, client],
+    [authState, client, isProfileAvailable, profile],
   );
 
   const t = useCallback(

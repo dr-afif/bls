@@ -107,7 +107,7 @@ export function OperationsShell({ role }: { role: AppRole }) {
         <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <AppLogo compact />
           <span className="rounded-full bg-success-soft px-3 py-1 text-xs font-semibold text-success">
-            Live development data
+            {t("shell.liveDevelopmentData")}
           </span>
           <p className="mr-auto text-sm text-muted-foreground">{roleLabel}</p>
           <LanguageSwitcher />
@@ -123,7 +123,7 @@ export function OperationsShell({ role }: { role: AppRole }) {
           </Button>
         </div>
         <nav
-          aria-label={`${roleLabel} workspace`}
+          aria-label={`${roleLabel} · ${t("shell.workspace")}`}
           className={cn(
             "mx-auto max-w-7xl gap-2 px-4 pb-3 sm:px-6 lg:px-8",
             fieldRole
@@ -147,7 +147,7 @@ export function OperationsShell({ role }: { role: AppRole }) {
       </main>
       {fieldRole && (
         <nav
-          aria-label={`${roleLabel} mobile navigation`}
+          aria-label={`${roleLabel} · ${t("shell.mobileNavigation")}`}
           className="safe-bottom fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t bg-card px-3 pt-2 shadow-lift sm:hidden"
         >
           {renderLinks(true)}

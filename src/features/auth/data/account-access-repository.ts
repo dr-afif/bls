@@ -12,6 +12,7 @@ export async function getAccountAccess(
   client: SupabaseClient<Database>,
   userId: string,
 ): Promise<AccountAccess> {
+  let preferredLanguageAvailable = true;
   let profileQuery = await client
     .from("profiles")
     .select("full_name, account_status, organization_id, preferred_language")
@@ -25,6 +26,7 @@ export async function getAccountAccess(
     (profileQuery.error.code === "42703" ||
       profileQuery.error.message?.includes("preferred_language"))
   ) {
+    preferredLanguageAvailable = false;
     profileQuery = (await client
       .from("profiles")
       .select("full_name, account_status, organization_id")
@@ -57,6 +59,7 @@ export async function getAccountAccess(
           preferredLanguage: normalizePreferredLanguage(
             profileData.preferred_language,
           ),
+          preferredLanguageAvailable,
         }
       : null,
     roles: (roleResult.data ?? []).map(({ role }) => role),
@@ -67,7 +70,7 @@ export async function updatePreferredLanguage(
   client: SupabaseClient<Database>,
   userId: string,
   preferredLanguage: AppLocale,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; persisted: boolean; error?: string }> {
   try {
     const { error } = await client
       .from("profiles")
@@ -75,20 +78,21 @@ export async function updatePreferredLanguage(
       .eq("id", userId);
 
     if (error) {
-      // If column does not exist on hosted database yet, treat gracefully as non-fatal
+      // If column does not exist on hosted database yet, treat gracefully as non-fatal local-only
       if (
         error.code === "42703" ||
         error.message?.includes("preferred_language")
       ) {
-        return { success: true };
+        return { success: true, persisted: false };
       }
-      return { success: false, error: error.message };
+      return { success: false, persisted: false, error: error.message };
     }
 
-    return { success: true };
+    return { success: true, persisted: true };
   } catch (err) {
     return {
       success: false,
+      persisted: false,
       error: err instanceof Error ? err.message : "Unknown error",
     };
   }

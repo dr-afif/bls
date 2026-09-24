@@ -11,11 +11,16 @@ describe('LanguageSwitcher', () => {
     vi.clearAllMocks();
   });
 
-  it('renders accessible radiogroup with English and Bahasa Melayu buttons', () => {
+  it('renders accessible group with English and Bahasa Melayu buttons', () => {
     vi.spyOn(useTranslationModule, 'useTranslation').mockReturnValue({
       locale: 'en',
       setLocale: mockSetLocale,
-      t: (key: string) => (key === 'language.label' ? 'Language' : key),
+      t: (key: string) => {
+        if (key === 'language.label') return 'Language';
+        if (key === 'language.english') return 'English';
+        if (key === 'language.malay') return 'Bahasa Melayu';
+        return key;
+      },
       formatDate: vi.fn(),
       formatDateTime: vi.fn(),
       formatNumber: vi.fn(),
@@ -25,16 +30,16 @@ describe('LanguageSwitcher', () => {
 
     render(<LanguageSwitcher />);
 
-    const group = screen.getByRole('radiogroup', { name: 'Language' });
+    const group = screen.getByRole('group', { name: 'Language' });
     expect(group).toBeInTheDocument();
 
-    const enButton = screen.getByRole('radio', { name: 'English' });
-    const msButton = screen.getByRole('radio', { name: 'Bahasa Melayu' });
+    const enButton = screen.getByRole('button', { name: 'English' });
+    const msButton = screen.getByRole('button', { name: 'Bahasa Melayu' });
 
     expect(enButton).toBeInTheDocument();
     expect(msButton).toBeInTheDocument();
-    expect(enButton).toHaveAttribute('aria-checked', 'true');
-    expect(msButton).toHaveAttribute('aria-checked', 'false');
+    expect(enButton).toHaveAttribute('aria-pressed', 'true');
+    expect(msButton).toHaveAttribute('aria-pressed', 'false');
   });
 
   it('calls setLocale when selecting Bahasa Melayu', async () => {
@@ -42,7 +47,12 @@ describe('LanguageSwitcher', () => {
     vi.spyOn(useTranslationModule, 'useTranslation').mockReturnValue({
       locale: 'en',
       setLocale: mockSetLocale,
-      t: (key: string) => (key === 'language.label' ? 'Language' : key),
+      t: (key: string) => {
+        if (key === 'language.label') return 'Language';
+        if (key === 'language.english') return 'English';
+        if (key === 'language.malay') return 'Bahasa Melayu';
+        return key;
+      },
       formatDate: vi.fn(),
       formatDateTime: vi.fn(),
       formatNumber: vi.fn(),
@@ -52,7 +62,7 @@ describe('LanguageSwitcher', () => {
 
     render(<LanguageSwitcher />);
 
-    const msButton = screen.getByRole('radio', { name: 'Bahasa Melayu' });
+    const msButton = screen.getByRole('button', { name: 'Bahasa Melayu' });
     await user.click(msButton);
 
     expect(mockSetLocale).toHaveBeenCalledWith('ms');
@@ -63,7 +73,12 @@ describe('LanguageSwitcher', () => {
     vi.spyOn(useTranslationModule, 'useTranslation').mockReturnValue({
       locale: 'en',
       setLocale: mockSetLocale,
-      t: (key: string) => (key === 'language.label' ? 'Language' : key),
+      t: (key: string) => {
+        if (key === 'language.label') return 'Language';
+        if (key === 'language.english') return 'English';
+        if (key === 'language.malay') return 'Bahasa Melayu';
+        return key;
+      },
       formatDate: vi.fn(),
       formatDateTime: vi.fn(),
       formatNumber: vi.fn(),
@@ -73,7 +88,7 @@ describe('LanguageSwitcher', () => {
 
     render(<LanguageSwitcher />);
 
-    const msButton = screen.getByRole('radio', { name: 'Bahasa Melayu' });
+    const msButton = screen.getByRole('button', { name: 'Bahasa Melayu' });
     msButton.focus();
     await user.keyboard('{Enter}');
 
@@ -84,7 +99,12 @@ describe('LanguageSwitcher', () => {
     vi.spyOn(useTranslationModule, 'useTranslation').mockReturnValue({
       locale: 'en',
       setLocale: mockSetLocale,
-      t: (key: string) => (key === 'language.label' ? 'Language' : key),
+      t: (key: string) => {
+        if (key === 'language.label') return 'Language';
+        if (key === 'language.english') return 'English';
+        if (key === 'language.malay') return 'Bahasa Melayu';
+        return key;
+      },
       formatDate: vi.fn(),
       formatDateTime: vi.fn(),
       formatNumber: vi.fn(),
@@ -94,7 +114,32 @@ describe('LanguageSwitcher', () => {
 
     render(<LanguageSwitcher />);
 
-    expect(screen.getByRole('radio', { name: 'English' })).toBeDisabled();
-    expect(screen.getByRole('radio', { name: 'Bahasa Melayu' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'English' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Bahasa Melayu' })).toBeDisabled();
+  });
+
+  it('displays accessible alert when preferenceError is present', () => {
+    vi.spyOn(useTranslationModule, 'useTranslation').mockReturnValue({
+      locale: 'en',
+      setLocale: mockSetLocale,
+      t: (key: string) => {
+        if (key === 'language.label') return 'Language';
+        if (key === 'language.english') return 'English';
+        if (key === 'language.malay') return 'Bahasa Melayu';
+        if (key === 'profile.languageUpdateFailed') return 'Unable to save language preference.';
+        return key;
+      },
+      formatDate: vi.fn(),
+      formatDateTime: vi.fn(),
+      formatNumber: vi.fn(),
+      isUpdatingPreference: false,
+      preferenceError: 'profile.languageUpdateFailed',
+    });
+
+    render(<LanguageSwitcher />);
+
+    const alert = screen.getByRole('alert');
+    expect(alert).toBeInTheDocument();
+    expect(alert).toHaveTextContent('Unable to save language preference.');
   });
 });

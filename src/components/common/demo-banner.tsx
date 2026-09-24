@@ -1,5 +1,6 @@
 import { FlaskConical } from "lucide-react";
 
+import { useTranslation } from "../../lib/i18n/use-translation";
 import { cn } from "../../lib/utils";
 
 type DemoBannerProps = {
@@ -8,6 +9,8 @@ type DemoBannerProps = {
 };
 
 export function DemoBanner({ className, compact = false }: DemoBannerProps) {
+  const { t } = useTranslation();
+
   return (
     <div
       className={cn(
@@ -17,7 +20,7 @@ export function DemoBanner({ className, compact = false }: DemoBannerProps) {
       role="status"
     >
       <FlaskConical aria-hidden="true" className="size-3.5" />
-      {compact ? "Prototype" : "Prototype · Demo data"}
+      {compact ? t("shell.prototypeTitle") : `${t("shell.prototypeTitle")} · ${t("shell.demoData")}`}
     </div>
   );
 }

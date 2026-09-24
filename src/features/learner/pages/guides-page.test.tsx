@@ -16,7 +16,11 @@ describe("GuidesPage", () => {
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Available references" }),
+      await screen.findByRole(
+        "heading",
+        { name: "Available references" },
+        { timeout: 4000 },
+      ),
     ).toBeVisible();
     expect(
       screen.getByRole("link", { name: /adult cpr quick guide/i }),

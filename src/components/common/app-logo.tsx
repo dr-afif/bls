@@ -1,5 +1,6 @@
 import { HeartPulse } from "lucide-react";
 
+import { useTranslation } from "../../lib/i18n/use-translation";
 import { cn } from "../../lib/utils";
 
 type AppLogoProps = {
@@ -8,6 +9,8 @@ type AppLogoProps = {
 };
 
 export function AppLogo({ className, compact = false }: AppLogoProps) {
+  const { t } = useTranslation();
+
   return (
     <div className={cn("flex items-center gap-3", className)}>
       <span
@@ -22,7 +25,7 @@ export function AppLogo({ className, compact = false }: AppLogoProps) {
             BLS Course Companion
           </span>
           <span className="block text-xs font-medium text-muted-foreground">
-            Physical-course companion
+            {t("brand.tagline")}
           </span>
         </span>
       )}

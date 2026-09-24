@@ -5,6 +5,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { useDemoSession } from "../../features/demo/context/demo-session-context";
 import type { DemoRole } from "../../features/demo/model/demo-role";
+import { useTranslation } from "../../lib/i18n/use-translation";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { AppLogo } from "./app-logo";
@@ -47,6 +48,7 @@ export function FieldShell({
   const { pathname } = useLocation();
   const mainRef = useRef<HTMLElement>(null);
   const { resetDemo, setRole } = useDemoSession();
+  const { t } = useTranslation();
 
   useEffect(() => {
     setRole(role);
@@ -63,7 +65,7 @@ export function FieldShell({
         className="fixed left-4 top-3 z-[100] -translate-y-24 rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground transition-transform focus:translate-y-0"
         href="#main-content"
       >
-        Skip to main content
+        {t("nav.skipToContent")}
       </a>
 
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r bg-card lg:flex lg:flex-col">
@@ -76,7 +78,7 @@ export function FieldShell({
           className="scrollbar-subtle flex-1 overflow-y-auto p-4"
         >
           <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            {roleLabel} companion
+            {roleLabel} {t("shell.companion")}
           </p>
           <div className="space-y-1">
             {navigation.map((item) => {
@@ -100,7 +102,7 @@ export function FieldShell({
             to={statePatternsPath}
           >
             <FlaskConical aria-hidden="true" className="size-5" />
-            State patterns
+            {t("shell.statePatterns")}
           </NavLink>
         </nav>
         <div className="border-t p-4">
@@ -109,7 +111,7 @@ export function FieldShell({
           </div>
           <div className="rounded-xl border bg-muted/55 p-3">
             <p className="text-xs font-medium text-muted-foreground">
-              Demo experience
+              {t("shell.demoExperience")}
             </p>
             <p className="mt-0.5 text-sm font-semibold">{roleLabel}</p>
           </div>
@@ -121,7 +123,7 @@ export function FieldShell({
           >
             <Link to="/">
               <LogOut aria-hidden="true" />
-              Change demo role
+              {t("shell.changeDemoRole")}
             </Link>
           </Button>
         </div>
@@ -134,9 +136,9 @@ export function FieldShell({
             <div className="min-w-0 flex-1 py-1">
               <p className="text-sm font-bold leading-tight">BLS Companion</p>
               <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
-                <span className="shrink-0">{roleLabel} prototype</span>
+                <span className="shrink-0">{roleLabel} {t("shell.prototype")}</span>
                 <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-medium">
-                  Demo data
+                  {t("shell.demoData")}
                 </span>
               </div>
             </div>
@@ -144,7 +146,7 @@ export function FieldShell({
               <LanguageSwitcher />
               <Button
                 asChild
-                aria-label={`Open ${roleLabel.toLowerCase()} profile`}
+                aria-label={`${t("shell.openProfile")} (${roleLabel})`}
                 size="icon"
                 variant="ghost"
               >
@@ -167,7 +169,7 @@ export function FieldShell({
       </div>
 
       <nav
-        aria-label={`Mobile ${navigationLabel.toLowerCase()}`}
+        aria-label={`${navigationLabel} (${t("shell.mobileNavigation")})`}
         className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t bg-card px-1 pt-1 shadow-[0_-4px_16px_rgb(15_23_42/0.06)] lg:hidden"
       >
         <div

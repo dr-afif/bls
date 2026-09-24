@@ -35,6 +35,7 @@ describe("useAccountAccess", () => {
         fullName: "Test User",
         organizationId: "10000000-0000-0000-0000-000000000001",
         preferredLanguage: "en" as const,
+        preferredLanguageAvailable: true,
       },
       roles: ["learner"],
     };
@@ -74,6 +75,7 @@ describe("useAccountAccess", () => {
         fullName: "Test User",
         organizationId: "10000000-0000-0000-0000-000000000001",
         preferredLanguage: "en" as const,
+        preferredLanguageAvailable: true,
       },
       roles: ["learner" as const],
     };
@@ -118,6 +120,7 @@ describe("useAccountAccess", () => {
         fullName: "Test Learner",
         organizationId: "10000000-0000-0000-0000-000000000001",
         preferredLanguage: "en" as const,
+        preferredLanguageAvailable: true,
       },
       roles: ["learner" as const],
     }));
@@ -194,6 +197,7 @@ describe("useAccountAccess", () => {
         fullName: "Invited Learner",
         organizationId: "10000000-0000-0000-0000-000000000001",
         preferredLanguage: "en" as const,
+        preferredLanguageAvailable: true,
       },
       roles: ["learner" as const],
     }));

@@ -17,6 +17,8 @@
     * Deployed hosted migration versions: `20260922010000_milestone_7_enums.sql`, `20260922020000_milestone_7_schema_foundation.sql`.
   - Phase 7.2: Bilingual Application Foundation:
     * Phase 7.2A: Bilingual Locale & Preference Foundation (Local/CI Foundation Only) — COMPLETE (PASS).
+    * Phase 7.2A.1: i18n Foundation Correction Pass (Local/CI Only) — COMPLETE (PASS).
+    * Phase 7.2 overall status: NOT COMPLETE.
     * Phase 7.2B: Assessment & Content Localization + Hosted Deployment — PLANNED (NOT STARTED).
   - Phase 7.3: Email Transport Spike & Staff Bootstrap — PLANNED.
   - Phase 7.4: Cohort Roster & Invitation Engine — PLANNED.
@@ -48,9 +50,11 @@
     * Created `localizedText({ en, ms, locale })`: returns Bahasa Melayu text if `locale === 'ms'` and non-empty/non-whitespace BM text is authored; otherwise falls back safely to English.
   - Additive Database Migration (`20260924010000_milestone_7_bilingual_foundation.sql`):
     * `public.profiles.preferred_language`: `text NOT NULL DEFAULT 'en'`, check constraint `preferred_language IN ('en', 'ms')`.
-    * Profile self-update column grant: Granted `UPDATE (preferred_language)` to `authenticated` role on `public.profiles`. RLS policy `profiles_self_update_active` enforces that only active users can update their own row.
-    * `public.courses.title_ms` and `public.courses.description_ms`: nullable text with length/trim checks.
-    * `public.cohorts.name_ms` and `public.cohorts.description_ms`: nullable text with length/trim checks.
+    * Profile self-update column grant: Granted `UPDATE (preferred_language)` to `authenticated` role on `public.profiles`. The existing consolidated RLS policy `profiles_update_authorized` permits users to update their own active profile or administrators to update profiles within their organization.
+    * `public.courses.title_ms`: check constraint between 2 and 160 characters (matching English `title`).
+    * `public.courses.description_ms`: nullable text without length checks (matching English `description`).
+    * `public.cohorts.name_ms`: check constraint between 2 and 160 characters (matching English `name`).
+    * `public.cohorts.description_ms`: nullable text without length checks (matching English `description`).
     * `public.resource_language` enum: `'en'`, `'ms'`, `'bilingual'`, `'language_independent'`.
     * `public.resources.content_language`: `resource_language NOT NULL DEFAULT 'en'`.
   - Production Backward-Compatibility Adapter:
@@ -60,7 +64,49 @@
   - Automated Testing & Verification:
     * Added pgTAP test suite `supabase/tests/milestone_7_bilingual_foundation_test.sql` with 21 assertions covering column definitions, defaults, constraints, active self-update, suspended update denial, and foreign update denial.
     * Total pgTAP suites: **15 test suites, 461 total assertions — 100% PASS**.
-    * Frontend test suite: **39 test files, 221 total tests — 100% PASS** (added `i18n-context.test.tsx`, `localized-text.test.ts`, `language-switcher.test.tsx`, `account-access-repository.test.ts`).
+    * Frontend test suite: **39 test files, 224 total tests — 100% PASS** (added `i18n-context.test.tsx`, `localized-text.test.ts`, `language-switcher.test.tsx`, `account-access-repository.test.ts`).
+    * Typecheck (`npm run typecheck`): 0 errors.
+    * Lint (`npm run lint`): 0 errors, 0 warnings.
+    * Build (`npm run build`): PASS (exit code 0).
+  - Strict Operational Boundaries:
+    * `HOSTED_SUPABASE_MUTATIONS = ZERO`
+    * `PHASE_7_2_HOSTED_MIGRATION_DEPLOYED = NO`
+    * `PHASE_7_2B_STARTED = NO`
+
+- Implemented Milestone 7 Phase 7.2A.1: i18n Foundation Correction Pass (Local/CI Implementation Only) — COMPLETE (PASS):
+  - Authoritative Post-Auth Preference Resolution:
+    * Corrected preference precedence so authenticated profile preference (`profile.preferredLanguage`) is authoritative when available. Pre-auth manual/local selections made in `localStorage` no longer outrank an authenticated user's persisted profile preference.
+    * On sign-out, the last safe locale is preserved in `localStorage`.
+    * Added regression tests verifying pre-auth `ms` -> sign-in `en` => `en`, and pre-auth `en` -> sign-in `ms` => `ms`.
+  - Explicit Preference Availability Modeling:
+    * Extended `AccountAccess['profile']` with typed `preferredLanguageAvailable: boolean`.
+    * Phase 7.2 local schema: `preferredLanguageAvailable = true`.
+    * Hosted Phase 7.1 fallback (PostgREST error 42703): `preferredLanguageAvailable = false`.
+    * Accurately distinguishes an explicit user choice of English from the temporary absence of the database column on unmigrated hosted instances.
+  - Optimistic Persistence & Reversion Semantics:
+    * Signed-in preference update changes UI immediately, sets optimistic state, and initiates persistence.
+    * The temporary optimistic state clears automatically as soon as the refetched `profile.preferredLanguage` matches the requested locale.
+    * If persistence fails, the UI reverts to the persisted profile preference, restores `localStorage` to that value, and exposes a localized error without signing out.
+    * If `preferredLanguageAvailable === false` (hosted 7.1 schema), the update remains safely local without pretending database persistence occurred and without displaying false persistence errors.
+  - Localized User-Facing Preference Error:
+    * Replaced raw English string ("Failed to update preference") with translation key `profile.languageUpdateFailed` ("Failed to save language preference. Please try again." / "Gagal menyimpan pilihan bahasa. Sila cuba lagi.").
+    * Rendered visibly in `LanguageSwitcher` with `role="alert"` and `aria-live="polite"` for screen readers.
+  - System Core Shell UI Translation Completed:
+    * Replaced all hard-coded English in core shells: `AuthLayout` (introductory heading, description, security badge, demo button, footer text), `OperationsShell` (live data badge, aria labels), `FieldShell` (skip link, companion label, aria labels), `DemoBanner` (badge, subtitle, role switcher button, aria labels), and `AppLogo` (prototype badge).
+    * Maintained 100% EN/MS dictionary key parity. Clinical/assessment prototype content remains in English until Phase 7.2B.
+  - Accessible Language Switcher (Option B Pattern):
+    * Standardized on accessible `role="group"` with native buttons using `aria-pressed`, official translated labels ("English", "Bahasa Melayu"), and localized error message. Native button semantics guarantee universal keyboard navigation (Tab / Enter / Space).
+  - Schema & Policy Documentation Alignment:
+    * Verified actual SQL constraints: `courses.title_ms` (2–160 chars), `cohorts.name_ms` (2–160 chars), with unconstrained nullable text for descriptions (matching existing English schema). Corrected prior documentation claims of 1–255 / max 5000.
+    * Corrected references to the profile update policy to cite `profiles_update_authorized` (consolidated policy).
+  - Profile Update Authorization Regression & Decision Checkpoint:
+    * Reconfirmed pgTAP tests: active users can update own `preferred_language`; learners cannot update other learners; suspended accounts cannot update; protected fields (`account_status`, `organization_id`, `role`) cannot be modified.
+    * Product/Security Decision Checkpoint: Documented that existing consolidated policy `profiles_update_authorized` permits administrators in the same organization to update other users' profile records, including `preferred_language`. The preferred product behavior is self-owned language preference. If strict self-ownership is required in a future phase, a dedicated trigger or RPC design should be formally reviewed.
+  - Project-Local Supabase Ports:
+    * Local ports (`53321` API, `53322` DB, `53320` shadow, `53329` pooler, `53323` studio, `53324` inbucket) documented as intentional project-local development ports to avoid Windows host port conflicts.
+  - Automated Testing & Verification:
+    * pgTAP suite: **15 test suites, 461 total assertions — 100% PASS**.
+    * Frontend test suite: **39 test files, 224 total tests — 100% PASS** (added regression tests in `i18n-context.test.tsx` and `language-switcher.test.tsx`).
     * Typecheck (`npm run typecheck`): 0 errors.
     * Lint (`npm run lint`): 0 errors, 0 warnings.
     * Build (`npm run build`): PASS (exit code 0).
@@ -958,6 +1004,8 @@ Milestone 7 Phase 7.1 (Schema & Compatibility Foundation) is COMPLETE and formal
 
 Milestone 7 Phase 7.2 (Bilingual Application Foundation):
 - Phase 7.2A (Bilingual Locale & Preference Foundation — Local/CI Implementation Only) — COMPLETE (PASS)
+- Phase 7.2A.1 (i18n Foundation Correction Pass — Local/CI Implementation Only) — COMPLETE (PASS)
+- Phase 7.2 overall status — NOT COMPLETE
 - Phase 7.2B (Assessment & Content Localization + Hosted Deployment) — PLANNED (NOT STARTED)
 
 Hosted Supabase Project `zlaixhnyydxgbphgsetv` deployed migrations remain at:
@@ -966,7 +1014,8 @@ Hosted Supabase Project `zlaixhnyydxgbphgsetv` deployed migrations remain at:
 (Phase 7.2A migration `20260924010000_milestone_7_bilingual_foundation.sql` is NOT deployed to hosted Supabase).
 
 Recommended next action:
-1. Review and approve the Phase 7.2A Bilingual Locale & Preference Foundation implementation.
+1. Review and approve the Phase 7.2A and Phase 7.2A.1 Bilingual Foundation implementation.
 2. Proceed to Phase 7.2B: Content & Assessment Localization + Hosted Migration Deployment.
-3. Do NOT execute the production clean-slate reset at this time (reserved for post-7.7 pre-launch).
-4. Do NOT mutate hosted production data or seed fixtures during development.
+3. Do NOT deploy migration 20260924010000 to hosted Supabase until Phase 7.2B is approved for hosted rollout.
+4. Do NOT execute the production clean-slate reset at this time (reserved for post-7.7 pre-launch).
+5. Do NOT mutate hosted production data or seed fixtures during development.
