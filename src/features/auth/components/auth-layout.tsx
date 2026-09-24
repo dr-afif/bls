@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { AppLogo } from "../../../components/common/app-logo";
+import { LanguageSwitcher } from "../../../components/common/language-switcher";
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -35,12 +36,15 @@ export function AuthLayout({ children }: { children: ReactNode }) {
             <div className="lg:hidden">
               <AppLogo compact />
             </div>
-            <Link
-              className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-primary hover:bg-primary-soft"
-              to="/demo"
-            >
-              View demo
-            </Link>
+            <div className="flex items-center gap-3">
+              <LanguageSwitcher />
+              <Link
+                className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-semibold text-primary hover:bg-primary-soft"
+                to="/demo"
+              >
+                View demo
+              </Link>
+            </div>
           </div>
           <div className="my-auto w-full py-10">{children}</div>
           <p className="text-center text-xs text-muted-foreground">

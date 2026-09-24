@@ -494,7 +494,8 @@ effective_expired := (inv.status = 'sent' and inv.expires_at <= now());
 - TypeScript database types synchronized with hosted database. Comprehensive pgTAP test coverage (14 suites, 440 assertions).
 
 ### Phase 7.2 — Bilingual Application Foundation
-- Implement `src/lib/i18n/` framework, locale dictionaries (`en.ts`, `ms.ts`), language switcher, profile language persistence (`profiles.preferred_language`), bilingual metadata schema.
+- **Phase 7.2A (Local/CI Foundation)**: COMPLETE (PASS) — Lightweight typed first-party client-side i18n framework under `src/lib/i18n/` (`types.ts`, `en.ts`, `ms.ts`, `i18n-context.tsx`, `use-translation.ts`, `localized-text.ts`, `formatting.ts`); pre-auth local storage preference (`bls.locale`, default `'en'`); post-auth authoritative `profiles.preferred_language` (`en` | `ms`); accessible `LanguageSwitcher` mounted in auth and all role shells; core system/auth UI translated; additive schema migration `20260924010000_milestone_7_bilingual_foundation.sql` (`profiles.preferred_language`, `courses.title_ms`/`description_ms`, `cohorts.name_ms`/`description_ms`, `resource_language` enum, `resources.content_language`); backward-compatible production fallback strategy (survives unmigrated hosted schema); pgTAP suite (21 assertions) and frontend test suite (221 tests) 100% PASS.
+- **Phase 7.2B (Assessment & Content Localization + Hosted Deployment)**: PLANNED — Remaining feature-page UI translation; bilingual quiz question and option schema (`prompt_ms`, `option_text_ms`) with immutable bilingual attempt snapshots; learner quiz payload language selection; admin bilingual quiz authoring; broad course/cohort translated metadata rendering; controlled hosted Phase 7.2 migration deployment.
 
 ### Phase 7.3 — Staff Bootstrap & Invitations
 - Execute Email Transport Spike.

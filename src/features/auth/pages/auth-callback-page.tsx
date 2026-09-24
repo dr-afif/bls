@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { StatePanel } from "../../../components/common/state-panel";
+import { useTranslation } from "../../../lib/i18n/use-translation";
 import { AuthLayout } from "../components/auth-layout";
 import { useAuth } from "../context/auth-context";
 
@@ -35,6 +36,7 @@ function cleanTokenFromUrl() {
 
 export function AuthCallbackPage() {
   const { state, verifyOtp } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -118,12 +120,12 @@ export function AuthCallbackPage() {
         <AuthLayout>
           <div className="mx-auto max-w-md">
             <StatePanel
-              actionLabel="Return to sign in"
+              actionLabel={t("auth.callback.returnToSignIn")}
               as="h1"
-              description="This invitation link is invalid or has expired. Please contact your course administrator for a new invitation."
+              description={t("auth.callback.inviteExpiredDesc")}
               kind="expired"
               onAction={() => navigate("/auth/login", { replace: true })}
-              title="This invitation link is no longer available"
+              title={t("auth.callback.inviteExpiredTitle")}
             />
           </div>
         </AuthLayout>
@@ -135,9 +137,9 @@ export function AuthCallbackPage() {
         <div className="mx-auto max-w-md">
           <StatePanel
             as="h1"
-            description="Validating your course invitation and setting up your secure session."
+            description={t("auth.callback.acceptingDesc")}
             kind="loading"
-            title="Accepting your invitation"
+            title={t("auth.callback.acceptingTitle")}
           />
         </div>
       </AuthLayout>
@@ -149,19 +151,19 @@ export function AuthCallbackPage() {
       <div className="mx-auto max-w-md">
         {state.status === "signed_out" ? (
           <StatePanel
-            actionLabel="Return to sign in"
+            actionLabel={t("auth.callback.returnToSignIn")}
             as="h1"
-            description="This link is invalid or has expired. Request a new password reset message."
+            description={t("auth.callback.resetExpiredDesc")}
             kind="expired"
             onAction={() => navigate("/auth/login", { replace: true })}
-            title="This reset link is no longer available"
+            title={t("auth.callback.resetExpiredTitle")}
           />
         ) : (
           <StatePanel
             as="h1"
-            description="Verifying the secure account link."
+            description={t("auth.callback.checkingLinkDesc")}
             kind="loading"
-            title="Checking your link"
+            title={t("auth.callback.checkingLinkTitle")}
           />
         )}
       </div>

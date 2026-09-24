@@ -1,77 +1,102 @@
 import { useNavigate } from "react-router-dom";
 
 import { StatePanel } from "../../../components/common/state-panel";
-import type { AccountStatus } from "../model/auth-types";
+import { useTranslation } from "../../../lib/i18n/use-translation";
 import { AuthLayout } from "../components/auth-layout";
 import { useAuth } from "../context/auth-context";
-
-const statusCopy: Record<AccountStatus, { title: string; description: string; kind: "denied" | "expired" }> = {
-  active: {
-    title: "Access is active",
-    description: "Your account is ready.",
-    kind: "denied",
-  },
-  archived: {
-    title: "Account archived",
-    description: "This account is no longer available. Contact your course administrator if this is unexpected.",
-    kind: "denied",
-  },
-  expired: {
-    title: "Account access expired",
-    description: "Your account access period has ended. Contact your course administrator for assistance.",
-    kind: "expired",
-  },
-  pending_approval: {
-    title: "Approval pending",
-    description: "Your account is waiting for approval from your course organization.",
-    kind: "denied",
-  },
-  pending_registration: {
-    title: "Registration pending",
-    description: "Complete your registration to access the companion.",
-    kind: "denied",
-  },
-  pending_verification: {
-    title: "Email verification pending",
-    description: "Follow the verification instructions sent to your invited email address.",
-    kind: "denied",
-  },
-  suspended: {
-    title: "Account suspended",
-    description: "This account cannot currently access the companion. Contact your course administrator.",
-    kind: "denied",
-  },
-};
+import type { AccountStatus } from "../model/auth-types";
 
 export function AccessStatePage({
   status,
   variant = "account",
 }: {
   status?: AccountStatus;
-  variant?: "account" | "configuration" | "missing-profile" | "missing-role" | "role";
+  variant?:
+    | "account"
+    | "configuration"
+    | "missing-profile"
+    | "missing-role"
+    | "role";
 }) {
   const { signOut } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const content = status ? statusCopy[status] : null;
+
+  const getStatusContent = (
+    s: AccountStatus,
+  ): { title: string; description: string; kind: "denied" | "expired" } => {
+    switch (s) {
+      case "active":
+        return {
+          title: "Access is active",
+          description: "Your account is ready.",
+          kind: "denied",
+        };
+      case "archived":
+        return {
+          title: "Account archived",
+          description:
+            "This account is no longer available. Contact your course administrator if this is unexpected.",
+          kind: "denied",
+        };
+      case "expired":
+        return {
+          title: "Account access expired",
+          description:
+            "Your account access period has ended. Contact your course administrator for assistance.",
+          kind: "expired",
+        };
+      case "pending_approval":
+        return {
+          title: "Approval pending",
+          description:
+            "Your account is waiting for approval from your course organization.",
+          kind: "denied",
+        };
+      case "pending_registration":
+        return {
+          title: t("auth.accessState.pendingRegistrationTitle"),
+          description: t("auth.accessState.pendingRegistrationDesc"),
+          kind: "denied",
+        };
+      case "pending_verification":
+        return {
+          title: t("auth.accessState.pendingVerificationTitle"),
+          description: t("auth.accessState.pendingVerificationDesc"),
+          kind: "denied",
+        };
+      case "suspended":
+        return {
+          title: t("auth.accessState.suspendedTitle"),
+          description: t("auth.accessState.suspendedDesc"),
+          kind: "denied",
+        };
+    }
+  };
+
+  const content = status ? getStatusContent(status) : null;
   const fallback = {
     configuration: {
       title: "Sign-in is not configured",
-      description: "This deployment needs its public Supabase URL and publishable key. No secret key should be added to frontend code.",
+      description:
+        "This deployment needs its public Supabase URL and publishable key. No secret key should be added to frontend code.",
     },
     "missing-profile": {
       title: "Account setup is incomplete",
-      description: "Your sign-in exists, but its application profile is missing. Contact your course administrator.",
+      description:
+        "Your sign-in exists, but its application profile is missing. Contact your course administrator.",
     },
     "missing-role": {
       title: "No application role assigned",
-      description: "Your account has not been assigned a learner, instructor, or administrator role.",
+      description:
+        "Your account has not been assigned a learner, instructor, or administrator role.",
     },
     role: {
-      title: "This area is not available",
-      description: "Your assigned role does not permit this application area.",
+      title: t("auth.accessState.accessDeniedTitle"),
+      description: t("auth.accessState.accessDeniedDesc"),
     },
     account: {
-      title: "Access is not available",
+      title: t("auth.accessState.accessDeniedTitle"),
       description: "Contact your course administrator for assistance.",
     },
   }[variant];
@@ -80,7 +105,7 @@ export function AccessStatePage({
     <AuthLayout>
       <div className="mx-auto max-w-lg">
         <StatePanel
-          actionLabel={variant === "configuration" ? "Open demo" : "Sign out"}
+          actionLabel={variant === "configuration" ? "Open demo" : t("auth.signOut")}
           as="h1"
           description={content?.description ?? fallback.description}
           kind={content?.kind ?? "denied"}
@@ -89,7 +114,9 @@ export function AccessStatePage({
               navigate("/demo");
               return;
             }
-            void signOut().then(() => navigate("/auth/login", { replace: true }));
+            void signOut().then(() =>
+              navigate("/auth/login", { replace: true }),
+            );
           }}
           title={content?.title ?? fallback.title}
         />

@@ -34,6 +34,7 @@ describe("useAccountAccess", () => {
         accountStatus: "active",
         fullName: "Test User",
         organizationId: "10000000-0000-0000-0000-000000000001",
+        preferredLanguage: "en" as const,
       },
       roles: ["learner"],
     };
@@ -72,6 +73,7 @@ describe("useAccountAccess", () => {
         accountStatus: "suspended" as const,
         fullName: "Test User",
         organizationId: "10000000-0000-0000-0000-000000000001",
+        preferredLanguage: "en" as const,
       },
       roles: ["learner" as const],
     };
@@ -115,6 +117,7 @@ describe("useAccountAccess", () => {
         accountStatus: currentStatus,
         fullName: "Test Learner",
         organizationId: "10000000-0000-0000-0000-000000000001",
+        preferredLanguage: "en" as const,
       },
       roles: ["learner" as const],
     }));
@@ -190,6 +193,7 @@ describe("useAccountAccess", () => {
         accountStatus,
         fullName: "Invited Learner",
         organizationId: "10000000-0000-0000-0000-000000000001",
+        preferredLanguage: "en" as const,
       },
       roles: ["learner" as const],
     }));

@@ -15,7 +15,9 @@
     * Phase 7.1B: Controlled Hosted Schema Deployment & Verification — PASS.
     * Phase 7.1 — COMPLETE.
     * Deployed hosted migration versions: `20260922010000_milestone_7_enums.sql`, `20260922020000_milestone_7_schema_foundation.sql`.
-  - Phase 7.2: Bilingual Application Foundation — PLANNED (READY FOR ARCHITECTURE REVIEW).
+  - Phase 7.2: Bilingual Application Foundation:
+    * Phase 7.2A: Bilingual Locale & Preference Foundation (Local/CI Foundation Only) — COMPLETE (PASS).
+    * Phase 7.2B: Assessment & Content Localization + Hosted Deployment — PLANNED (NOT STARTED).
   - Phase 7.3: Email Transport Spike & Staff Bootstrap — PLANNED.
   - Phase 7.4: Cohort Roster & Invitation Engine — PLANNED.
   - Phase 7.5: Passwordless Return Spike, First-Time & Returning User Registration — PLANNED.
@@ -24,6 +26,48 @@
   - Final Release Gate: Controlled Production Clean-Slate Reset — REQUIRED immediately prior to first real participant launch.
 
 ## Work completed
+
+- Implemented Milestone 7 Phase 7.2A: Bilingual Locale & Preference Foundation (Local/CI Implementation Only) — COMPLETE (PASS):
+  - Lightweight First-Party i18n Framework:
+    * Created typed client-side localization framework under `src/lib/i18n/` (`types.ts`, `en.ts`, `ms.ts`, `i18n-context.tsx`, `use-translation.ts`, `localized-text.ts`, `formatting.ts`).
+    * Strongly typed dictionaries with full compile-time key parity between English (`en`) and Bahasa Melayu (`ms`).
+    * English is canonical default and automatic fallback; date/time and number formatters mapped cleanly to `en-MY` and `ms-MY`.
+    * Synchronizes document language (`<html lang="en">` / `<html lang="ms">`) automatically on locale switch.
+  - Pre-Auth & Post-Auth Language Preference Precedence:
+    * Pre-auth: Persisted in non-sensitive `bls.locale` in `localStorage`. Defaults strictly to English (`'en'`). Does NOT auto-switch based on `navigator.language`.
+    * Post-auth: Authoritative user preference loaded from `profiles.preferred_language`. Updating locale when signed in immediately syncs UI, updates `localStorage`, and updates `profiles.preferred_language`.
+    * Fail-safe error handling: Persistence failures revert safely with user feedback without blocking the session or logging the user out.
+  - Accessible Language Switcher Component:
+    * Created `LanguageSwitcher` (`src/components/common/language-switcher.tsx`) supporting keyboard navigation, WAI-ARIA radiogroup semantics, screen-reader labels, and visible active state.
+    * Uses official labels "English" and "Bahasa Melayu" (never "Malay").
+    * Integrated into login/auth layout, learner field shell, instructor field shell, and operations/admin navigation bar.
+  - System Core UI Translation:
+    * Translated core system flows: Login, Forgot Password, Reset Password, Auth Callback, Access State, Not Found, Route Error, State Panel, navigation labels, and sign-out UI.
+    * Untranslated clinical/assessment content is strictly preserved as English source until Phase 7.2B.
+  - Safe Authored Bilingual Helper:
+    * Created `localizedText({ en, ms, locale })`: returns Bahasa Melayu text if `locale === 'ms'` and non-empty/non-whitespace BM text is authored; otherwise falls back safely to English.
+  - Additive Database Migration (`20260924010000_milestone_7_bilingual_foundation.sql`):
+    * `public.profiles.preferred_language`: `text NOT NULL DEFAULT 'en'`, check constraint `preferred_language IN ('en', 'ms')`.
+    * Profile self-update column grant: Granted `UPDATE (preferred_language)` to `authenticated` role on `public.profiles`. RLS policy `profiles_self_update_active` enforces that only active users can update their own row.
+    * `public.courses.title_ms` and `public.courses.description_ms`: nullable text with length/trim checks.
+    * `public.cohorts.name_ms` and `public.cohorts.description_ms`: nullable text with length/trim checks.
+    * `public.resource_language` enum: `'en'`, `'ms'`, `'bilingual'`, `'language_independent'`.
+    * `public.resources.content_language`: `resource_language NOT NULL DEFAULT 'en'`.
+  - Production Backward-Compatibility Adapter:
+    * Hosted Supabase database remains on Phase 7.1 schema (no hosted migrations deployed yet).
+    * `account-access-repository.ts` catches PostgREST error `42703` (missing column `preferred_language`) and falls back immediately to selecting standard profile columns without crashing.
+    * `updatePreferredLanguage` catches error `42703` gracefully, allowing local preference to function without database errors on hosted environments.
+  - Automated Testing & Verification:
+    * Added pgTAP test suite `supabase/tests/milestone_7_bilingual_foundation_test.sql` with 21 assertions covering column definitions, defaults, constraints, active self-update, suspended update denial, and foreign update denial.
+    * Total pgTAP suites: **15 test suites, 461 total assertions — 100% PASS**.
+    * Frontend test suite: **39 test files, 221 total tests — 100% PASS** (added `i18n-context.test.tsx`, `localized-text.test.ts`, `language-switcher.test.tsx`, `account-access-repository.test.ts`).
+    * Typecheck (`npm run typecheck`): 0 errors.
+    * Lint (`npm run lint`): 0 errors, 0 warnings.
+    * Build (`npm run build`): PASS (exit code 0).
+  - Strict Operational Boundaries:
+    * `HOSTED_SUPABASE_MUTATIONS = ZERO`
+    * `PHASE_7_2_HOSTED_MIGRATION_DEPLOYED = NO`
+    * `PHASE_7_2B_STARTED = NO`
 
 - Implemented Milestone 7 Phase 7.1B: Controlled Hosted Schema Deployment & Verification — COMPLETE (PASS):
   - Pre-Deployment Verification & Preflight:
@@ -899,6 +943,10 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
   Git-based development and publication. Keep the OneDrive copy only until all
   unpublished work has been confirmed in GitHub.
 
+- Phase 7.2A bilingual database migration (`20260924010000_milestone_7_bilingual_foundation.sql`) is local/CI only. It has NOT been deployed to hosted Supabase `zlaixhnyydxgbphgsetv` (`HOSTED_SUPABASE_MUTATIONS = ZERO`). The frontend application provides a backward-compatibility adapter that catches missing remote columns (`42703`) so production GitHub Pages builds run safely against the unmigrated hosted schema.
+- Educational guides, video content, and assessment quiz questions/options are not translated in Phase 7.2A. Machine translation is strictly prohibited. Quiz localization with immutable bilingual question snapshots and attempt snapshots is deferred to Phase 7.2B.
+- Broad feature-page UI translation (Learner Guides, Quiz Views, Profile Page, Instructor Teaching Kit, Admin Management forms) is deferred to Phase 7.2B.
+
 ## Exact recommended next action
 
 Milestone 6 is formally CLOSED (Technical Production Readiness: PASS).
@@ -908,12 +956,17 @@ Milestone 7 Phase 7.1 (Schema & Compatibility Foundation) is COMPLETE and formal
 - Phase 7.1B (Controlled Hosted Schema Deployment & Verification) — PASS
 - Phase 7.1 — COMPLETE
 
-Hosted Supabase Project `zlaixhnyydxgbphgsetv` deployed migrations:
+Milestone 7 Phase 7.2 (Bilingual Application Foundation):
+- Phase 7.2A (Bilingual Locale & Preference Foundation — Local/CI Implementation Only) — COMPLETE (PASS)
+- Phase 7.2B (Assessment & Content Localization + Hosted Deployment) — PLANNED (NOT STARTED)
+
+Hosted Supabase Project `zlaixhnyydxgbphgsetv` deployed migrations remain at:
 - `20260922010000_milestone_7_enums.sql`
 - `20260922020000_milestone_7_schema_foundation.sql`
+(Phase 7.2A migration `20260924010000_milestone_7_bilingual_foundation.sql` is NOT deployed to hosted Supabase).
 
 Recommended next action:
-1. Review and approve the Phase 7.2 Bilingual Application Foundation implementation plan.
-2. Proceed to Phase 7.2 implementation (client-side i18n framework, locale dictionaries, profile language persistence, language switcher).
+1. Review and approve the Phase 7.2A Bilingual Locale & Preference Foundation implementation.
+2. Proceed to Phase 7.2B: Content & Assessment Localization + Hosted Migration Deployment.
 3. Do NOT execute the production clean-slate reset at this time (reserved for post-7.7 pre-launch).
 4. Do NOT mutate hosted production data or seed fixtures during development.

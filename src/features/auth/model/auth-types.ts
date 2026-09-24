@@ -1,5 +1,6 @@
 import type { Session, User } from "@supabase/supabase-js";
 
+import type { AppLocale } from "../../../lib/i18n/types";
 import type { Enums } from "../../../lib/supabase/database.types";
 
 export type AccountStatus = Enums<"account_status">;
@@ -10,6 +11,7 @@ export type AccountAccess = {
     accountStatus: AccountStatus;
     fullName: string;
     organizationId: string | null;
+    preferredLanguage: AppLocale;
   } | null;
   roles: AppRole[];
 };

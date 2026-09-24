@@ -9,6 +9,7 @@ import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { AppLogo } from "./app-logo";
 import { DemoBanner } from "./demo-banner";
+import { LanguageSwitcher } from "./language-switcher";
 
 export type FieldNavigationItem = {
   to: string;
@@ -103,6 +104,9 @@ export function FieldShell({
           </NavLink>
         </nav>
         <div className="border-t p-4">
+          <div className="mb-3">
+            <LanguageSwitcher />
+          </div>
           <div className="rounded-xl border bg-muted/55 p-3">
             <p className="text-xs font-medium text-muted-foreground">
               Demo experience
@@ -136,16 +140,19 @@ export function FieldShell({
                 </span>
               </div>
             </div>
-            <Button
-              asChild
-              aria-label={`Open ${roleLabel.toLowerCase()} profile`}
-              size="icon"
-              variant="ghost"
-            >
-              <Link to={profilePath}>
-                <UserRound aria-hidden="true" className="size-5" />
-              </Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <Button
+                asChild
+                aria-label={`Open ${roleLabel.toLowerCase()} profile`}
+                size="icon"
+                variant="ghost"
+              >
+                <Link to={profilePath}>
+                  <UserRound aria-hidden="true" className="size-5" />
+                </Link>
+              </Button>
+            </div>
           </div>
         </header>
 

@@ -351,7 +351,7 @@ authenticated learner journey is not yet implemented.
 
 ## Milestone 7 — Controlled onboarding, multi-course cohorts, and bilingual foundation
 
-**Status:** active — Phase 7.1 COMPLETE (Phase 7.1A: PASS, Phase 7.1A.1: PASS, Phase 7.1B: PASS); Phase 7.2 PLANNED. Deployed hosted migration versions: `20260922010000`, `20260922020000`.
+**Status:** active — Phase 7.1 COMPLETE (Phase 7.1A: PASS, Phase 7.1A.1: PASS, Phase 7.1B: PASS); Phase 7.2A LOCAL/CI FOUNDATION COMPLETE; Phase 7.2B PLANNED. Deployed hosted migration versions: `20260922010000`, `20260922020000`.
 
 ### Objectives
 
@@ -373,7 +373,26 @@ authenticated learner journey is not yet implemented.
   - **Phase 7.1 — COMPLETE**.
   - **Sequencing Safeguards**: Retain `one_active_cohort_per_learner` partial index until Phase 7.6 when multi-cohort UI exists. Retain `cohorts.course_id` (NOT NULL) until Phase 7.6 cutover. Retain existing `private.handle_auth_user_confirmed()` lifecycle (confirmations route to `active`, not `pending_registration`) until Phase 7.5 registration UI exists. Technical spikes are required before their dependent feature implementations (Spike 1 before Phase 7.3; Spike 2 before Phase 7.5), not before Phase 7.1 schema work.
 - **Phase 7.2 — Bilingual Application Foundation**:
-  Client-side translation framework (`useTranslation()`), locale dictionaries (`en.ts`, `ms.ts`), profile language preference, bilingual metadata schema, and fallback behavior.
+  - **Phase 7.2A (Bilingual Locale & Preference Foundation — LOCAL/CI FOUNDATION COMPLETE)**:
+    - Lightweight typed first-party client-side localization framework under `src/lib/i18n/` (`types.ts`, `en.ts`, `ms.ts`, `i18n-context.tsx`, `use-translation.ts`, `localized-text.ts`, `formatting.ts`). Full compile-time key parity between EN and MS dictionaries.
+    - Pre-auth language persistence via non-sensitive `bls.locale` in `localStorage` defaulting to `'en'`. Does not auto-switch based on `navigator.language`.
+    - Signed-in profile language preference (`profiles.preferred_language`) becomes authoritative upon authentication.
+    - Reusable accessible `LanguageSwitcher` mounted in auth pages, learner shell, instructor shell, and operations/admin shell.
+    - Core system/auth UI translated: Login, Forgot Password, Reset Password, Auth Callback, Access State, Not Found, Route Error, State Panel, navigation items, sign out.
+    - Safe authored bilingual database field helper `localizedText({ en, ms, locale })` falling back to English when BM is null, empty, or whitespace-only.
+    - Additive database migration `20260924010000_milestone_7_bilingual_foundation.sql`: `profiles.preferred_language text not null default 'en'`, `courses.title_ms text null`, `courses.description_ms text null`, `cohorts.name_ms text null`, `cohorts.description_ms text null`, `public.resource_language` enum, `resources.content_language resource_language not null default 'en'`.
+    - Active profile self-update privilege granted strictly on `preferred_language`.
+    - Tested via 21 pgTAP assertions (15 total suites, 461 tests) and 39 frontend test suites (221 tests) — 100% PASS.
+    - Zero hosted migrations deployed (`HOSTED_SUPABASE_MUTATIONS = ZERO`).
+    - Robust production backward-compatibility adapter: missing remote `preferred_language` column (PostgREST error 42703) is gracefully caught, allowing production GitHub Pages builds to run uninterrupted against the unmigrated hosted schema.
+  - **Phase 7.2B (Assessment & Content Localization + Hosted Deployment — PLANNED)**:
+    - Remaining feature-page UI translation (Learner Guides, Quiz Views, Profile Page, Instructor Teaching Kit, Admin Management forms).
+    - Bilingual quiz question/option schema (`prompt_ms`, `option_text_ms`).
+    - Bilingual immutable attempt snapshots and question versions.
+    - Learner quiz attempt payload language selection.
+    - Admin bilingual quiz authoring.
+    - Broad course/cohort translated-field rendering across feature components.
+    - Controlled hosted Phase 7.2 migration deployment.
 - **Phase 7.3 — Email Transport Spike & Staff Bootstrap**:
   Execute Email Transport Spike to evaluate and verify supported server-side mail transport. Implement `public.staff_access_entries` management, role hierarchy enforcement (`super_admin` -> admin/instructor; `admin` -> instructor; no self-assignment; no super-admin creation in UI), and first legitimate instructor onboarding.
 - **Phase 7.4 — Cohort Roster & Invitation Engine**:

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { useTranslation } from "../../lib/i18n/use-translation";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
@@ -32,49 +33,52 @@ type StatePanelProps = {
   children?: ReactNode;
 };
 
-const stateContent: Record<
-  StateKind,
-  { title: string; description: string; icon: LucideIcon; tone: string }
-> = {
+const stateIcons: Record<StateKind, { icon: LucideIcon; tone: string }> = {
   loading: {
-    title: "Loading content",
-    description: "Preparing this screen.",
     icon: LoaderCircle,
     tone: "bg-primary-soft text-primary",
   },
   empty: {
-    title: "Nothing here yet",
-    description: "This area is ready for content in a later prototype iteration.",
     icon: Inbox,
     tone: "bg-muted text-muted-foreground",
   },
   offline: {
-    title: "You appear to be offline",
-    description:
-      "The prototype shell remains available, but guides and teaching materials require a connection.",
     icon: CloudOff,
     tone: "bg-warning-soft text-warning",
   },
   expired: {
-    title: "Companion access has expired",
-    description:
-      "Course references and new assessments are unavailable in this state.",
     icon: Clock3,
     tone: "bg-warning-soft text-warning",
   },
   error: {
-    title: "We could not load this screen",
-    description: "Try again. No data has been changed.",
     icon: AlertCircle,
     tone: "bg-destructive-soft text-destructive",
   },
   denied: {
-    title: "Access is not available",
-    description:
-      "This demo role does not have permission to open the requested area.",
     icon: Ban,
     tone: "bg-destructive-soft text-destructive",
   },
+};
+
+const defaultTitles: Record<StateKind, string> = {
+  loading: "Loading content",
+  empty: "Nothing here yet",
+  offline: "You appear to be offline",
+  expired: "Companion access has expired",
+  error: "We could not load this screen",
+  denied: "Access is not available",
+};
+
+const defaultDescriptions: Record<StateKind, string> = {
+  loading: "Preparing this screen.",
+  empty: "This area is ready for content in a later prototype iteration.",
+  offline:
+    "The prototype shell remains available, but guides and teaching materials require a connection.",
+  expired:
+    "Course references and new assessments are unavailable in this state.",
+  error: "Try again. No data has been changed.",
+  denied:
+    "This demo role does not have permission to open the requested area.",
 };
 
 export function StatePanel({
@@ -87,10 +91,27 @@ export function StatePanel({
   onAction,
   title,
 }: StatePanelProps) {
-  const content = stateContent[kind];
-  const Icon = content.icon;
+  const { locale, t } = useTranslation();
+  const visual = stateIcons[kind];
+  const Icon = visual.icon;
   const isLoading = kind === "loading";
   const Heading = as;
+
+  const resolvedTitle =
+    title ??
+    (locale === "ms"
+      ? kind === "loading"
+        ? t("state.loading")
+        : kind === "error"
+          ? t("state.error")
+          : kind === "offline"
+            ? t("state.offline")
+            : kind === "empty"
+              ? t("state.empty")
+              : defaultTitles[kind]
+      : defaultTitles[kind]);
+
+  const resolvedDescription = description ?? defaultDescriptions[kind];
 
   return (
     <Card
@@ -106,14 +127,14 @@ export function StatePanel({
         aria-hidden="true"
         className={cn(
           "mb-4 flex size-12 items-center justify-center rounded-2xl",
-          content.tone,
+          visual.tone,
         )}
       >
         <Icon className={cn("size-6", isLoading && "animate-spin")} />
       </span>
-      <Heading className="text-lg font-semibold">{title ?? content.title}</Heading>
+      <Heading className="text-lg font-semibold">{resolvedTitle}</Heading>
       <p className="mt-2 max-w-md text-sm text-muted-foreground">
-        {description ?? content.description}
+        {resolvedDescription}
       </p>
       {children}
       {actionLabel && onAction && (

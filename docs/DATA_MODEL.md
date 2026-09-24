@@ -191,7 +191,9 @@ Primary key: `(cohort_id, user_id)`. The legacy `one_active_cohort_per_learner` 
 - `organization_id`
 - `slug`
 - `title`
+- `title_ms` (Optional localized title)
 - `description`
+- `description_ms` (Optional localized description)
 - `status`
 - `created_by`
 - `updated_by`
@@ -287,6 +289,7 @@ browsing. Referenced taxonomy records are retired rather than deleted.
 - `slug`
 - `title`
 - `resource_type`
+- `content_language` (enum `public.resource_language`: `'en'`, `'ms'`, `'bilingual'`, `'language_independent'`; default `'en'`)
 - `estimated_minutes`
 - `featured`
 - `status`

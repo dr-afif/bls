@@ -602,10 +602,12 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          description_ms: string | null
           end_at: string
           id: string
           learner_access_state: Database["public"]["Enums"]["learner_access_state"]
           name: string
+          name_ms: string | null
           organization_id: string
           preparation_notes: string | null
           start_at: string
@@ -621,10 +623,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          description_ms?: string | null
           end_at: string
           id?: string
           learner_access_state?: Database["public"]["Enums"]["learner_access_state"]
           name: string
+          name_ms?: string | null
           organization_id: string
           preparation_notes?: string | null
           start_at: string
@@ -640,10 +644,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          description_ms?: string | null
           end_at?: string
           id?: string
           learner_access_state?: Database["public"]["Enums"]["learner_access_state"]
           name?: string
+          name_ms?: string | null
           organization_id?: string
           preparation_notes?: string | null
           start_at?: string
@@ -783,11 +789,13 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          description_ms: string | null
           id: string
           organization_id: string
           slug: string
           status: Database["public"]["Enums"]["course_status"]
           title: string
+          title_ms: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -795,11 +803,13 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          description_ms?: string | null
           id?: string
           organization_id: string
           slug: string
           status?: Database["public"]["Enums"]["course_status"]
           title: string
+          title_ms?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -807,11 +817,13 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          description_ms?: string | null
           id?: string
           organization_id?: string
           slug?: string
           status?: Database["public"]["Enums"]["course_status"]
           title?: string
+          title_ms?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -872,6 +884,7 @@ export type Database = {
           id: string
           organization_id: string | null
           phone: string | null
+          preferred_language: string
           profession: string | null
           staff_id: string | null
           updated_at: string
@@ -884,6 +897,7 @@ export type Database = {
           id: string
           organization_id?: string | null
           phone?: string | null
+          preferred_language?: string
           profession?: string | null
           staff_id?: string | null
           updated_at?: string
@@ -896,6 +910,7 @@ export type Database = {
           id?: string
           organization_id?: string | null
           phone?: string | null
+          preferred_language?: string
           profession?: string | null
           staff_id?: string | null
           updated_at?: string
@@ -1760,6 +1775,7 @@ export type Database = {
         Row: {
           available_from: string | null
           available_until: string | null
+          content_language: Database["public"]["Enums"]["resource_language"]
           course_id: string
           created_at: string
           created_by: string | null
@@ -1778,6 +1794,7 @@ export type Database = {
         Insert: {
           available_from?: string | null
           available_until?: string | null
+          content_language?: Database["public"]["Enums"]["resource_language"]
           course_id: string
           created_at?: string
           created_by?: string | null
@@ -1796,6 +1813,7 @@ export type Database = {
         Update: {
           available_from?: string | null
           available_until?: string | null
+          content_language?: Database["public"]["Enums"]["resource_language"]
           course_id?: string
           created_at?: string
           created_by?: string | null
@@ -2278,6 +2296,7 @@ export type Database = {
       quiz_type: "pre_test" | "post_test"
       quiz_version_status: "draft" | "published" | "retired"
       resource_audience: "learner" | "instructor"
+      resource_language: "en" | "ms" | "bilingual" | "language_independent"
       resource_status:
         | "draft"
         | "under_review"
@@ -2451,6 +2470,7 @@ export const Constants = {
       quiz_type: ["pre_test", "post_test"],
       quiz_version_status: ["draft", "published", "retired"],
       resource_audience: ["learner", "instructor"],
+      resource_language: ["en", "ms", "bilingual", "language_independent"],
       resource_status: [
         "draft",
         "under_review",
