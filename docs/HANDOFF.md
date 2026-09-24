@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-09-23
+2026-09-24
 
 ## Current milestone
 
@@ -10,8 +10,12 @@
 - Milestone 7 (Controlled Onboarding, Multi-Course Cohorts & Bilingual Foundation) — ACTIVE:
   - Architecture & Documentation Phase — COMPLETE & REFINED.
   - Phase 7.1: Schema & Compatibility Foundation:
-    * Phase 7.1A / 7.1A.1: Local/CI Database Schema Foundation & Hardening Pass — COMPLETE (PASS; HOSTED_SUPABASE_MUTATIONS = ZERO).
-  - Phase 7.2: Bilingual Application Foundation — PLANNED.
+    * Phase 7.1A: Local/CI Database Schema Foundation — PASS.
+    * Phase 7.1A.1: Local Schema Hardening & Correction Pass — PASS.
+    * Phase 7.1B: Controlled Hosted Schema Deployment & Verification — PASS.
+    * Phase 7.1 — COMPLETE.
+    * Deployed hosted migration versions: `20260922010000_milestone_7_enums.sql`, `20260922020000_milestone_7_schema_foundation.sql`.
+  - Phase 7.2: Bilingual Application Foundation — PLANNED (READY FOR ARCHITECTURE REVIEW).
   - Phase 7.3: Email Transport Spike & Staff Bootstrap — PLANNED.
   - Phase 7.4: Cohort Roster & Invitation Engine — PLANNED.
   - Phase 7.5: Passwordless Return Spike, First-Time & Returning User Registration — PLANNED.
@@ -20,6 +24,46 @@
   - Final Release Gate: Controlled Production Clean-Slate Reset — REQUIRED immediately prior to first real participant launch.
 
 ## Work completed
+
+- Implemented Milestone 7 Phase 7.1B: Controlled Hosted Schema Deployment & Verification — COMPLETE (PASS):
+  - Pre-Deployment Verification & Preflight:
+    * Local Baseline: Verified git status clean, branch `main`, HEAD commit `1df0a69d3e9fc7aa9bb185b0cdf5a09b37a32a15`.
+    * Linked Project: Verified linked Supabase project reference is strictly `zlaixhnyydxgbphgsetv`.
+    * Remote Migration History: Preflight confirmed remote migration history ended cleanly at `20260820090000_milestone_6_user_provisioning_transaction`. Exactly two pending migrations (`20260922010000`, `20260922020000`), zero remote-only migrations, zero drift. Dry-run verified 2 migrations to be applied, 0 seeds, 0 custom roles.
+    * Hosted Data Preflight: Read-only inventory confirmed 2 cohorts (`BLS-DEMO-01`, `KTGS02-0826`), 1 course (`1eda1f27-28b0-4ebd-ac5b-ee8bb132ca66`), 3 profiles, 0 cohort members, 0 course entitlements, 0 null course_ids, and 0 organization mismatches. Confirmed target tables did not exist prior to push.
+  - Migration Deployment:
+    * Deployed exactly the two reviewed migrations via `npx supabase db push`:
+      1. `20260922010000_milestone_7_enums.sql`
+      2. `20260922020000_milestone_7_schema_foundation.sql`
+    * Exit code 0, clean execution, no repair or rollback flags used.
+  - Post-Deployment Schema & Data Verification:
+    * Hosted migration history contains all 30 migrations matching local 1-to-1, ending at `20260922020000`.
+    * Enums: `account_status` contains `pending_registration`; `learner_access_state` has values `'open'` and `'closed'`.
+    * Cohorts: `learner_access_state` column exists, `NOT NULL`, default `'open'`, both existing cohorts set to `'open'`; legacy `course_id` remains `NOT NULL`.
+    * Backfill: `cohort_courses` contains exactly 2 rows matching existing cohorts (`BLS-DEMO-01`, `KTGS02-0826`) with `display_order = 0`, `start_at = NULL`, `end_at = NULL`, `venue = NULL`, and organization parity confirmed. Legacy sync trigger `trg_sync_cohort_legacy_course` active on `cohorts`.
+    * Intent Tables: `cohort_learner_roster`, `staff_access_entries`, and `access_invitations` created with fail-closed RLS enabled and 0 initial rows.
+    * Private Identity: `private.learner_identities` exists in `private` schema with 0 rows; grants revoked from all browser roles (`anon`, `authenticated`), accessible only to `postgres` service role.
+    * Compatibility & Invariants: `one_active_cohort_per_learner` unique index intact; `private.handle_auth_user_confirmed()` retains Milestone 6 behavior; profile count intact (3).
+  - Hosted Type Parity:
+    * Generated TypeScript types from linked hosted project into temporary file.
+    * Compared against `src/lib/supabase/database.types.ts`: verified byte-for-byte schema equivalence (differed only by standard CLI PostgREST 14.5 version annotation comment block). Temporary comparison file cleaned up.
+  - Security & Performance Advisors:
+    * Ran `supabase db advisors --linked --type security` and `--type performance`.
+    * Verified **0 security issues** and **0 performance issues** attributable to Phase 7.1 objects.
+  - Production App Smoke:
+    * Production app entry and assets (`https://dr-afif.github.io/bls/`) verified over HTTP: status 200 OK.
+    * Automated build and test suites pass 100% locally (33 files, 189 tests, typecheck 0 errors, lint 0 errors, build succeeds).
+    * Authenticated live production user smoke reported as MANUAL_CONFIRMATION_REQUIRED per guidelines.
+  - Documentation Cleanups:
+    * Corrected MyKad validation description in canonical docs to remove undocumented "checksum" rule; specified date-format / DOB prefix and accepted state/place code validation where formally specified.
+    * Recorded Phase 7.5 design checkpoint: evaluate whether passport uniqueness must include issuing-country context before enabling real participant registrations.
+  - Strict Operational Boundaries:
+    * `HOSTED_MILESTONE_7_MIGRATIONS = 20260922010000, 20260922020000`
+    * `SEED_EXECUTED_ON_HOSTED = NO`
+    * `AUTH_CONFIG_MUTATIONS = ZERO`
+    * `EDGE_FUNCTION_DEPLOYS = ZERO`
+    * `SMTP_MUTATIONS = ZERO`
+    * `CLEAN_SLATE_RESET_EXECUTED = NO`
 
 - Implemented Milestone 7 Phase 7.1A.1: Local Schema Hardening & Correction Pass — COMPLETE (PASS):
   - Hardened Local/CI Database Migrations (Pre-Hosted Direct Modification):
@@ -30,7 +74,7 @@
     * Token Hash Format Enforcement: Added `CHECK (token_hash IS NULL OR token_hash ~ '^[0-9a-f]{64}$')`, guaranteeing lowercase 64-char hexadecimal SHA-256 hash representation.
     * Removed Generic Metadata: Removed unjustified `metadata jsonb` container from `access_invitations` and generated database types.
     * Preserved Invitation History on Target Deletion: Changed target FKs `cohort_roster_entry_id`, `staff_access_entry_id`, and `supersedes_invitation_id` from cascading delete to `ON DELETE RESTRICT`, preventing accidental destruction of historical attempt records.
-    * Aligned National Identity Format & Documentation: Standardized Passport canonical shape to uppercase trimmed alphanumeric 6–20 characters (`^[A-Z0-9]{6,20}$`) and MyKad to 12 numeric digits (`^[0-9]{12}$`). Clarified in canonical docs that database validates shape only, while semantic validation (calendar DOB, Malaysian state code, checksum) is deferred to the trusted Phase 7.5 registration layer.
+    * Aligned National Identity Format & Documentation: Standardized Passport canonical shape to uppercase trimmed alphanumeric 6–20 characters (`^[A-Z0-9]{6,20}$`) and MyKad to 12 numeric digits (`^[0-9]{12}$`). Clarified in canonical docs that database validates shape only, while semantic validation (date-format / valid DOB prefix and accepted Malaysian place-of-birth code where formally specified) is deferred to the trusted Phase 7.5 registration layer; Phase 7.5 must not invent or implement an undocumented MyKad checksum rule. Recorded Phase 7.5 design checkpoint regarding passport issuing-country context.
   - Preserved Backward Compatibility & Sequencing Safeguards:
     * Safeguard A: Preserved existing `private.handle_auth_user_confirmed()` email confirmation behavior (transitions unconfirmed users to `'active'`, not `'pending_registration'`).
     * Safeguard B: Preserved `cohorts.course_id` (NOT NULL) and installed compatibility mirroring trigger.
@@ -858,11 +902,18 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
 ## Exact recommended next action
 
 Milestone 6 is formally CLOSED (Technical Production Readiness: PASS).
-Milestone 7 Architecture & Documentation Phase is COMPLETE & REFINED.
-The comprehensive architecture plan is detailed in [`docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md`](MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md) and ADRs 017–022 in [`docs/DECISIONS.md`](DECISIONS.md).
+Milestone 7 Phase 7.1 (Schema & Compatibility Foundation) is COMPLETE and formally CLOSED:
+- Phase 7.1A (Local/CI Foundation) — PASS
+- Phase 7.1A.1 (Local Schema Hardening Pass) — PASS
+- Phase 7.1B (Controlled Hosted Schema Deployment & Verification) — PASS
+- Phase 7.1 — COMPLETE
+
+Hosted Supabase Project `zlaixhnyydxgbphgsetv` deployed migrations:
+- `20260922010000_milestone_7_enums.sql`
+- `20260922020000_milestone_7_schema_foundation.sql`
 
 Recommended next action:
-1. Review and approve the refined Milestone 7 Architecture Plan.
-2. Upon approval, begin implementation of Milestone 7 Phase 7.1 (Schema & Compatibility Foundation).
-3. Do NOT execute the production clean-slate reset at this time. The controlled pre-launch clean-slate reset must occur immediately prior to onboarding the first real course participants (after Phase 7.7 passes).
+1. Review and approve the Phase 7.2 Bilingual Application Foundation implementation plan.
+2. Proceed to Phase 7.2 implementation (client-side i18n framework, locale dictionaries, profile language persistence, language switcher).
+3. Do NOT execute the production clean-slate reset at this time (reserved for post-7.7 pre-launch).
 4. Do NOT mutate hosted production data or seed fixtures during development.

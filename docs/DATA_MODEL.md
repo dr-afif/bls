@@ -47,8 +47,8 @@
   - `get_cohort_roster_for_instructor(...)`: instructor reads cohort roster with server-derived masked identifier (`******-**-1234`). Full values never appear in network payloads.
 - **Server-Derived Masking**: Masked strings are computed dynamically on the server (`'******-**-' || right(id_number, 4)` for MyKad). No mutable redundant column is stored.
 - **Database Shape Validation vs Semantic Validation**:
-  - `mykad`: Canonical database shape validation verifies strictly 12 numeric digits (`^[0-9]{12}$`). Semantic calendar DOB, Malaysian state codes, and checksum verification are deferred to the trusted Phase 7.5 registration validation layer.
-  - `passport`: Canonical database shape validation verifies uppercase trimmed alphanumeric representation 6–20 characters (`^[A-Z0-9]{6,20}$`). Universal international passport format validation is not claimed.
+  - `mykad`: Canonical database shape validation verifies strictly 12 numeric digits (`^[0-9]{12}$`). Semantic checks (date-format / valid DOB prefix and accepted Malaysian place-of-birth code validation where formally specified) are deferred to the trusted Phase 7.5 registration validation layer; the system must not invent or implement an undocumented MyKad checksum rule.
+  - `passport`: Canonical database shape validation verifies uppercase trimmed alphanumeric representation 6–20 characters (`^[A-Z0-9]{6,20}$`). Universal international passport format validation is not claimed. Phase 7.5 Design Checkpoint: Before passport-based registration is enabled for real participants, review whether passport uniqueness must include issuing-country context.
   - Constraint: `UNIQUE (id_type, id_number)`. Duplicate registration fails safely with generic error messaging to prevent identity enumeration. Full IDs are never logged.
 
 ### `user_roles`

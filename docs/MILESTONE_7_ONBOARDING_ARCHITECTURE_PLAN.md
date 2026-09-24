@@ -223,7 +223,7 @@ Physically isolated in the `private` PostgreSQL schema. **Browser roles (`anon`,
 - `created_at timestamptz not null default now()`
 - `updated_at timestamptz not null default now()`
 - **Unique Constraint**: `unique (id_type, id_number)` (Prevents duplicate learner identities across accounts)
-- **Database Shape Validation vs Semantic Validation**: The database validates canonical shape (`^[0-9]{12}$` for MyKad; `^[A-Z0-9]{6,20}$` for Passport). Semantic checks (calendar DOB, Malaysian state code, checksum) are deferred to trusted Phase 7.5 registration RPCs. Universal passport validation is not claimed.
+- **Database Shape Validation vs Semantic Validation**: The database validates canonical shape (`^[0-9]{12}$` for MyKad; `^[A-Z0-9]{6,20}$` for Passport). Semantic checks (date-format / accepted place-code validation where formally specified) are deferred to trusted Phase 7.5 registration RPCs; the system must not invent or implement an undocumented MyKad checksum rule. Universal passport validation is not claimed. Phase 7.5 Design Checkpoint: Before passport-based registration is enabled for real participants, review whether passport uniqueness must include issuing-country context.
 - **Controlled Access Interfaces (SECURITY DEFINER RPCs with `SET search_path = ''`)**:
   1. `get_my_learner_identity()`: Learner reads own identity record.
   2. `update_my_learner_identity(id_type, id_number)`: Learner updates own identity with validation.
@@ -409,10 +409,11 @@ All sensitive identity card numbers reside in `private.learner_identities`. Dire
 - **MyKad (`id_type = 'mykad'`)**:
   - Normalized stored representation: strictly 12 numeric digits without punctuation, spaces, or hyphens (`^[0-9]{12}$`).
   - Database responsibility: canonical shape validation only (`id_number ~ '^[0-9]{12}$'`).
-  - Trusted RPC validation (Phase 7.5): verifies 12 digits, valid date of birth prefix (`YYMMDD`), valid Malaysian place of birth code, and checksum.
+  - Trusted RPC validation (Phase 7.5): verifies 12 digits, valid date-format / date-of-birth prefix (`YYMMDD`), and accepted Malaysian place-of-birth code where formally specified. The system must not invent or implement an undocumented MyKad checksum rule.
 - **Passport (`id_type = 'passport'`)**:
   - Normalized stored representation: uppercase, trimmed alphanumeric string (`^[A-Z0-9]{6,20}$`).
   - Database responsibility: canonical shape validation only (`id_number ~ '^[A-Z0-9]{6,20}$'`). Universal international format validation is not claimed.
+  - Phase 7.5 Design Checkpoint: Before passport-based registration is enabled for real participants, review whether passport uniqueness must include issuing-country context.
 - **Uniqueness Invariant**:
   - `unique (id_type, id_number)` in `private.learner_identities`.
   - Duplicate registration attempts fail safely with a generic error ("Unable to complete registration. If you already have an account, please sign in."). No specific details are reflected to prevent identity enumeration.
@@ -481,12 +482,16 @@ effective_expired := (inv.status = 'sent' and inv.expires_at <= now());
 
 ## 12. Phased Implementation Plan (Milestones 7.1 – 7.7)
 
-### Phase 7.1 — Schema & Compatibility Foundation
-- **Phase 7.1A (Local/CI Foundation — CURRENT)**: Deploy `cohort_courses` (with schedule overrides and legacy mirror trigger), `cohort_learner_roster`, `staff_access_entries`, `access_invitations` (attempt history referencing exactly one intent target, token_hash/sent_at/expires_at dispatch lifecycle, and active attempt uniqueness), `private.learner_identities` (browser access revoked).
-- Add `learner_access_state` to `cohorts` and `pending_registration` to `account_status`.
-- Backfill `cohort_courses` from `cohorts.course_id`.
+### Phase 7.1 — Schema & Compatibility Foundation — COMPLETE
+- **Phase 7.1A (Local/CI Foundation)**: PASS — Deployed `cohort_courses` (with schedule overrides and legacy mirror trigger), `cohort_learner_roster`, `staff_access_entries`, `access_invitations` (attempt history referencing exactly one intent target, token_hash/sent_at/expires_at dispatch lifecycle, and active attempt uniqueness), `private.learner_identities` (browser access revoked).
+- **Phase 7.1A.1 (Local Schema Hardening Pass)**: PASS — Dynamic inheritance with NULL overrides, lineage supersession hardening, immutable send fields on dispatched invitations, exact 7-day validity constraint, lowercase 64-char hex token hash format, RESTRICT on target deletion, removed metadata jsonb.
+- **Phase 7.1B (Hosted Schema Deployment & Verification)**: PASS — Applied migrations to linked Supabase project `zlaixhnyydxgbphgsetv` with verified schema compatibility, non-null backfill, zero advisor issues, and full TypeScript type parity.
+- **Phase 7.1 — COMPLETE**:
+  - Deployed hosted migration versions:
+    * `20260922010000_milestone_7_enums.sql`
+    * `20260922020000_milestone_7_schema_foundation.sql`
 - **Sequencing Safeguards**: Retain `one_active_cohort_per_learner` index until Phase 7.6 when multi-cohort UI exists. Retain `cohorts.course_id` (NOT NULL) until Phase 7.6 cutover. Retain existing `private.handle_auth_user_confirmed` lifecycle (confirmations route to `active`, not `pending_registration`) until Phase 7.5 registration UI exists.
-- Regenerate TypeScript database types. Comprehensive pgTAP test coverage.
+- TypeScript database types synchronized with hosted database. Comprehensive pgTAP test coverage (14 suites, 440 assertions).
 
 ### Phase 7.2 — Bilingual Application Foundation
 - Implement `src/lib/i18n/` framework, locale dictionaries (`en.ts`, `ms.ts`), language switcher, profile language persistence (`profiles.preferred_language`), bilingual metadata schema.

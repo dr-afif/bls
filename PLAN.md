@@ -351,7 +351,7 @@ authenticated learner journey is not yet implemented.
 
 ## Milestone 7 — Controlled onboarding, multi-course cohorts, and bilingual foundation
 
-**Status:** planned (architecture & documentation complete in [`docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md`](docs/MILESTONE_7_ONBOARDING_ARCHITECTURE_PLAN.md); implementation pending review and approval).
+**Status:** active — Phase 7.1 COMPLETE (Phase 7.1A: PASS, Phase 7.1A.1: PASS, Phase 7.1B: PASS); Phase 7.2 PLANNED. Deployed hosted migration versions: `20260922010000`, `20260922020000`.
 
 ### Objectives
 
@@ -367,7 +367,10 @@ authenticated learner journey is not yet implemented.
 ### Phase Plan
 
 - **Phase 7.1 — Schema & Compatibility Foundation**:
-  - **Phase 7.1A / 7.1A.1 (Local/CI Foundation — COMPLETE)**: Deploy additive schema foundation for `public.cohort_courses` (with dynamic inheritance via NULL overrides and compatibility mirror from legacy `cohorts.course_id`), `public.cohort_learner_roster`, `public.staff_access_entries`, `public.access_invitations` (attempt history referencing exactly one intent target, target deletion restricted, 64-char lowercase hex token hash format, exact 7-day validity `expires_at = sent_at + interval '7 days'`, status lifecycle preserving historical send fields, same-target supersession lineage hardening, and no generic metadata), `private.learner_identities` (in `private` schema with browser access revoked, canonical 12-digit MyKad and 6-20 uppercase alphanumeric Passport shape validation), `learner_access_state` enum (`open`, `closed`), and `pending_registration` account state.
+  - **Phase 7.1A (Local/CI Foundation)**: PASS — Additive schema foundation for `public.cohort_courses`, `public.cohort_learner_roster`, `public.staff_access_entries`, `public.access_invitations`, `private.learner_identities`, `learner_access_state`, and `pending_registration`.
+  - **Phase 7.1A.1 (Local Schema Hardening Pass)**: PASS — Dynamic inheritance with NULL overrides, lineage supersession hardening, immutable send fields on dispatched invitations, exact 7-day validity constraint, lowercase 64-char hex token hash format, RESTRICT on target deletion, removed metadata jsonb.
+  - **Phase 7.1B (Hosted Schema Deployment & Verification)**: PASS — Successfully applied both migrations (`20260922010000_milestone_7_enums.sql`, `20260922020000_milestone_7_schema_foundation.sql`) to linked Supabase project `zlaixhnyydxgbphgsetv`; verified 100% schema and backfill compatibility, zero advisor issues, and full TypeScript type parity.
+  - **Phase 7.1 — COMPLETE**.
   - **Sequencing Safeguards**: Retain `one_active_cohort_per_learner` partial index until Phase 7.6 when multi-cohort UI exists. Retain `cohorts.course_id` (NOT NULL) until Phase 7.6 cutover. Retain existing `private.handle_auth_user_confirmed()` lifecycle (confirmations route to `active`, not `pending_registration`) until Phase 7.5 registration UI exists. Technical spikes are required before their dependent feature implementations (Spike 1 before Phase 7.3; Spike 2 before Phase 7.5), not before Phase 7.1 schema work.
 - **Phase 7.2 — Bilingual Application Foundation**:
   Client-side translation framework (`useTranslation()`), locale dictionaries (`en.ts`, `ms.ts`), profile language preference, bilingual metadata schema, and fallback behavior.
