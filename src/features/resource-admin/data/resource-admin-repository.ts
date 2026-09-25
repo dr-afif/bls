@@ -21,14 +21,14 @@ function ensureResults(results: Array<{ error: unknown }>) {
 
 export async function listAdminResourceCatalog(client: Client): Promise<AdminResourceCatalog> {
   const [resources, versions, audiences, topicAssignments, topics, stageAssignments, stages, courses, auditEvents, profiles] = await Promise.all([
-    client.from("resources").select("id, organization_id, course_id, slug, title, resource_type, status, current_version_id, estimated_minutes, featured, available_from, available_until, updated_at").order("updated_at", { ascending: false }).limit(100),
+    client.from("resources").select("id, organization_id, course_id, slug, title, resource_type, status, current_version_id, estimated_minutes, featured, available_from, available_until, updated_at, content_language").order("updated_at", { ascending: false }).limit(100),
     client.from("resource_versions").select("id, resource_id, version_number, title, summary, content, youtube_video_id, storage_path, guideline_source, guideline_year, reviewed_at, next_review_at, approved_at, status, created_at").order("created_at", { ascending: false }).limit(500),
     client.from("resource_audiences").select("resource_id, audience"),
     client.from("resource_topics").select("resource_id, topic_id, display_order"),
     client.from("bls_topics").select("id, name, display_order, active").order("display_order").order("name"),
     client.from("resource_teaching_stages").select("resource_id, teaching_stage_id, display_order"),
     client.from("teaching_stages").select("id, name, display_order, active").order("display_order").order("name"),
-    client.from("courses").select("id, title, status").neq("status", "archived").order("title"),
+    client.from("courses").select("id, title, title_ms, status").neq("status", "archived").order("title"),
     client.from("audit_events").select("id, actor_user_id, action, entity_id, created_at").in("entity_type", ["resource", "resource_version"]).order("created_at", { ascending: false }).limit(100),
     client.from("profiles").select("id, full_name"),
   ]);
@@ -52,8 +52,10 @@ export async function listAdminResourceCatalog(client: Client): Promise<AdminRes
     })),
     availableFrom: resource.available_from,
     availableUntil: resource.available_until,
+    contentLanguage: resource.content_language,
     courseId: resource.course_id,
     courseTitle: courseById.get(resource.course_id)?.title ?? "Course unavailable",
+    courseTitleMs: courseById.get(resource.course_id)?.title_ms ?? null,
     currentVersionId: resource.current_version_id,
     estimatedMinutes: resource.estimated_minutes,
     featured: resource.featured,
@@ -97,7 +99,7 @@ export async function listAdminResourceCatalog(client: Client): Promise<AdminRes
   };});
 
   return {
-    courses: (courses.data ?? []).map((course) => ({ id: course.id, name: course.title })),
+    courses: (courses.data ?? []).map((course) => ({ id: course.id, name: course.title, titleMs: course.title_ms })),
     resources: assembled,
     stages: (stages.data ?? []).map((stage) => ({ active: stage.active, id: stage.id, name: stage.name })),
     topics: (topics.data ?? []).map((topic) => ({ active: topic.active, id: topic.id, name: topic.name })),
@@ -106,6 +108,7 @@ export async function listAdminResourceCatalog(client: Client): Promise<AdminRes
 
 export async function updateResourceMetadata(client: Client, input: UpdateResourceMetadataInput) {
   const { error } = await client.from("resources").update({
+    content_language: input.contentLanguage,
     estimated_minutes: input.estimatedMinutes,
     featured: input.featured,
     slug: input.slug.trim().toLowerCase(),
@@ -119,6 +122,7 @@ export async function createResource(client: Client, input: CreateResourceInput)
   const { data: resource, error: resourceError } = await client.from("resources").insert({
     organization_id: input.organizationId,
     course_id: input.courseId,
+    content_language: input.contentLanguage,
     slug: input.slug.trim().toLowerCase(),
     title: input.title.trim(),
     resource_type: input.type,

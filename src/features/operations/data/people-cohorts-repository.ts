@@ -17,7 +17,7 @@ export async function listPeople(client: SupabaseClient<Database>): Promise<Oper
     client.from("profiles").select("id, full_name, staff_id, profession, department, account_status").order("full_name"),
     client.from("user_roles").select("user_id, role"),
     client.from("cohort_members").select("cohort_id, user_id, member_role, membership_status"),
-    client.from("cohorts").select("id, code, name"),
+    client.from("cohorts").select("id, code, name, name_ms"),
   ]);
   assertResults([profiles, roles, memberships, cohorts]);
 
@@ -38,6 +38,7 @@ export async function listPeople(client: SupabaseClient<Database>): Promise<Oper
           cohortId: cohort.id,
           cohortCode: cohort.code,
           cohortName: cohort.name,
+          cohortNameMs: cohort.name_ms,
           memberRole: membership.member_role,
           status: membership.membership_status,
         }] : [];
@@ -47,7 +48,7 @@ export async function listPeople(client: SupabaseClient<Database>): Promise<Oper
 
 export async function listCohorts(client: SupabaseClient<Database>): Promise<OperationsCohort[]> {
   const [cohorts, memberships, profiles] = await Promise.all([
-    client.from("cohorts").select("id, organization_id, code, name, description, venue, start_at, end_at, status, contact_name, contact_phone, preparation_notes").order("start_at"),
+    client.from("cohorts").select("id, organization_id, code, name, name_ms, description, description_ms, venue, start_at, end_at, status, contact_name, contact_phone, preparation_notes").order("start_at"),
     client.from("cohort_members").select("cohort_id, user_id, member_role, membership_status"),
     client.from("profiles").select("id, full_name"),
   ]);
@@ -59,7 +60,9 @@ export async function listCohorts(client: SupabaseClient<Database>): Promise<Ope
     organizationId: cohort.organization_id,
     code: cohort.code,
     name: cohort.name,
+    nameMs: cohort.name_ms,
     description: cohort.description,
+    descriptionMs: cohort.description_ms,
     venue: cohort.venue,
     startAt: cohort.start_at,
     endAt: cohort.end_at,
@@ -98,6 +101,9 @@ export async function createCohort(client: SupabaseClient<Database>, input: Crea
     created_by: input.actorUserId,
     code: input.code.trim().toUpperCase(),
     name: input.name.trim(),
+    name_ms: input.nameMs?.trim() || null,
+    description: input.description?.trim() || null,
+    description_ms: input.descriptionMs?.trim() || null,
     venue: input.venue.trim(),
     start_at: input.startAt,
     end_at: input.endAt,

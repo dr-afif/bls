@@ -3,6 +3,7 @@ import type { Enums, Json } from "../../../lib/supabase/database.types";
 export type ResourceStatus = Enums<"resource_status">;
 export type ResourceType = Enums<"resource_type">;
 export type ResourceAudience = Enums<"resource_audience">;
+export type ResourceLanguage = Enums<"resource_language">;
 export type ResourceOption = { id: string; name: string };
 export type ResourceClassificationOption = ResourceOption & { active: boolean };
 
@@ -35,8 +36,10 @@ export type AdminResource = {
   auditEvents: AdminAuditEvent[];
   availableFrom: string | null;
   availableUntil: string | null;
+  contentLanguage: ResourceLanguage;
   courseId: string;
   courseTitle: string;
+  courseTitleMs: string | null;
   currentVersionId: string | null;
   estimatedMinutes: number | null;
   featured: boolean;
@@ -54,6 +57,7 @@ export type AdminResource = {
 
 export type UpdateResourceMetadataInput = {
   actorUserId: string;
+  contentLanguage: ResourceLanguage;
   estimatedMinutes: number | null;
   featured: boolean;
   resourceId: string;
@@ -62,7 +66,7 @@ export type UpdateResourceMetadataInput = {
 };
 
 export type AdminResourceCatalog = {
-  courses: ResourceOption[];
+  courses: Array<ResourceOption & { titleMs: string | null }>;
   resources: AdminResource[];
   stages: ResourceClassificationOption[];
   topics: ResourceClassificationOption[];
@@ -71,6 +75,7 @@ export type AdminResourceCatalog = {
 export type CreateResourceInput = {
   actorUserId: string;
   audiences: ResourceAudience[];
+  contentLanguage: ResourceLanguage;
   courseId: string;
   estimatedMinutes: number | null;
   featured: boolean;

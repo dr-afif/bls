@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
+import { useTranslation } from "../../../lib/i18n";
 import type { Json } from "../../../lib/supabase/database.types";
 import { FieldError } from "./resource-admin-ui";
 import { contentFromDraftBody, textareaClassName } from "../model/resource-admin-form-utils";
@@ -36,6 +37,7 @@ export function VersionDraftForm({ disabled, initial, onSubmit, submitLabel, typ
   submitLabel: string;
   type: ResourceType;
 }) {
+  const { t } = useTranslation();
   const schema = baseSchema.superRefine((values, context) => {
     if ((type === "guide" || type === "checklist") && values.contentBody.trim().length < 2) context.addIssue({ code: "custom", message: "Add the clinical content.", path: ["contentBody"] });
     if (type === "youtube_video" && values.youtubeVideoId.trim().length < 6) context.addIssue({ code: "custom", message: "Add a valid YouTube video ID.", path: ["youtubeVideoId"] });
@@ -45,21 +47,63 @@ export function VersionDraftForm({ disabled, initial, onSubmit, submitLabel, typ
     resolver: zodResolver(schema),
   });
 
-  return <form className="grid gap-4 sm:grid-cols-2" onSubmit={form.handleSubmit((values) => onSubmit({
-    content: contentFromDraftBody(type, values.contentBody),
-    guidelineSource: values.guidelineSource.trim(),
-    guidelineYear: Number(values.guidelineYear),
-    summary: values.summary,
-    title: values.title,
-    youtubeVideoId: type === "youtube_video" ? values.youtubeVideoId.trim() : null,
-  }))}>
-    <label className="text-sm font-semibold sm:col-span-2">Version title<Input className="mt-2" {...form.register("title")} /><FieldError>{form.formState.errors.title?.message}</FieldError></label>
-    <label className="text-sm font-semibold sm:col-span-2">Summary<textarea className={textareaClassName} {...form.register("summary")} /><FieldError>{form.formState.errors.summary?.message}</FieldError></label>
-    <label className="text-sm font-semibold">Guideline source<Input className="mt-2" {...form.register("guidelineSource")} /><FieldError>{form.formState.errors.guidelineSource?.message}</FieldError></label>
-    <label className="text-sm font-semibold">Guideline year<Input className="mt-2" inputMode="numeric" {...form.register("guidelineYear")} /><FieldError>{form.formState.errors.guidelineYear?.message}</FieldError></label>
-    {(type === "guide" || type === "checklist") && <label className="text-sm font-semibold sm:col-span-2">{type === "checklist" ? "Checklist items — one per line" : "Clinical guide content"}<textarea className={textareaClassName} {...form.register("contentBody")} /><FieldError>{form.formState.errors.contentBody?.message}</FieldError></label>}
-    {type === "youtube_video" && <label className="text-sm font-semibold sm:col-span-2">YouTube video ID<Input className="mt-2" {...form.register("youtubeVideoId")} /><FieldError>{form.formState.errors.youtubeVideoId?.message}</FieldError></label>}
-    {type === "pdf" && <p className="rounded-xl border border-info/25 bg-info-soft p-4 text-sm text-info sm:col-span-2">After saving this draft, upload its PDF on the version workspace. The private path is allocated by the server and cannot be replaced.</p>}
-    <div className="border-t pt-4 sm:col-span-2"><Button disabled={disabled} type="submit"><Save aria-hidden="true" />{disabled ? "Saving…" : submitLabel}</Button></div>
-  </form>;
+  return (
+    <form
+      className="grid gap-4 sm:grid-cols-2"
+      onSubmit={form.handleSubmit((values) => onSubmit({
+        content: contentFromDraftBody(type, values.contentBody),
+        guidelineSource: values.guidelineSource.trim(),
+        guidelineYear: Number(values.guidelineYear),
+        summary: values.summary,
+        title: values.title,
+        youtubeVideoId: type === "youtube_video" ? values.youtubeVideoId.trim() : null,
+      }))}
+    >
+      <label className="text-sm font-semibold sm:col-span-2">
+        {t("resourceAdmin.version.versionTitle")}
+        <Input className="mt-2" {...form.register("title")} />
+        <FieldError>{form.formState.errors.title?.message}</FieldError>
+      </label>
+      <label className="text-sm font-semibold sm:col-span-2">
+        {t("resourceAdmin.new.summary")}
+        <textarea className={textareaClassName} {...form.register("summary")} />
+        <FieldError>{form.formState.errors.summary?.message}</FieldError>
+      </label>
+      <label className="text-sm font-semibold">
+        {t("resourceAdmin.new.guidelineSource")}
+        <Input className="mt-2" {...form.register("guidelineSource")} />
+        <FieldError>{form.formState.errors.guidelineSource?.message}</FieldError>
+      </label>
+      <label className="text-sm font-semibold">
+        {t("resourceAdmin.new.guidelineYear")}
+        <Input className="mt-2" inputMode="numeric" {...form.register("guidelineYear")} />
+        <FieldError>{form.formState.errors.guidelineYear?.message}</FieldError>
+      </label>
+      {(type === "guide" || type === "checklist") && (
+        <label className="text-sm font-semibold sm:col-span-2">
+          {type === "checklist" ? t("resourceAdmin.new.checklistItems") : t("resourceAdmin.new.guideContent")}
+          <textarea className={textareaClassName} {...form.register("contentBody")} />
+          <FieldError>{form.formState.errors.contentBody?.message}</FieldError>
+        </label>
+      )}
+      {type === "youtube_video" && (
+        <label className="text-sm font-semibold sm:col-span-2">
+          {t("resourceAdmin.new.youtubeVideoId")}
+          <Input className="mt-2" {...form.register("youtubeVideoId")} />
+          <FieldError>{form.formState.errors.youtubeVideoId?.message}</FieldError>
+        </label>
+      )}
+      {type === "pdf" && (
+        <p className="rounded-xl border border-info/25 bg-info-soft p-4 text-sm text-info sm:col-span-2">
+          {t("resourceAdmin.new.pdfNotice")}
+        </p>
+      )}
+      <div className="border-t pt-4 sm:col-span-2">
+        <Button disabled={disabled} type="submit">
+          <Save aria-hidden="true" />
+          {disabled ? t("resourceAdmin.version.saving") : submitLabel}
+        </Button>
+      </div>
+    </form>
+  );
 }

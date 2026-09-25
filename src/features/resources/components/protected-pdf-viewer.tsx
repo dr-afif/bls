@@ -6,6 +6,7 @@ import { StatePanel } from "../../../components/common/state-panel";
 import { Badge } from "../../../components/ui/badge";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent } from "../../../components/ui/card";
+import { useTranslation } from "../../../lib/i18n";
 import { useAuth } from "../../auth/context/auth-context";
 import { useAccountAccess } from "../../auth/hooks/use-account-access";
 import { fetchProtectedPdf } from "../data/resource-access-service";
@@ -83,6 +84,7 @@ function classifyError(error: unknown): "offline" | "expired" | "denied" | "rate
 }
 
 export function ProtectedPdfViewer({ resource }: { resource: CourseResource }) {
+  const { t, formatDateTime } = useTranslation();
   const { client, state: authState } = useAuth();
   const account = useAccountAccess();
   const [attempt, setAttempt] = useState(0);
@@ -122,50 +124,111 @@ export function ProtectedPdfViewer({ resource }: { resource: CourseResource }) {
   };
 
   if (!client) {
-    return <StatePanel description="Sign in again to request protected document access." kind="denied" title="Document access unavailable" />;
+    return (
+      <StatePanel
+        description={t("resource.pdf.deniedDesc")}
+        kind="denied"
+        title={t("resource.pdf.deniedTitle")}
+      />
+    );
   }
 
   if (loadState.status === "loading") {
-    return <StatePanel kind="loading" title="Opening protected document" description="Authorizing access and preparing the document in this browser session." />;
+    return (
+      <StatePanel
+        kind="loading"
+        title={t("resource.pdf.opening")}
+        description={t("resource.pdf.openingDesc")}
+      />
+    );
   }
+
   if (loadState.status !== "ready") {
     const copy = {
-      offline: { kind: "offline" as const, title: "Connection required", description: "Protected documents are not stored for offline use. Reconnect and try again." },
-      expired: { kind: "expired" as const, title: "Document access expired", description: "The short-lived document link has expired. Request a fresh viewing session." },
-      denied: { kind: "denied" as const, title: "Document access unavailable", description: "Your current account or course access does not permit this document." },
-      rate_limited: { kind: "error" as const, title: "Too many document requests", description: "Wait about one minute before requesting this protected document again." },
-      error: { kind: "error" as const, title: "Document could not be opened", description: "The protected file was not retained. Check your connection and try again." },
+      offline: {
+        kind: "offline" as const,
+        title: t("resource.pdf.connRequired"),
+        description: t("resource.pdf.connRequiredDesc"),
+      },
+      expired: {
+        kind: "expired" as const,
+        title: t("resource.pdf.expiredTitle"),
+        description: t("resource.pdf.expiredDesc"),
+      },
+      denied: {
+        kind: "denied" as const,
+        title: t("resource.pdf.deniedTitle"),
+        description: t("resource.pdf.deniedDesc"),
+      },
+      rate_limited: {
+        kind: "error" as const,
+        title: t("resource.pdf.rateLimitedTitle"),
+        description: t("resource.pdf.rateLimitedDesc"),
+      },
+      error: {
+        kind: "error" as const,
+        title: t("resource.pdf.errorTitle"),
+        description: t("resource.pdf.errorDesc"),
+      },
     }[loadState.status];
-    return <StatePanel actionLabel={loadState.status === "denied" ? undefined : "Try again"} description={copy.description} kind={copy.kind} onAction={loadState.status === "denied" ? undefined : retry} title={copy.title} />;
+
+    return (
+      <StatePanel
+        actionLabel={loadState.status === "denied" ? undefined : t("common.tryAgain")}
+        description={copy.description}
+        kind={copy.kind}
+        onAction={loadState.status === "denied" ? undefined : retry}
+        title={copy.title}
+      />
+    );
   }
 
   const userId = authState.status === "signed_in" ? authState.user.id : "unknown";
-  const watermark = `${account.data?.profile?.fullName ?? "Authorized user"} · ${userId.slice(0, 8)} · ${new Date().toLocaleString()}`;
+  const watermark = `${account.data?.profile?.fullName ?? "Authorized user"} · ${userId.slice(0, 8)} · ${formatDateTime(new Date())}`;
 
   return (
     <div className="space-y-4">
       <Card className="shadow-none">
         <CardContent className="flex flex-wrap items-start justify-between gap-3 pt-5 sm:pt-6">
           <div className="flex gap-3">
-            <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success-soft text-success"><ShieldCheck className="size-5" /></span>
-            <div><h2 className="font-semibold">Authorized session view</h2><p className="mt-1 max-w-2xl text-sm text-muted-foreground">Access was checked when this document opened. It is rendered from in-memory bytes and is not available offline.</p></div>
+            <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-success-soft text-success">
+              <ShieldCheck className="size-5" />
+            </span>
+            <div>
+              <h2 className="font-semibold">{t("resource.pdf.authorizedSession")}</h2>
+              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{t("resource.pdf.authorizedSessionDesc")}</p>
+            </div>
           </div>
-          <Badge variant="success"><FileLock2 aria-hidden="true" className="size-3.5" /> {loadState.document.numPages} {loadState.document.numPages === 1 ? "page" : "pages"}</Badge>
+          <Badge variant="success">
+            <FileLock2 aria-hidden="true" className="size-3.5" /> {loadState.document.numPages}{" "}
+            {loadState.document.numPages === 1 ? t("resource.pdf.page") : t("resource.pdf.pages")}
+          </Badge>
         </CardContent>
       </Card>
 
       <div className="relative space-y-4" data-protected-document="memory-only">
-        {Array.from({ length: loadState.document.numPages }, (_, index) => <PdfPage document={loadState.document} key={index + 1} pageNumber={index + 1} />)}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex flex-col items-center justify-around overflow-hidden px-4 text-center font-semibold uppercase tracking-wide text-primary/20">
-          {[0, 1, 2].map((item) => <span className="-rotate-12 rounded-lg border-2 border-primary/15 px-4 py-2 text-xs sm:text-sm" key={item}>Authorized training use only · {watermark}</span>)}
+        {Array.from({ length: loadState.document.numPages }, (_, index) => (
+          <PdfPage document={loadState.document} key={index + 1} pageNumber={index + 1} />
+        ))}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 flex flex-col items-center justify-around overflow-hidden px-4 text-center font-semibold uppercase tracking-wide text-primary/20"
+        >
+          {[0, 1, 2].map((item) => (
+            <span className="-rotate-12 rounded-lg border-2 border-primary/15 px-4 py-2 text-xs sm:text-sm" key={item}>
+              {t("resource.pdf.watermark")} · {watermark}
+            </span>
+          ))}
         </div>
       </div>
 
       <div className="flex items-start gap-3 rounded-xl border border-warning/25 bg-warning-soft p-4 text-warning">
         <AlertTriangle aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
-        <p className="text-sm">This control reduces casual copying but cannot prevent screenshots or recording. Do not share protected course material.</p>
+        <p className="text-sm">{t("resource.pdf.securityNotice")}</p>
       </div>
-      <Button onClick={retry} variant="outline"><RefreshCw aria-hidden="true" /> Refresh access</Button>
+      <Button onClick={retry} variant="outline">
+        <RefreshCw aria-hidden="true" /> {t("resource.pdf.refreshAccess")}
+      </Button>
     </div>
   );
 }

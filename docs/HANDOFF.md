@@ -2,7 +2,7 @@
 
 ## Last updated
 
-2026-09-24
+2026-09-25
 
 ## Current milestone
 
@@ -21,8 +21,9 @@
     * Phase 7.2A.2: Final Pre-Deployment Language-Preference Hardening (Local/CI Only) — COMPLETE (PASS).
     * Phase 7.2A.3: Controlled Hosted Bilingual Foundation Deployment — COMPLETE (PASS).
     * Deployed hosted migration version: `20260924010000_milestone_7_bilingual_foundation.sql`.
-    * Phase 7.2 overall status: NOT COMPLETE.
-    * Phase 7.2B: Assessment & Content Localization — PLANNED (NOT STARTED).
+    * Phase 7.2B: Production Non-Assessment Localization & Localized Metadata — COMPLETE (PASS).
+    * Phase 7.2 overall status: IN PROGRESS (7.2A, 7.2A.1, 7.2A.2, 7.2A.3, 7.2B COMPLETE; 7.2C DEFERRED/NOT STARTED).
+    * Phase 7.2C: Assessment & Content Localization — PLANNED (NOT STARTED).
   - Phase 7.3: Email Transport Spike & Staff Bootstrap — PLANNED.
   - Phase 7.4: Cohort Roster & Invitation Engine — PLANNED.
   - Phase 7.5: Passwordless Return Spike, First-Time & Returning User Registration — PLANNED.
@@ -31,6 +32,45 @@
   - Final Release Gate: Controlled Production Clean-Slate Reset — REQUIRED immediately prior to first real participant launch.
 
 ## Work completed
+
+- Implemented Milestone 7 Phase 7.2B: Production Non-Assessment Localization & Localized Metadata — COMPLETE (PASS):
+  - 42703 Backward-Compatibility Adapter Cleanup:
+    * Removed temporary PostgREST 42703 catch block and fallback in `account-access-repository.ts`.
+    * Removed `preferredLanguageAvailable: boolean` flag from `AccountAccess['profile']`.
+    * `profiles.preferred_language` is now queried and persisted directly as a first-class standard column.
+    * Simplified `I18nProvider` precedence resolution to standard signed-in vs signed-out rules.
+    * Regression tests verify that unexpected database errors throw directly without column error suppression.
+  - Operations Domain Localization & Bilingual Metadata:
+    * Added `nameMs?: string | null` and `descriptionMs?: string | null` to `OperationsCohort` and `CreateCohortInput`.
+    * Added `cohortNameMs?: string | null` to `OperationsPerson['memberships']`.
+    * Updated `people-cohorts-repository.ts` (`listCohorts`, `listPeople`, `createCohort`) to retrieve and persist bilingual cohort fields.
+    * Updated `CohortsAdminPage` with bilingual authoring fields (`nameMs`, `descriptionMs`).
+    * Updated `MyCohortsPage` and `PeoplePage` with active locale rendering using `localizedText({ en, ms, locale })`.
+    * Fully translated Operations UI (empty, loading, error states, buttons, labels, dialogs).
+  - Resource Catalog & Resource Admin Domain Localization:
+    * Added `ResourceLanguage` enum (`en`, `ms`, `bilingual`, `language_independent`) and `contentLanguage` field to `CourseResource`, `AdminResource`, `CreateResourceInput`, and `UpdateResourceMetadataInput`.
+    * Updated `resource-repository.ts` and `resource-admin-repository.ts` to query, assemble, and persist `content_language`.
+    * Added `courseTitleMs` to `AdminResource` and `titleMs` to courses; `resources-admin-page.tsx` renders course title according to active locale and matches search queries against both English and Bahasa Melayu course titles.
+    * Integrated content language filter into `ResourceLibraryPage` ("All languages" default does not filter out any resources regardless of active UI locale).
+    * Localized all resource and resource administration pages: `ResourceLibraryPage`, `ResourceViewerPage`, `ProtectedPdfViewer`, `LiveResourceRow`, `ResourcesAdminPage`, `ResourceDetailPage`, `ResourceNewPage`, `ResourceTaxonomyPage`, `ResourceVersionPage`, `ResourceVersionNewPage`.
+  - Enum Label Helpers & i18n Dictionary Parity:
+    * Created `src/lib/i18n/enum-labels.ts` providing typed helpers: `cohortStatusKey`, `membershipStatusKey`, `accountStatusKey`, `appRoleKey`, `resourceStatusKey`, `resourceTypeKey`, `resourceAudienceKey`, `resourceLanguageKey`.
+    * Added barrel export `src/lib/i18n/index.ts`.
+    * Expanded `src/lib/i18n/en.ts` and `src/lib/i18n/ms.ts` with 100% key parity (enforced at compile-time and unit tests).
+    * Replaced ad-hoc `Intl.DateTimeFormat(undefined)` with locale-aware `formatDateTime` and `formatDate`.
+  - Strict Boundary Adherence:
+    * `NEW_DATABASE_MIGRATIONS = ZERO` (migration count remains exactly 31).
+    * `HOSTED_SCHEMA_MUTATIONS = ZERO`.
+    * `HOSTED_TEST_DATA_MUTATIONS = ZERO`.
+    * Assessment workflows (`src/features/quiz/**`, `src/features/quiz-admin/**`, results, item analysis, CSV exports, `InstructorCohortReadiness`) remain strictly untouched and deferred to Phase 7.2C.
+    * Educational clinical text remains in its authored language; zero machine translation.
+  - Test Suite & Quality Verification:
+    * TypeScript typecheck: 0 errors (`tsc -b`).
+    * ESLint: 0 errors, 0 warnings.
+    * Vitest suite: 41 test files passed, 235 tests passed.
+    * Vite production build: SUCCESS (`dist/` generated with zero errors).
+    * pgTAP database tests: 15 suites, 465 tests passed (`npx supabase test db`).
+    * Git diff check: clean.
 
 - Implemented Milestone 7 Phase 7.2A.3: Controlled Hosted Bilingual Foundation Deployment — COMPLETE (PASS):
   - Pre-Deployment Verification & Preflight:
@@ -1057,9 +1097,9 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
   Git-based development and publication. Keep the OneDrive copy only until all
   unpublished work has been confirmed in GitHub.
 
-- Phase 7.2A bilingual database migration (`20260924010000_milestone_7_bilingual_foundation.sql`) is deployed to hosted Supabase `zlaixhnyydxgbphgsetv` (31 total hosted migrations). The defensive 42703 backward-compatibility adapter in `account-access-repository.ts` is temporarily retained and scheduled for removal in Phase 7.2B.
-- Educational guides, video content, and assessment quiz questions/options are not translated in Phase 7.2A. Machine translation is strictly prohibited. Quiz localization with immutable bilingual question snapshots and attempt snapshots is deferred to Phase 7.2B.
-- Broad feature-page UI translation (Learner Guides, Quiz Views, Profile Page, Instructor Teaching Kit, Admin Management forms) is deferred to Phase 7.2B.
+- Phase 7.2A bilingual database migration (`20260924010000_milestone_7_bilingual_foundation.sql`) is deployed to hosted Supabase `zlaixhnyydxgbphgsetv` (31 total hosted migrations). The defensive 42703 backward-compatibility adapter in `account-access-repository.ts` has been decommissioned in Phase 7.2B; `profiles.preferred_language` is queried and persisted directly as a standard column.
+- Production non-assessment UI workflows (People, Cohorts, Guides, Teaching Kit, Protected PDF Viewer, Resources Admin, Resource Detail, Resource Taxonomy, Resource Versions) are localized with active-locale metadata rendering and resource language classification.
+- Educational clinical text remains in its authored language; machine translation is strictly prohibited. Quiz and assessment localization with immutable bilingual question snapshots and attempt snapshots is deferred to Phase 7.2C.
 
 ## Exact recommended next action
 
@@ -1075,14 +1115,15 @@ Milestone 7 Phase 7.2 (Bilingual Application Foundation):
 - Phase 7.2A.1 (i18n Foundation Correction Pass — Local/CI Implementation Only) — COMPLETE (PASS)
 - Phase 7.2A.2 (Final Pre-Deployment Language-Preference Hardening — Local/CI Implementation Only) — COMPLETE (PASS)
 - Phase 7.2A.3 (Controlled Hosted Bilingual Foundation Deployment) — COMPLETE (PASS)
-- Phase 7.2 overall status — NOT COMPLETE
-- Phase 7.2B (Assessment & Content Localization) — PLANNED (NOT STARTED)
+- Phase 7.2B (Production Non-Assessment Localization & Localized Metadata) — COMPLETE (PASS)
+- Phase 7.2 overall status — IN PROGRESS (Phase 7.2A, 7.2A.1, 7.2A.2, 7.2A.3, and 7.2B COMPLETE; Phase 7.2C DEFERRED/NOT STARTED)
+- Phase 7.2C (Assessment & Content Localization) — PLANNED (NOT STARTED)
 
 Hosted Supabase Project `zlaixhnyydxgbphgsetv` deployed migrations (31 total):
 - Ends at: `20260924010000_milestone_7_bilingual_foundation.sql`
 
 Recommended next action:
-1. Proceed to Phase 7.2B: Content & Assessment Localization (Quiz/Question bilingual schemas, question version snapshots, attempt payload language selection, admin quiz authoring, and feature page translations).
-2. Clean up temporary 42703 compatibility adapter in `account-access-repository.ts` during Phase 7.2B.
+1. Conduct user/stakeholder review of Phase 7.2B non-assessment localization and localized metadata.
+2. Proceed to Phase 7.2C: Assessment & Content Localization (Quiz/Question bilingual schemas, immutable attempt/question version snapshots, learner quiz payload language selection, admin quiz authoring, item analysis, results, CSV exports, and cohort readiness bilingual views).
 3. Do NOT execute the production clean-slate reset at this time (reserved for post-7.7 pre-launch).
 4. Do NOT mutate hosted production data or seed fixtures during development.

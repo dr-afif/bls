@@ -2,8 +2,9 @@ import { ArrowRight, CheckSquare2, FileText, PlayCircle, ScrollText } from "luci
 import { Link } from "react-router-dom";
 
 import { Badge } from "../../../components/ui/badge";
+import { useTranslation } from "../../../lib/i18n";
+import { resourceLanguageKey, resourceTypeKey } from "../../../lib/i18n/enum-labels";
 import type { CourseResource } from "../model/resource-types";
-import { resourceTypeLabels } from "../model/resource-types";
 
 const resourceIcons = {
   guide: ScrollText,
@@ -21,8 +22,11 @@ export function LiveResourceRow({
   resource: CourseResource;
   to: string;
 }) {
+  const { t } = useTranslation();
   const Icon = resourceIcons[resource.type];
-  const duration = resource.estimatedMinutes ? `${resource.estimatedMinutes} min` : "Quick reference";
+  const duration = resource.estimatedMinutes
+    ? `${resource.estimatedMinutes} ${t("resource.minutes")}`
+    : t("resource.quickReference");
 
   return (
     <Link
@@ -35,11 +39,12 @@ export function LiveResourceRow({
       <span className="min-w-0 flex-1">
         <span className="flex flex-wrap items-center gap-2">
           <span className="font-semibold leading-snug">{resource.title}</span>
-          <Badge>{resourceTypeLabels[resource.type]}</Badge>
-          {resource.featured && <Badge variant="info">Featured</Badge>}
+          <Badge>{t(resourceTypeKey(resource.type))}</Badge>
+          <Badge variant="neutral">{t(resourceLanguageKey(resource.contentLanguage))}</Badge>
+          {resource.featured && <Badge variant="info">{t("resource.featured")}</Badge>}
         </span>
         <span className="mt-1 block text-sm leading-snug text-muted-foreground">
-          {(contextLabel ?? resource.topics.map((topic) => topic.name).join(", ")) || "General BLS"} · {duration}
+          {(contextLabel ?? resource.topics.map((topic) => topic.name).join(", ")) || t("resource.generalBls")} · {duration}
         </span>
       </span>
       <ArrowRight aria-hidden="true" className="size-5 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-primary" />

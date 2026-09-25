@@ -157,7 +157,6 @@ describe('I18nContext and Provider', () => {
           fullName: 'Dr Afif',
           organizationId: null,
           preferredLanguage: 'en',
-          preferredLanguageAvailable: true,
         },
         roles: ['learner'],
       },
@@ -232,7 +231,6 @@ describe('I18nContext and Provider', () => {
           fullName: 'Dr Afif',
           organizationId: null,
           preferredLanguage: 'ms',
-          preferredLanguageAvailable: true,
         },
         roles: ['learner'],
       },
@@ -285,7 +283,6 @@ describe('I18nContext and Provider', () => {
           fullName: 'Test User',
           organizationId: null,
           preferredLanguage: 'en',
-          preferredLanguageAvailable: true,
         },
         roles: ['learner'],
       },
@@ -334,7 +331,6 @@ describe('I18nContext and Provider', () => {
           fullName: 'Test User',
           organizationId: null,
           preferredLanguage: 'en',
-          preferredLanguageAvailable: true,
         },
         roles: ['learner'],
       },
@@ -364,13 +360,11 @@ describe('I18nContext and Provider', () => {
     expect(result.current.preferenceError).toBe('profile.languageUpdateFailed');
   });
 
-  it('when preferredLanguageAvailable is false (hosted 7.1), selection remains local without calling db or showing error', async () => {
+  it('when signed out, selection remains local without calling db or showing error', async () => {
     vi.spyOn(authContext, 'useAuth').mockReturnValue({
       client: mockClient,
       state: {
-        status: 'signed_in',
-        session: { user: { id: userId } } as unknown as Session,
-        user: { id: userId } as unknown as User,
+        status: 'signed_out',
       },
       requestPasswordReset: vi.fn(),
       signIn: vi.fn(),
@@ -380,16 +374,7 @@ describe('I18nContext and Provider', () => {
     });
 
     vi.spyOn(accountAccessHook, 'useAccountAccess').mockReturnValue({
-      data: {
-        profile: {
-          accountStatus: 'active',
-          fullName: 'Legacy User',
-          organizationId: null,
-          preferredLanguage: 'en',
-          preferredLanguageAvailable: false, // Hosted schema fallback
-        },
-        roles: ['learner'],
-      },
+      data: undefined,
       isLoading: false,
       isError: false,
       error: null,

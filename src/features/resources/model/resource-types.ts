@@ -2,6 +2,7 @@ import type { Enums } from "../../../lib/supabase/database.types";
 
 export type ResourceScope = "learner" | "instructor";
 export type ResourceType = Enums<"resource_type">;
+export type ResourceLanguage = Enums<"resource_language">;
 
 export type ResourceTopic = {
   id: string;
@@ -36,6 +37,7 @@ export type CourseResource = {
   title: string;
   summary: string;
   type: ResourceType;
+  contentLanguage: ResourceLanguage;
   estimatedMinutes: number | null;
   featured: boolean;
   versionNumber: number;

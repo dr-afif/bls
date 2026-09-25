@@ -411,15 +411,22 @@ authenticated learner journey is not yet implemented.
     - Production app smoke: HTTP 200 on `https://dr-afif.github.io/bls/` with successful asset loads.
     - Compatibility adapter: Harmless 42703 defensive adapter retained in `account-access-repository.ts` for cleanup in Phase 7.2B.
     - Quiz/assessment localization remains NOT IMPLEMENTED.
-  - **Phase 7.2 overall status**: NOT COMPLETE (Phase 7.2A, 7.2A.1, 7.2A.2, and 7.2A.3 Hosted Deployment complete; Phase 7.2B NOT started).
-  - **Phase 7.2B (Assessment & Content Localization — PLANNED / NOT STARTED)**:
-    - Remaining feature-page UI translation (Learner Guides, Quiz Views, Profile Page, Instructor Teaching Kit, Admin Management forms).
+  - **Phase 7.2 overall status**: IN PROGRESS (Phase 7.2A, 7.2A.1, 7.2A.2, 7.2A.3, and 7.2B complete; Phase 7.2C deferred / not started).
+  - **Phase 7.2B (Production Non-Assessment Localization & Localized Metadata — COMPLETE)**:
+    - Removed defensive 42703 adapter from `account-access-repository.ts` and `preferredLanguageAvailable` flag from `AccountAccess['profile']`. `profiles.preferred_language` queried directly as a standard column.
+    - Added bilingual cohort authoring (`nameMs`, `descriptionMs`) and active locale rendering in Operations (People, Cohorts Admin, My Cohorts).
+    - Added `ResourceLanguage` enum classification throughout live resource catalog, admin authoring, and library filters (verifying "All languages" does not filter out any resources regardless of active UI locale).
+    - Localized all non-assessment production workflows (People, Cohorts, Guides, Teaching Kit, Protected PDF Viewer, Resources Admin, Resource Detail, Resource Taxonomy, Resource Versions).
+    - Course title active locale-sensitive display and bilingual search in Resources Admin.
+    - Accessible date and time formatting via `formatDateTime`/`formatDate`.
+    - Zero new database migrations (count stays 31), zero hosted schema/data mutations.
+    - Assessment/quiz localization strictly deferred to Phase 7.2C.
+  - **Phase 7.2C (Assessment & Content Localization — PLANNED / NOT STARTED)**:
     - Bilingual quiz question/option schema (`prompt_ms`, `option_text_ms`).
     - Bilingual immutable attempt snapshots and question versions.
     - Learner quiz attempt payload language selection.
-    - Admin bilingual quiz authoring.
-    - Broad course/cohort translated-field rendering across feature components.
-    - Removal of temporary 42703 compatibility adapter in `account-access-repository.ts`.
+    - Admin bilingual quiz authoring and editors.
+    - Item analysis, results, CSV exports localization, and cohort readiness bilingual views.
 - **Phase 7.3 — Email Transport Spike & Staff Bootstrap**:
   Execute Email Transport Spike to evaluate and verify supported server-side mail transport. Implement `public.staff_access_entries` management, role hierarchy enforcement (`super_admin` -> admin/instructor; `admin` -> instructor; no self-assignment; no super-admin creation in UI), and first legitimate instructor onboarding.
 - **Phase 7.4 — Cohort Roster & Invitation Engine**:

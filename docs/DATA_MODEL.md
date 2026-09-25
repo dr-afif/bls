@@ -23,7 +23,7 @@
 | `profession` | text | Optional |
 | `organization_id` | uuid | Required organization scope |
 | `department` | text | Optional |
-| `preferred_language` | text | `en` (default/fallback) or `ms`. Deployed to hosted Supabase in Phase 7.2A.3. Strictly user-owned (enforced by `private.validate_profile_preferred_language_update()` trigger). In client runtime, availability is explicitly signaled via `preferredLanguageAvailable: boolean`. |
+| `preferred_language` | text | `en` (default/fallback) or `ms`. Deployed to hosted Supabase in Phase 7.2A.3. Strictly user-owned (enforced by `private.validate_profile_preferred_language_update()` trigger). Queried directly by the client runtime; temporary 42703 fallback and `preferredLanguageAvailable` flags were decommissioned in Phase 7.2B. |
 | `account_status` | enum | `pending_verification`, `pending_registration`, `pending_approval`, `active`, `suspended`, `expired`, `archived` |
 | `created_at` | timestamptz | Required |
 | `updated_at` | timestamptz | Required |

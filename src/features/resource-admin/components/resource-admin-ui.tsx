@@ -3,8 +3,9 @@ import type { ReactNode } from "react";
 
 import { StatePanel } from "../../../components/common/state-panel";
 import { Badge } from "../../../components/ui/badge";
+import { useTranslation } from "../../../lib/i18n";
+import { resourceStatusKey } from "../../../lib/i18n/enum-labels";
 import type { ResourceStatus } from "../model/resource-admin-types";
-import { resourceStatusLabels } from "../model/resource-admin-types";
 
 const statusIcon: Record<ResourceStatus, typeof Clock3> = {
   approved: PackageCheck,
@@ -16,6 +17,7 @@ const statusIcon: Record<ResourceStatus, typeof Clock3> = {
 };
 
 export function ResourceStatusBadge({ status }: { status: ResourceStatus }) {
+  const { t } = useTranslation();
   const Icon = statusIcon[status];
   const variant = status === "published" || status === "approved"
     ? "success"
@@ -24,16 +26,48 @@ export function ResourceStatusBadge({ status }: { status: ResourceStatus }) {
       : status === "retired" || status === "archived"
         ? "neutral"
         : "warning";
-  return <Badge variant={variant}><Icon aria-hidden="true" className="mr-1 size-3.5" />{resourceStatusLabels[status]}</Badge>;
+  return (
+    <Badge variant={variant}>
+      <Icon aria-hidden="true" className="mr-1 size-3.5" />
+      {t(resourceStatusKey(status))}
+    </Badge>
+  );
 }
 
 export function ResourceAdminState({ query, empty }: {
   empty?: boolean;
   query: { isError: boolean; isPending: boolean; refetch: () => unknown };
 }) {
-  if (query.isPending) return <StatePanel kind="loading" title="Loading resource workspace" description="Checking the resource records permitted for your administrator account." />;
-  if (query.isError) return <StatePanel actionLabel="Try again" kind="error" onAction={() => void query.refetch()} title="Resources are unavailable" description="Check your connection and try again. No resource records were changed." />;
-  if (empty) return <StatePanel kind="empty" title="No resources yet" description="Create the first controlled course resource and its initial draft version." />;
+  const { t } = useTranslation();
+  if (query.isPending) {
+    return (
+      <StatePanel
+        kind="loading"
+        title={t("resourceAdmin.state.loadingTitle")}
+        description={t("resourceAdmin.state.loadingDesc")}
+      />
+    );
+  }
+  if (query.isError) {
+    return (
+      <StatePanel
+        actionLabel={t("common.tryAgain")}
+        kind="error"
+        onAction={() => void query.refetch()}
+        title={t("resourceAdmin.state.errorTitle")}
+        description={t("resourceAdmin.state.errorDesc")}
+      />
+    );
+  }
+  if (empty) {
+    return (
+      <StatePanel
+        kind="empty"
+        title={t("resourceAdmin.state.emptyTitle")}
+        description={t("resourceAdmin.state.emptyDesc")}
+      />
+    );
+  }
   return null;
 }
 

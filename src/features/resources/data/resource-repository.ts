@@ -16,6 +16,7 @@ type CatalogRows = {
     slug: string;
     title: string;
     resource_type: CourseResource["type"];
+    content_language: CourseResource["contentLanguage"];
     estimated_minutes: number | null;
     featured: boolean;
   }>;
@@ -87,6 +88,7 @@ export function assembleResourceCatalog(rows: CatalogRows): CourseResource[] {
       title: version.title,
       summary: version.summary,
       type: resource.resource_type,
+      contentLanguage: resource.content_language,
       estimatedMinutes: resource.estimated_minutes,
       featured: resource.featured,
       versionNumber: version.version_number,
@@ -112,7 +114,7 @@ function assertResults(results: Array<{ error: unknown }>) {
 
 export async function listCourseResources(client: SupabaseClient<Database>): Promise<CourseResource[]> {
   const [resources, versions, topicAssignments, topics, stageAssignments, stages, relations] = await Promise.all([
-    client.from("resources").select("id, current_version_id, slug, title, resource_type, estimated_minutes, featured").eq("status", "published").order("featured", { ascending: false }).order("title"),
+    client.from("resources").select("id, current_version_id, slug, title, resource_type, content_language, estimated_minutes, featured").eq("status", "published").order("featured", { ascending: false }).order("title"),
     client.from("resource_versions").select("id, resource_id, version_number, resource_type, title, summary, content, guideline_source, guideline_year, reviewed_at, next_review_at, youtube_video_id").eq("status", "approved"),
     client.from("resource_topics").select("resource_id, topic_id, display_order"),
     client.from("bls_topics").select("id, name, slug, display_order").eq("active", true).order("display_order"),

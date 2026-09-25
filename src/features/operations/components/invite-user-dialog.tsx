@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Input } from "../../../components/ui/input";
+import { useTranslation, type TranslationKey } from "../../../lib/i18n";
 import { useOperationsMutations } from "../hooks/use-operations";
 import type { InviteUserInput } from "../data/people-cohorts-repository";
 
@@ -14,17 +15,17 @@ type InviteUserDialogProps = {
   organizationId?: string | null;
 };
 
-const ERROR_MESSAGES: Record<string, string> = {
-  USER_ALREADY_EXISTS: "A user with this email address has already been registered.",
-  INVALID_EMAIL: "Please enter a valid email address.",
-  INVALID_NAME: "Full name is required (maximum 160 characters).",
-  INVALID_ACCESS_PERIOD: "Please choose a valid expiry date in the future.",
-  UNSUPPORTED_ROLE: "Only learner and instructor roles can be invited.",
-  ORGANIZATION_MISMATCH: "You can only invite users to your assigned organization.",
-  ORGANIZATION_REQUIRED: "Your account is not assigned to an organization.",
-  RATE_LIMITED: "Too many invitation attempts. Please wait a moment before trying again.",
-  FORBIDDEN: "You do not have permission to invite users.",
-  AUTHENTICATION_REQUIRED: "You must be signed in as an administrator.",
+const ERROR_KEYS: Record<string, TranslationKey> = {
+  USER_ALREADY_EXISTS: "operations.invite.userAlreadyExists",
+  INVALID_EMAIL: "operations.invite.invalidEmail",
+  INVALID_NAME: "operations.invite.invalidName",
+  INVALID_ACCESS_PERIOD: "operations.invite.invalidAccessPeriod",
+  UNSUPPORTED_ROLE: "operations.invite.unsupportedRole",
+  ORGANIZATION_MISMATCH: "operations.invite.orgMismatch",
+  ORGANIZATION_REQUIRED: "operations.invite.orgRequired",
+  RATE_LIMITED: "operations.invite.rateLimited",
+  FORBIDDEN: "operations.invite.forbidden",
+  AUTHENTICATION_REQUIRED: "operations.invite.authRequired",
 };
 
 function InviteUserDialogContent({
@@ -32,6 +33,7 @@ function InviteUserDialogContent({
   onSuccess,
   organizationId,
 }: Omit<InviteUserDialogProps, "isOpen">) {
+  const { t } = useTranslation();
   const { inviteUser } = useOperationsMutations();
 
   const [email, setEmail] = useState("");
@@ -60,12 +62,12 @@ function InviteUserDialogContent({
     const trimmedName = fullName.trim();
 
     if (!trimmedEmail) {
-      setErrorMessage("Please enter an email address.");
+      setErrorMessage(t("operations.invite.invalidEmail"));
       return;
     }
 
     if (!trimmedName) {
-      setErrorMessage("Please enter the user's full name.");
+      setErrorMessage(t("operations.invite.invalidName"));
       return;
     }
 
@@ -74,12 +76,12 @@ function InviteUserDialogContent({
 
     if (accessMode === "limited") {
       if (!expiresAt) {
-        setErrorMessage("Please select an expiry date for limited access.");
+        setErrorMessage(t("operations.invite.missingExpiryDate"));
         return;
       }
       const expDate = new Date(expiresAt);
       if (Number.isNaN(expDate.getTime()) || expDate.getTime() <= Date.now()) {
-        setErrorMessage("Expiry date must be in the future.");
+        setErrorMessage(t("operations.invite.expiryMustBeFuture"));
         return;
       }
       isoExpiresAt = expDate.toISOString();
@@ -87,7 +89,7 @@ function InviteUserDialogContent({
       if (startsAt) {
         const startDate = new Date(startsAt);
         if (Number.isNaN(startDate.getTime()) || expDate.getTime() <= startDate.getTime()) {
-          setErrorMessage("Expiry date must be after the start date.");
+          setErrorMessage(t("operations.invite.expiryAfterStart"));
           return;
         }
         isoStartsAt = startDate.toISOString();
@@ -114,7 +116,8 @@ function InviteUserDialogContent({
       onClose();
     } catch (err) {
       const code = err instanceof Error ? err.message : "";
-      const mapped = ERROR_MESSAGES[code] || "The invitation could not be sent. Please check your connection and try again.";
+      const mappedKey = ERROR_KEYS[code];
+      const mapped = mappedKey ? t(mappedKey) : t("operations.invite.failed");
       setErrorMessage(mapped);
     }
   };
@@ -129,13 +132,13 @@ function InviteUserDialogContent({
       <Card className="relative w-full max-w-lg border-primary/25 shadow-xl">
         <CardHeader className="flex flex-row items-center justify-between pb-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-primary">Administration</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary">{t("operations.invite.administration")}</p>
             <CardTitle className="text-xl" id="invite-dialog-title">
-              Invite user
+              {t("operations.invite.title")}
             </CardTitle>
           </div>
           <Button
-            aria-label="Close invitation dialog"
+            aria-label={t("operations.invite.closeDialog")}
             disabled={inviteUser.isPending}
             onClick={onClose}
             size="icon"
@@ -160,7 +163,7 @@ function InviteUserDialogContent({
           <form className="space-y-4" noValidate onSubmit={handleSubmit}>
             <div>
               <label className="block text-sm font-semibold" htmlFor="invite-email">
-                Email address <span className="text-destructive">*</span>
+                {t("operations.invite.emailAddress")} <span className="text-destructive">*</span>
               </label>
               <Input
                 autoComplete="off"
@@ -178,7 +181,7 @@ function InviteUserDialogContent({
 
             <div>
               <label className="block text-sm font-semibold" htmlFor="invite-full-name">
-                Full name <span className="text-destructive">*</span>
+                {t("operations.invite.fullName")} <span className="text-destructive">*</span>
               </label>
               <Input
                 autoComplete="off"
@@ -196,7 +199,7 @@ function InviteUserDialogContent({
 
             <div>
               <fieldset disabled={inviteUser.isPending}>
-                <legend className="text-sm font-semibold">Assigned role</legend>
+                <legend className="text-sm font-semibold">{t("operations.invite.assignedRole")}</legend>
                 <div className="mt-2 grid grid-cols-2 gap-3">
                   <label
                     className={`flex cursor-pointer items-center justify-center rounded-lg border p-3 text-sm font-medium transition-colors ${
@@ -213,7 +216,7 @@ function InviteUserDialogContent({
                       type="radio"
                       value="learner"
                     />
-                    Learner
+                    {t("role.learner")}
                   </label>
                   <label
                     className={`flex cursor-pointer items-center justify-center rounded-lg border p-3 text-sm font-medium transition-colors ${
@@ -230,7 +233,7 @@ function InviteUserDialogContent({
                       type="radio"
                       value="instructor"
                     />
-                    Instructor
+                    {t("role.instructor")}
                   </label>
                 </div>
               </fieldset>
@@ -238,7 +241,7 @@ function InviteUserDialogContent({
 
             <div>
               <fieldset disabled={inviteUser.isPending}>
-                <legend className="text-sm font-semibold">Access period</legend>
+                <legend className="text-sm font-semibold">{t("operations.invite.accessPeriod")}</legend>
                 <div className="mt-2 grid grid-cols-2 gap-3">
                   <label
                     className={`flex cursor-pointer items-center justify-center rounded-lg border p-3 text-sm font-medium transition-colors ${
@@ -255,7 +258,7 @@ function InviteUserDialogContent({
                       type="radio"
                       value="unlimited"
                     />
-                    Unlimited
+                    {t("operations.invite.unlimited")}
                   </label>
                   <label
                     className={`flex cursor-pointer items-center justify-center rounded-lg border p-3 text-sm font-medium transition-colors ${
@@ -272,7 +275,7 @@ function InviteUserDialogContent({
                       type="radio"
                       value="limited"
                     />
-                    Limited window
+                    {t("operations.invite.limitedWindow")}
                   </label>
                 </div>
               </fieldset>
@@ -282,7 +285,7 @@ function InviteUserDialogContent({
               <div className="grid gap-3 rounded-lg border border-border bg-muted/30 p-3 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-semibold" htmlFor="invite-start-date">
-                    Access start (optional)
+                    {t("operations.invite.accessStart")}
                   </label>
                   <Input
                     className="mt-1 text-sm"
@@ -296,7 +299,7 @@ function InviteUserDialogContent({
                 </div>
                 <div>
                   <label className="block text-xs font-semibold" htmlFor="invite-expiry-date">
-                    Access expiry <span className="text-destructive">*</span>
+                    {t("operations.invite.accessExpiry")} <span className="text-destructive">*</span>
                   </label>
                   <Input
                     className="mt-1 text-sm"
@@ -319,14 +322,14 @@ function InviteUserDialogContent({
                 type="button"
                 variant="outline"
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 disabled={inviteUser.isPending}
                 type="submit"
               >
                 <UserPlus aria-hidden="true" className="size-4" />
-                {inviteUser.isPending ? "Sending invitation..." : "Send invitation"}
+                {inviteUser.isPending ? t("operations.invite.sendingInvitation") : t("operations.invite.sendInvitation")}
               </Button>
             </div>
           </form>

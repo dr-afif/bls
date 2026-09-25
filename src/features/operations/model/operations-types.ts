@@ -16,6 +16,7 @@ export type OperationsPerson = {
     cohortId: string;
     cohortCode: string;
     cohortName: string;
+    cohortNameMs: string | null;
     memberRole: MemberRole;
     status: MembershipStatus;
   }>;
@@ -26,7 +27,9 @@ export type OperationsCohort = {
   organizationId: string;
   code: string;
   name: string;
+  nameMs: string | null;
   description: string | null;
+  descriptionMs: string | null;
   venue: string | null;
   startAt: string;
   endAt: string;
@@ -47,6 +50,9 @@ export type CreateCohortInput = {
   actorUserId: string;
   code: string;
   name: string;
+  nameMs?: string | null;
+  description?: string | null;
+  descriptionMs?: string | null;
   venue: string;
   startAt: string;
   endAt: string;

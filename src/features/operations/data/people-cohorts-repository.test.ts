@@ -23,7 +23,7 @@ describe("People and Cohorts repository", () => {
     expect(people[0]).toMatchObject({ fullName: "Learner One", roles: ["learner"], memberships: [{ cohortCode: "BLS-01" }] });
   });
 
-  it("normalizes cohort input before inserting", async () => {
+  it("normalizes cohort input and handles bilingual fields before inserting", async () => {
     const insert = vi.fn().mockResolvedValue({ error: null });
     const maybeSingle = vi.fn().mockResolvedValue(result({ id: "course-1" }));
     const courseQuery = {
@@ -37,12 +37,72 @@ describe("People and Cohorts repository", () => {
       from: vi.fn((table: string) => table === "courses" ? courseQuery : { insert }),
     } as unknown as SupabaseClient<Database>;
     await createCohort(client, {
-      organizationId: "org-1", actorUserId: "admin-1", code: " bls-01 ", name: " Provider Course ", venue: " Skills Lab ", startAt: "2026-08-22T00:30:00.000Z", endAt: "2026-08-22T08:30:00.000Z",
+      organizationId: "org-1",
+      actorUserId: "admin-1",
+      code: " bls-01 ",
+      name: " Provider Course ",
+      nameMs: " Kursus Penyedia ",
+      description: " English description ",
+      descriptionMs: " Penerangan Bahasa Melayu ",
+      venue: " Skills Lab ",
+      startAt: "2026-08-22T00:30:00.000Z",
+      endAt: "2026-08-22T08:30:00.000Z",
     });
     expect(insert).toHaveBeenCalledWith(expect.objectContaining({
-      course_id: "course-1", code: "BLS-01", name: "Provider Course",
-      venue: "Skills Lab", status: "scheduled",
+      course_id: "course-1",
+      code: "BLS-01",
+      name: "Provider Course",
+      name_ms: "Kursus Penyedia",
+      description: "English description",
+      description_ms: "Penerangan Bahasa Melayu",
+      venue: "Skills Lab",
+      status: "scheduled",
     }));
+  });
+
+  it("retrieves bilingual fields in listCohorts", async () => {
+    const { listCohorts } = await import("./people-cohorts-repository");
+    const cohortsData = [
+      {
+        id: "cohort-1",
+        organization_id: "org-1",
+        code: "BLS-01",
+        name: "Provider Course",
+        name_ms: "Kursus Penyedia",
+        description: "EN Description",
+        description_ms: "BM Penerangan",
+        venue: "Auditorium",
+        start_at: "2026-08-22T00:30:00.000Z",
+        end_at: "2026-08-22T08:30:00.000Z",
+        status: "scheduled",
+        contact_name: "Dr. Afif",
+        contact_phone: "0123456789",
+        preparation_notes: "Bring pen",
+      },
+    ];
+    const client = {
+      from: vi.fn((table: string) => {
+        if (table === "cohorts") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: cohortsData, error: null }),
+            }),
+          };
+        }
+        return {
+          select: vi.fn().mockResolvedValue({ data: [], error: null }),
+        };
+      }),
+    } as unknown as SupabaseClient<Database>;
+
+    const cohorts = await listCohorts(client);
+    expect(cohorts[0]).toMatchObject({
+      code: "BLS-01",
+      name: "Provider Course",
+      nameMs: "Kursus Penyedia",
+      description: "EN Description",
+      descriptionMs: "BM Penerangan",
+    });
   });
 
   it("invokes admin-invite-user function and returns invited user result", async () => {

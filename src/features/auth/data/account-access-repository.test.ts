@@ -43,40 +43,25 @@ describe('account-access-repository', () => {
     const access = await getAccountAccess(mockClient, userId);
 
     expect(access.profile?.preferredLanguage).toBe('ms');
-    expect(access.profile?.preferredLanguageAvailable).toBe(true);
     expect(access.profile?.fullName).toBe('Siti Aminah');
     expect(access.roles).toEqual(['learner']);
   });
 
-  it('backward compatibility: falls back gracefully when preferred_language column does not exist on remote database', async () => {
-    let profileCallCount = 0;
+  it('normalizes null or unexpected preferred_language to en', async () => {
     const mockClient = {
       from: vi.fn((table: string) => {
         if (table === 'profiles') {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockImplementation(async () => {
-              profileCallCount++;
-              if (profileCallCount === 1) {
-                // First call fails with missing column error
-                return {
-                  data: null,
-                  error: {
-                    code: '42703',
-                    message: 'column profiles.preferred_language does not exist',
-                  },
-                };
-              }
-              // Second call without preferred_language succeeds
-              return {
-                data: {
-                  account_status: 'active',
-                  full_name: 'Legacy User',
-                  organization_id: null,
-                },
-                error: null,
-              };
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: {
+                account_status: 'active',
+                full_name: 'John Doe',
+                organization_id: null,
+                preferred_language: null,
+              },
+              error: null,
             }),
           };
         }
@@ -95,10 +80,8 @@ describe('account-access-repository', () => {
 
     const access = await getAccountAccess(mockClient, userId);
 
-    expect(profileCallCount).toBe(2);
-    expect(access.profile?.fullName).toBe('Legacy User');
-    expect(access.profile?.preferredLanguage).toBe('en'); // Safe fallback
-    expect(access.profile?.preferredLanguageAvailable).toBe(false); // Explicit compatibility signal
+    expect(access.profile?.fullName).toBe('John Doe');
+    expect(access.profile?.preferredLanguage).toBe('en');
     expect(access.roles).toEqual(['instructor']);
   });
 
@@ -121,25 +104,6 @@ describe('account-access-repository', () => {
     expect(eqSpy).toHaveBeenCalledWith('id', userId);
   });
 
-  it('updatePreferredLanguage treats missing remote column as non-fatal local-only', async () => {
-    const mockClient = {
-      from: vi.fn(() => ({
-        update: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockResolvedValue({
-          error: {
-            code: '42703',
-            message: 'column profiles.preferred_language does not exist',
-          },
-        }),
-      })),
-    } as unknown as SupabaseClient<Database>;
-
-    const result = await updatePreferredLanguage(mockClient, userId, 'ms');
-
-    expect(result.success).toBe(true);
-    expect(result.persisted).toBe(false);
-  });
-
   it('updatePreferredLanguage returns failure when unexpected database error occurs', async () => {
     const mockClient = {
       from: vi.fn(() => ({
@@ -157,5 +121,25 @@ describe('account-access-repository', () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe('permission denied for table profiles');
+  });
+
+  it('getAccountAccess propagates database query errors directly without 42703 fallback suppression', async () => {
+    const mockClient = {
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        maybeSingle: vi.fn().mockResolvedValue({
+          data: null,
+          error: {
+            code: '42703',
+            message: 'column profiles.preferred_language does not exist',
+          },
+        }),
+      })),
+    } as unknown as SupabaseClient<Database>;
+
+    await expect(getAccountAccess(mockClient, userId)).rejects.toThrow(
+      'ACCOUNT_ACCESS_UNAVAILABLE',
+    );
   });
 });

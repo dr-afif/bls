@@ -9,15 +9,18 @@ import { PageHeader } from "../../../components/common/page-header";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Input } from "../../../components/ui/input";
+import { localizedText, useTranslation } from "../../../lib/i18n";
+import { resourceAudienceKey, resourceLanguageKey, resourceTypeKey } from "../../../lib/i18n/enum-labels";
 import { useAccountAccess } from "../../auth/hooks/use-account-access";
 import { FieldError, ResourceAdminState } from "../components/resource-admin-ui";
 import { useAdminResourceCatalog, useAdminResourceMutations } from "../hooks/use-admin-resources";
 import { contentFromDraftBody, selectClassName, textareaClassName } from "../model/resource-admin-form-utils";
-import { resourceTypeLabels } from "../model/resource-admin-types";
+import type { ResourceLanguage, ResourceType } from "../model/resource-admin-types";
 
 const schema = z.object({
   audiences: z.array(z.enum(["learner", "instructor"])).min(1, "Choose at least one audience."),
   contentBody: z.string(),
+  contentLanguage: z.enum(["en", "ms", "bilingual", "language_independent"]),
   courseId: z.string().uuid("Choose a course."),
   estimatedMinutes: z.string().regex(/^\d+$/, "Enter whole minutes."),
   featured: z.boolean(),
@@ -44,14 +47,34 @@ const schema = z.object({
 
 type Values = z.infer<typeof schema>;
 
+const resourceTypeOptions: ResourceType[] = ["guide", "checklist", "pdf", "youtube_video"];
+const contentLanguageOptions: ResourceLanguage[] = ["en", "ms", "bilingual", "language_independent"];
+
 export function ResourceNewPage() {
+  const { t, locale } = useTranslation();
   const access = useAccountAccess();
   const catalog = useAdminResourceCatalog();
   const { create } = useAdminResourceMutations();
   const navigate = useNavigate();
   const [notice, setNotice] = useState("");
   const form = useForm<Values>({
-    defaultValues: { audiences: ["learner"], contentBody: "", courseId: "", estimatedMinutes: "5", featured: false, guidelineSource: "", guidelineYear: String(new Date().getFullYear()), slug: "", stageIds: [], summary: "", title: "", topicIds: [], type: "guide", youtubeVideoId: "" },
+    defaultValues: {
+      audiences: ["learner"],
+      contentBody: "",
+      contentLanguage: "en",
+      courseId: "",
+      estimatedMinutes: "5",
+      featured: false,
+      guidelineSource: "",
+      guidelineYear: String(new Date().getFullYear()),
+      slug: "",
+      stageIds: [],
+      summary: "",
+      title: "",
+      topicIds: [],
+      type: "guide",
+      youtubeVideoId: "",
+    },
     resolver: zodResolver(schema),
   });
   const type = useWatch({ control: form.control, name: "type" });
@@ -60,11 +83,12 @@ export function ResourceNewPage() {
 
   const submit = form.handleSubmit(async (values) => {
     const organizationId = access.data?.profile?.organizationId;
-    if (!organizationId) return setNotice("Your administrator profile has no organization assignment.");
+    if (!organizationId) return setNotice(t("operations.cohorts.noOrg"));
     setNotice("");
     try {
       const created = await create.mutateAsync({
         audiences: values.audiences,
+        contentLanguage: values.contentLanguage,
         courseId: values.courseId,
         estimatedMinutes: Number(values.estimatedMinutes),
         featured: values.featured,
@@ -82,38 +106,181 @@ export function ResourceNewPage() {
       });
       navigate(`/app/admin/resources/${created.resourceId}/versions/${created.versionId}`, { replace: true });
     } catch {
-      setNotice("The resource could not be created. Check the slug, course, and required content, then try again.");
+      setNotice(t("resourceAdmin.new.failedNotice"));
     }
   });
 
-  return <div className="space-y-6">
-    <PageHeader action={<Button asChild variant="ghost"><Link to="/app/admin/resources"><ArrowLeft aria-hidden="true" />Back to resources</Link></Button>} description="Create controlled metadata and an initial draft. PDF files are uploaded only after the server allocates an exact private path." eyebrow="Administrator workspace" title="New resource" />
-    <p aria-live="polite" className="text-sm font-medium text-destructive">{notice}</p>
-    <form className="space-y-6" onSubmit={submit}>
-      <Card><CardHeader><CardTitle>Resource identity</CardTitle></CardHeader><CardContent className="grid gap-4 sm:grid-cols-2">
-        <label className="text-sm font-semibold">Title<Input aria-describedby="title-error" className="mt-2" {...form.register("title")} /></label><FieldError id="title-error">{form.formState.errors.title?.message}</FieldError>
-        <label className="text-sm font-semibold">URL slug<Input aria-describedby="slug-error" className="mt-2" placeholder="adult-cpr-checklist" {...form.register("slug")} /></label><FieldError id="slug-error">{form.formState.errors.slug?.message}</FieldError>
-        <label className="text-sm font-semibold">Course<select className={selectClassName} {...form.register("courseId")}><option value="">Select course</option>{catalog.data?.courses.map((course) => <option key={course.id} value={course.id}>{course.name}</option>)}</select><FieldError>{form.formState.errors.courseId?.message}</FieldError></label>
-        <label className="text-sm font-semibold">Resource type<select className={selectClassName} {...form.register("type")}>{Object.entries(resourceTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-        <label className="text-sm font-semibold">Estimated minutes<Input className="mt-2" inputMode="numeric" {...form.register("estimatedMinutes")} /><FieldError>{form.formState.errors.estimatedMinutes?.message}</FieldError></label>
-        <label className="flex min-h-11 items-center gap-3 self-end rounded-xl border px-3 text-sm font-semibold"><input className="size-5" type="checkbox" {...form.register("featured")} />Feature in the learner or instructor library</label>
-      </CardContent></Card>
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        action={
+          <Button asChild variant="ghost">
+            <Link to="/app/admin/resources">
+              <ArrowLeft aria-hidden="true" />
+              {t("resourceAdmin.new.backToResources")}
+            </Link>
+          </Button>
+        }
+        description={t("resourceAdmin.new.description")}
+        eyebrow="Administrator workspace"
+        title={t("resourceAdmin.new.title")}
+      />
+      <p aria-live="polite" className="text-sm font-medium text-destructive">{notice}</p>
+      <form className="space-y-6" onSubmit={submit}>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("resourceAdmin.new.resourceIdentity")}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <label className="text-sm font-semibold">
+              {t("resourceAdmin.new.resourceTitle")}
+              <Input aria-describedby="title-error" className="mt-2" {...form.register("title")} />
+            </label>
+            <FieldError id="title-error">{form.formState.errors.title?.message}</FieldError>
+            <label className="text-sm font-semibold">
+              {t("resourceAdmin.new.urlSlug")}
+              <Input aria-describedby="slug-error" className="mt-2" placeholder="adult-cpr-checklist" {...form.register("slug")} />
+            </label>
+            <FieldError id="slug-error">{form.formState.errors.slug?.message}</FieldError>
+            <label className="text-sm font-semibold">
+              {t("resourceAdmin.new.course")}
+              <select className={selectClassName} {...form.register("courseId")}>
+                <option value="">{t("resourceAdmin.new.selectCourse")}</option>
+                {catalog.data?.courses.map((course) => (
+                  <option key={course.id} value={course.id}>
+                    {localizedText({ en: course.name, ms: course.titleMs, locale })}
+                  </option>
+                ))}
+              </select>
+              <FieldError>{form.formState.errors.courseId?.message}</FieldError>
+            </label>
+            <label className="text-sm font-semibold">
+              {t("resourceAdmin.new.contentLanguage")}
+              <select className={selectClassName} {...form.register("contentLanguage")}>
+                {contentLanguageOptions.map((lang) => (
+                  <option key={lang} value={lang}>
+                    {t(resourceLanguageKey(lang))}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm font-semibold">
+              {t("resourceAdmin.new.resourceType")}
+              <select className={selectClassName} {...form.register("type")}>
+                {resourceTypeOptions.map((value) => (
+                  <option key={value} value={value}>
+                    {t(resourceTypeKey(value))}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm font-semibold">
+              {t("resourceAdmin.new.estimatedMinutes")}
+              <Input className="mt-2" inputMode="numeric" {...form.register("estimatedMinutes")} />
+              <FieldError>{form.formState.errors.estimatedMinutes?.message}</FieldError>
+            </label>
+            <label className="flex min-h-11 items-center gap-3 self-end rounded-xl border px-3 text-sm font-semibold sm:col-span-2">
+              <input className="size-5" type="checkbox" {...form.register("featured")} />
+              {t("resourceAdmin.new.featureLibrary")}
+            </label>
+          </CardContent>
+        </Card>
 
-      <Card><CardHeader><CardTitle>Audience and discovery</CardTitle></CardHeader><CardContent className="grid gap-5 lg:grid-cols-3">
-        <fieldset><legend className="text-sm font-semibold">Audience</legend><div className="mt-2 space-y-2">{(["learner", "instructor"] as const).map((audience) => <label className="flex min-h-11 items-center gap-3 rounded-xl border px-3 text-sm" key={audience}><input className="size-5" type="checkbox" value={audience} {...form.register("audiences")} />{audience === "learner" ? "Learners" : "Instructors"}</label>)}</div><FieldError>{form.formState.errors.audiences?.message}</FieldError></fieldset>
-        <fieldset><legend className="text-sm font-semibold">BLS topics</legend><div className="mt-2 max-h-56 space-y-2 overflow-y-auto">{catalog.data?.topics.filter((topic) => topic.active).map((topic) => <label className="flex min-h-11 items-center gap-3 rounded-xl border px-3 text-sm" key={topic.id}><input className="size-5" type="checkbox" value={topic.id} {...form.register("topicIds")} />{topic.name}</label>)}</div><FieldError>{form.formState.errors.topicIds?.message}</FieldError></fieldset>
-        <fieldset><legend className="text-sm font-semibold">Teaching stages</legend><div className="mt-2 max-h-56 space-y-2 overflow-y-auto">{catalog.data?.stages.filter((stage) => stage.active).map((stage) => <label className="flex min-h-11 items-center gap-3 rounded-xl border px-3 text-sm" key={stage.id}><input className="size-5" type="checkbox" value={stage.id} {...form.register("stageIds")} />{stage.name}</label>)}</div><FieldError>{form.formState.errors.stageIds?.message}</FieldError></fieldset>
-      </CardContent></Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("resourceAdmin.new.audienceAndDiscovery")}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-5 lg:grid-cols-3">
+            <fieldset>
+              <legend className="text-sm font-semibold">{t("resourceAdmin.resources.audiences")}</legend>
+              <div className="mt-2 space-y-2">
+                {(["learner", "instructor"] as const).map((audience) => (
+                  <label className="flex min-h-11 items-center gap-3 rounded-xl border px-3 text-sm" key={audience}>
+                    <input className="size-5" type="checkbox" value={audience} {...form.register("audiences")} />
+                    {t(resourceAudienceKey(audience))}
+                  </label>
+                ))}
+              </div>
+              <FieldError>{form.formState.errors.audiences?.message}</FieldError>
+            </fieldset>
+            <fieldset>
+              <legend className="text-sm font-semibold">{t("resourceAdmin.taxonomy.topics")}</legend>
+              <div className="mt-2 max-h-56 space-y-2 overflow-y-auto">
+                {catalog.data?.topics.filter((topic) => topic.active).map((topic) => (
+                  <label className="flex min-h-11 items-center gap-3 rounded-xl border px-3 text-sm" key={topic.id}>
+                    <input className="size-5" type="checkbox" value={topic.id} {...form.register("topicIds")} />
+                    {topic.name}
+                  </label>
+                ))}
+              </div>
+              <FieldError>{form.formState.errors.topicIds?.message}</FieldError>
+            </fieldset>
+            <fieldset>
+              <legend className="text-sm font-semibold">{t("resourceAdmin.taxonomy.stages")}</legend>
+              <div className="mt-2 max-h-56 space-y-2 overflow-y-auto">
+                {catalog.data?.stages.filter((stage) => stage.active).map((stage) => (
+                  <label className="flex min-h-11 items-center gap-3 rounded-xl border px-3 text-sm" key={stage.id}>
+                    <input className="size-5" type="checkbox" value={stage.id} {...form.register("stageIds")} />
+                    {stage.name}
+                  </label>
+                ))}
+              </div>
+              <FieldError>{form.formState.errors.stageIds?.message}</FieldError>
+            </fieldset>
+          </CardContent>
+        </Card>
 
-      <Card><CardHeader><CardTitle>Initial version</CardTitle></CardHeader><CardContent className="grid gap-4 sm:grid-cols-2">
-        <label className="text-sm font-semibold sm:col-span-2">Summary<textarea className={textareaClassName} {...form.register("summary")} /><FieldError>{form.formState.errors.summary?.message}</FieldError></label>
-        <label className="text-sm font-semibold">Guideline source<Input className="mt-2" placeholder="e.g. AHA Guidelines" {...form.register("guidelineSource")} /><FieldError>{form.formState.errors.guidelineSource?.message}</FieldError></label>
-        <label className="text-sm font-semibold">Guideline year<Input className="mt-2" inputMode="numeric" {...form.register("guidelineYear")} /><FieldError>{form.formState.errors.guidelineYear?.message}</FieldError></label>
-        {(type === "guide" || type === "checklist") && <label className="text-sm font-semibold sm:col-span-2">{type === "checklist" ? "Checklist items — one per line" : "Clinical guide content"}<textarea className={textareaClassName} {...form.register("contentBody")} /><FieldError>{form.formState.errors.contentBody?.message}</FieldError></label>}
-        {type === "youtube_video" && <label className="text-sm font-semibold sm:col-span-2">YouTube video ID<Input className="mt-2" {...form.register("youtubeVideoId")} /><FieldError>{form.formState.errors.youtubeVideoId?.message}</FieldError></label>}
-        {type === "pdf" && <p className="rounded-xl border border-info/25 bg-info-soft p-4 text-sm text-info sm:col-span-2">The draft will be created first. On the next screen you can upload one PDF, up to 20 MiB, to its server-issued private path.</p>}
-      </CardContent></Card>
-      <div className="flex flex-wrap gap-3"><Button disabled={create.isPending} type="submit"><Save aria-hidden="true" />{create.isPending ? "Creating…" : "Create draft resource"}</Button><Button asChild variant="ghost"><Link to="/app/admin/resources">Cancel</Link></Button></div>
-    </form>
-  </div>;
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("resourceAdmin.new.initialVersion")}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <label className="text-sm font-semibold sm:col-span-2">
+              {t("resourceAdmin.new.summary")}
+              <textarea className={textareaClassName} {...form.register("summary")} />
+              <FieldError>{form.formState.errors.summary?.message}</FieldError>
+            </label>
+            <label className="text-sm font-semibold">
+              {t("resourceAdmin.new.guidelineSource")}
+              <Input className="mt-2" placeholder="e.g. AHA Guidelines" {...form.register("guidelineSource")} />
+              <FieldError>{form.formState.errors.guidelineSource?.message}</FieldError>
+            </label>
+            <label className="text-sm font-semibold">
+              {t("resourceAdmin.new.guidelineYear")}
+              <Input className="mt-2" inputMode="numeric" {...form.register("guidelineYear")} />
+              <FieldError>{form.formState.errors.guidelineYear?.message}</FieldError>
+            </label>
+            {(type === "guide" || type === "checklist") && (
+              <label className="text-sm font-semibold sm:col-span-2">
+                {type === "checklist" ? t("resourceAdmin.new.checklistItems") : t("resourceAdmin.new.guideContent")}
+                <textarea className={textareaClassName} {...form.register("contentBody")} />
+                <FieldError>{form.formState.errors.contentBody?.message}</FieldError>
+              </label>
+            )}
+            {type === "youtube_video" && (
+              <label className="text-sm font-semibold sm:col-span-2">
+                {t("resourceAdmin.new.youtubeVideoId")}
+                <Input className="mt-2" {...form.register("youtubeVideoId")} />
+                <FieldError>{form.formState.errors.youtubeVideoId?.message}</FieldError>
+              </label>
+            )}
+            {type === "pdf" && (
+              <p className="rounded-xl border border-info/25 bg-info-soft p-4 text-sm text-info sm:col-span-2">
+                {t("resourceAdmin.new.pdfNotice")}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+        <div className="flex flex-wrap gap-3">
+          <Button disabled={create.isPending} type="submit">
+            <Save aria-hidden="true" />
+            {create.isPending ? t("resourceAdmin.new.creating") : t("resourceAdmin.new.createDraft")}
+          </Button>
+          <Button asChild variant="ghost">
+            <Link to="/app/admin/resources">{t("common.cancel")}</Link>
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
 }

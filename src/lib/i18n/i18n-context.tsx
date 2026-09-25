@@ -62,7 +62,6 @@ export function I18nProvider({ children }: I18nProviderProps) {
   const isProfileAvailable =
     authState.status === 'signed_in' &&
     profile != null &&
-    profile.preferredLanguageAvailable &&
     (profile.preferredLanguage === 'en' || profile.preferredLanguage === 'ms');
 
   const [prevAuthStatus, setPrevAuthStatus] = useState(authState.status);
@@ -94,9 +93,9 @@ export function I18nProvider({ children }: I18nProviderProps) {
       : null;
 
   // Precedence rule:
-  // SIGNED IN & PROFILE PREFERENCE AVAILABLE:
-  //   optimistic update if actively saving -> persisted profile preferred_language -> localStorage fallback -> English
-  // SIGNED OUT OR PROFILE PREFERENCE UNAVAILABLE (e.g. hosted Phase 7.1):
+  // SIGNED IN:
+  //   optimistic update if actively saving -> persisted profile preferred_language -> English fail-safe
+  // SIGNED OUT:
   //   local choice -> localStorage stored choice -> English
   const locale: AppLocale = isProfileAvailable
     ? (activeOptimistic ?? profile.preferredLanguage)
@@ -150,8 +149,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
           setIsUpdatingPreference(false);
         }
       } else {
-        // Signed out OR hosted database does not have preferred_language column yet (Phase 7.1)
-        // Selection remains local-only without false persistence failure
+        // Signed out: selection remains local-only without persistence
         setLocalLocale(nextLocale);
         writeStoredLocale(nextLocale);
       }

@@ -7,38 +7,58 @@ import { PageHeader } from "../../../components/common/page-header";
 import { StatePanel } from "../../../components/common/state-panel";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Input } from "../../../components/ui/input";
+import { useTranslation } from "../../../lib/i18n";
+import { resourceLanguageKey, resourceTypeKey } from "../../../lib/i18n/enum-labels";
 import { LiveResourceRow } from "../components/live-resource-row";
 import { useResourceCatalog } from "../hooks/use-resources";
-import type { CourseResource, ResourceScope, ResourceType } from "../model/resource-types";
+import type { CourseResource, ResourceLanguage, ResourceScope, ResourceType } from "../model/resource-types";
 
-const typeOptions = ["All types", "Guide", "Checklist", "Document", "Video"] as const;
-const typeByLabel: Record<(typeof typeOptions)[number], ResourceType | null> = {
-  "All types": null,
-  Guide: "guide",
-  Checklist: "checklist",
-  Document: "pdf",
-  Video: "youtube_video",
-};
+const typeOptions: readonly (ResourceType | "all")[] = ["all", "guide", "checklist", "pdf", "youtube_video"] as const;
+const languageOptions: readonly (ResourceLanguage | "all")[] = ["all", "en", "ms", "bilingual", "language_independent"] as const;
 
-function filterResources(resources: CourseResource[], query: string, topic: string, stage: string, type: string) {
+function normalizeTypeParam(raw: string | null): ResourceType | "all" {
+  if (!raw || raw === "all" || raw === "All types") return "all";
+  if (raw === "guide" || raw === "Guide") return "guide";
+  if (raw === "checklist" || raw === "Checklist") return "checklist";
+  if (raw === "pdf" || raw === "Document") return "pdf";
+  if (raw === "youtube_video" || raw === "Video") return "youtube_video";
+  return "all";
+}
+
+function filterResources(
+  resources: CourseResource[],
+  query: string,
+  topic: string,
+  stage: string,
+  type: ResourceType | "all",
+  language: ResourceLanguage | "all",
+) {
   const normalizedQuery = query.trim().toLowerCase();
-  const selectedType = typeByLabel[type as keyof typeof typeByLabel] ?? null;
   return resources.filter((resource) => {
-    const searchable = [resource.title, resource.summary, ...resource.topics.map(({ name }) => name), ...resource.teachingStages.map(({ name }) => name)].join(" ").toLowerCase();
+    const searchable = [
+      resource.title,
+      resource.summary,
+      ...resource.topics.map(({ name }) => name),
+      ...resource.teachingStages.map(({ name }) => name),
+    ].join(" ").toLowerCase();
+
     return (!normalizedQuery || searchable.includes(normalizedQuery))
       && (topic === "all" || resource.topics.some(({ slug }) => slug === topic))
       && (stage === "all" || resource.teachingStages.some(({ slug }) => slug === stage))
-      && (!selectedType || resource.type === selectedType);
+      && (type === "all" || resource.type === type)
+      && (language === "all" || resource.contentLanguage === language);
   });
 }
 
 export function ResourceLibraryPage({ scope }: { scope: ResourceScope }) {
+  const { t } = useTranslation();
   const catalog = useResourceCatalog(scope);
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") ?? "";
   const topic = searchParams.get("topic") ?? "all";
   const stage = searchParams.get("stage") ?? "all";
-  const type = searchParams.get("type") ?? "All types";
+  const type = normalizeTypeParam(searchParams.get("type"));
+  const language = (searchParams.get("lang") ?? "all") as ResourceLanguage | "all";
   const instructor = scope === "instructor";
 
   const setFilter = (name: string, value: string, defaultValue: string) => {
@@ -54,58 +74,185 @@ export function ResourceLibraryPage({ scope }: { scope: ResourceScope }) {
     const unique = new Map(catalog.data?.flatMap((resource) => resource.topics).map((item) => [item.slug, item]) ?? []);
     return [...unique.values()].sort((left, right) => left.displayOrder - right.displayOrder);
   }, [catalog.data]);
+
   const stages = useMemo(() => {
     const unique = new Map(catalog.data?.flatMap((resource) => resource.teachingStages).map((item) => [item.slug, item]) ?? []);
     return [...unique.values()].sort((left, right) => left.displayOrder - right.displayOrder);
   }, [catalog.data]);
-  const filtered = useMemo(() => filterResources(catalog.data ?? [], query, topic, stage, type), [catalog.data, query, stage, topic, type]);
-  const topicLabel = (value: string) => value === "all" ? "All topics" : topics.find(({ slug }) => slug === value)?.name ?? value;
-  const stageLabel = (value: string) => value === "all" ? "All stages" : stages.find(({ slug }) => slug === value)?.name ?? value;
 
-  if (catalog.isPending) return <StatePanel kind="loading" title={instructor ? "Loading Teaching Kit" : "Loading Guides"} description="Checking your course access and available materials." />;
+  const filtered = useMemo(
+    () => filterResources(catalog.data ?? [], query, topic, stage, type, language),
+    [catalog.data, query, stage, topic, type, language],
+  );
+
+  const topicLabel = (value: string) => (value === "all" ? t("resource.library.allTopics") : topics.find(({ slug }) => slug === value)?.name ?? value);
+  const stageLabel = (value: string) => (value === "all" ? t("resource.library.allStages") : stages.find(({ slug }) => slug === value)?.name ?? value);
+  const typeLabel = (value: string) => (value === "all" ? t("resource.library.allTypes") : t(resourceTypeKey(value as ResourceType)));
+  const languageLabel = (value: string) => (value === "all" ? t("resourceLanguage.all") : t(resourceLanguageKey(value as ResourceLanguage)));
+
+  if (catalog.isPending) {
+    return (
+      <StatePanel
+        kind="loading"
+        title={instructor ? t("resource.library.loadingInstructor") : t("resource.library.loadingLearner")}
+        description={t("resource.library.loadingDesc")}
+      />
+    );
+  }
+
   if (catalog.isError) {
     const offline = !navigator.onLine;
-    return <StatePanel actionLabel="Try again" description={offline ? "Reconnect to load protected course materials." : "Check your connection and try again. No data was changed."} kind={offline ? "offline" : "error"} onAction={() => void catalog.refetch()} title={offline ? "Course materials require a connection" : "Course materials are unavailable"} />;
+    return (
+      <StatePanel
+        actionLabel={t("common.tryAgain")}
+        description={offline ? t("resource.library.offlineDesc") : t("resource.library.errorDesc")}
+        kind={offline ? "offline" : "error"}
+        onAction={() => void catalog.refetch()}
+        title={offline ? t("resource.library.offlineTitle") : t("resource.library.errorTitle")}
+      />
+    );
   }
-  if (!catalog.data?.length) return <StatePanel kind="empty" title={instructor ? "No teaching materials are available" : "No guides are available"} description="Your account is active, but no published resources are currently available for this course." />;
+
+  if (!catalog.data?.length) {
+    return (
+      <StatePanel
+        kind="empty"
+        title={instructor ? t("resource.library.emptyCatalogueInstructor") : t("resource.library.emptyCatalogueLearner")}
+        description={t("resource.library.emptyCatalogueDesc")}
+      />
+    );
+  }
 
   const basePath = instructor ? "/app/instructor/teaching-kit" : "/app/learner/guides";
   const grouped = instructor
-    ? stages.map((group) => ({ group, resources: filtered.filter((resource) => resource.teachingStages.some(({ id }) => id === group.id)) })).filter(({ resources }) => resources.length)
+    ? stages
+        .map((group) => ({
+          group,
+          resources: filtered.filter((resource) => resource.teachingStages.some(({ id }) => id === group.id)),
+        }))
+        .filter(({ resources }) => resources.length)
     : [];
 
   return (
     <div className="space-y-7">
       <PageHeader
-        description={instructor ? "Launch permitted materials by physical-course stage, BLS topic, or resource type." : "Find permitted practical BLS references by topic or resource type. Resources are not a completion pathway."}
+        description={instructor ? t("resource.library.instructorDesc") : t("resource.library.learnerDesc")}
         eyebrow="Live development resources"
-        title={instructor ? "Teaching Kit" : "Guides"}
+        title={instructor ? t("resource.library.instructorTitle") : t("resource.library.learnerTitle")}
       />
 
       <Card className="shadow-none">
         <CardContent className="space-y-5 pt-5 sm:pt-6">
           <div>
-            <label className="text-sm font-semibold" htmlFor="resource-search">Search {instructor ? "teaching materials" : "guides"}</label>
+            <label className="text-sm font-semibold" htmlFor="resource-search">
+              {instructor ? t("resource.library.searchTeachingMaterials") : t("resource.library.searchGuides")}
+            </label>
             <div className="relative mt-2">
               <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
-              <Input className="pl-10" id="resource-search" onChange={(event) => setFilter("q", event.target.value, "")} placeholder={instructor ? "Search guides, videos, checklists…" : "Search CPR, AED, airway…"} type="search" value={query} />
+              <Input
+                className="pl-10"
+                id="resource-search"
+                onChange={(event) => setFilter("q", event.target.value, "")}
+                placeholder={instructor ? t("resource.library.searchInstructorPlaceholder") : t("resource.library.searchLearnerPlaceholder")}
+                type="search"
+                value={query}
+              />
             </div>
           </div>
-          {instructor && <div><p className="mb-2 text-sm font-semibold">Teaching stage</p><FilterChips getLabel={stageLabel} label="Filter by teaching stage" onChange={(value) => setFilter("stage", value, "all")} options={["all", ...stages.map(({ slug }) => slug)]} value={stage} /></div>}
+          {instructor && (
+            <div>
+              <p className="mb-2 text-sm font-semibold">{t("resource.library.filterStage")}</p>
+              <FilterChips
+                getLabel={stageLabel}
+                label={t("resource.library.filterStage")}
+                onChange={(value) => setFilter("stage", value, "all")}
+                options={["all", ...stages.map(({ slug }) => slug)]}
+                value={stage}
+              />
+            </div>
+          )}
           <div className="grid gap-5 lg:grid-cols-2">
-            <div><p className="mb-2 text-sm font-semibold">BLS topic</p><FilterChips getLabel={topicLabel} label="Filter by BLS topic" onChange={(value) => setFilter("topic", value, "all")} options={["all", ...topics.map(({ slug }) => slug)]} value={topic} /></div>
-            <div><p className="mb-2 text-sm font-semibold">Resource type</p><FilterChips label="Filter by resource type" onChange={(value) => setFilter("type", value, "All types")} options={typeOptions} value={type as (typeof typeOptions)[number]} /></div>
+            <div>
+              <p className="mb-2 text-sm font-semibold">{t("resource.library.filterTopic")}</p>
+              <FilterChips
+                getLabel={topicLabel}
+                label={t("resource.library.filterTopic")}
+                onChange={(value) => setFilter("topic", value, "all")}
+                options={["all", ...topics.map(({ slug }) => slug)]}
+                value={topic}
+              />
+            </div>
+            <div>
+              <p className="mb-2 text-sm font-semibold">{t("resource.library.filterType")}</p>
+              <FilterChips
+                getLabel={typeLabel}
+                label={t("resource.library.filterType")}
+                onChange={(value) => setFilter("type", value, "all")}
+                options={typeOptions}
+                value={type}
+              />
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground">Filter selections are reflected in the URL so this view can be bookmarked. Topic and stage names come from live development data.</p>
+          <div>
+            <p className="mb-2 text-sm font-semibold">{t("resource.library.filterLanguage")}</p>
+            <FilterChips
+              getLabel={languageLabel}
+              label={t("resource.library.filterLanguage")}
+              onChange={(value) => setFilter("lang", value, "all")}
+              options={languageOptions}
+              value={language}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">{t("resource.library.bookmarkNotice")}</p>
         </CardContent>
       </Card>
 
-      <p aria-live="polite" className="text-sm text-muted-foreground">{filtered.length} {instructor ? "launch-ready" : "available"} {filtered.length === 1 ? "resource" : "resources"}</p>
+      <p aria-live="polite" className="text-sm text-muted-foreground">
+        {filtered.length} {instructor ? t("resource.library.countInstructor") : t("resource.library.countLearner")}{" "}
+        {filtered.length === 1 ? t("resource.library.resource") : t("resource.library.resources")}
+      </p>
 
       {filtered.length ? (
-        instructor ? <div className="space-y-6">{grouped.map(({ group, resources }) => <section aria-labelledby={`stage-${group.slug}`} key={group.id}><h2 className="mb-3 text-xl font-bold" id={`stage-${group.slug}`}>{group.name}</h2><div className="overflow-hidden rounded-xl border bg-card">{resources.map((resource) => <LiveResourceRow contextLabel={resource.topics.map(({ name }) => name).join(", ")} key={resource.id} resource={resource} to={`${basePath}/${resource.id}`} />)}</div></section>)}</div>
-        : <section aria-labelledby="guide-results-heading"><h2 className="mb-3 text-xl font-bold" id="guide-results-heading">Available references</h2><div className="overflow-hidden rounded-xl border bg-card">{filtered.map((resource) => <LiveResourceRow key={resource.id} resource={resource} to={`${basePath}/${resource.id}`} />)}</div></section>
-      ) : <StatePanel compact description="Try a different topic, teaching stage, resource type, or search term." kind="empty" title="No resources match these filters" />}
+        instructor ? (
+          <div className="space-y-6">
+            {grouped.map(({ group, resources }) => (
+              <section aria-labelledby={`stage-${group.slug}`} key={group.id}>
+                <h2 className="mb-3 text-xl font-bold" id={`stage-${group.slug}`}>
+                  {group.name}
+                </h2>
+                <div className="overflow-hidden rounded-xl border bg-card">
+                  {resources.map((resource) => (
+                    <LiveResourceRow
+                      contextLabel={resource.topics.map(({ name }) => name).join(", ")}
+                      key={resource.id}
+                      resource={resource}
+                      to={`${basePath}/${resource.id}`}
+                    />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        ) : (
+          <section aria-labelledby="guide-results-heading">
+            <h2 className="mb-3 text-xl font-bold" id="guide-results-heading">
+              {t("resource.library.availableReferences")}
+            </h2>
+            <div className="overflow-hidden rounded-xl border bg-card">
+              {filtered.map((resource) => (
+                <LiveResourceRow key={resource.id} resource={resource} to={`${basePath}/${resource.id}`} />
+              ))}
+            </div>
+          </section>
+        )
+      ) : (
+        <StatePanel
+          compact
+          description={t("resource.library.emptyDesc")}
+          kind="empty"
+          title={t("resource.library.emptyTitle")}
+        />
+      )}
     </div>
   );
 }
