@@ -19,8 +19,10 @@
     * Phase 7.2A: Bilingual Locale & Preference Foundation (Local/CI Foundation Only) — COMPLETE (PASS).
     * Phase 7.2A.1: i18n Foundation Correction Pass (Local/CI Only) — COMPLETE (PASS).
     * Phase 7.2A.2: Final Pre-Deployment Language-Preference Hardening (Local/CI Only) — COMPLETE (PASS).
+    * Phase 7.2A.3: Controlled Hosted Bilingual Foundation Deployment — COMPLETE (PASS).
+    * Deployed hosted migration version: `20260924010000_milestone_7_bilingual_foundation.sql`.
     * Phase 7.2 overall status: NOT COMPLETE.
-    * Phase 7.2B: Assessment & Content Localization + Hosted Deployment — PLANNED (NOT STARTED).
+    * Phase 7.2B: Assessment & Content Localization — PLANNED (NOT STARTED).
   - Phase 7.3: Email Transport Spike & Staff Bootstrap — PLANNED.
   - Phase 7.4: Cohort Roster & Invitation Engine — PLANNED.
   - Phase 7.5: Passwordless Return Spike, First-Time & Returning User Registration — PLANNED.
@@ -29,6 +31,44 @@
   - Final Release Gate: Controlled Production Clean-Slate Reset — REQUIRED immediately prior to first real participant launch.
 
 ## Work completed
+
+- Implemented Milestone 7 Phase 7.2A.3: Controlled Hosted Bilingual Foundation Deployment — COMPLETE (PASS):
+  - Pre-Deployment Verification & Preflight:
+    * Local Baseline: Verified git status clean, branch `main`, HEAD commit `bd6030762f7178019a1936463671e1b9367dae0c`.
+    * Linked Project: Verified linked Supabase project reference is strictly `zlaixhnyydxgbphgsetv` (`ACTIVE_HEALTHY`).
+    * Remote Migration History: Remote migration history ended cleanly at `20260922020000_milestone_7_schema_foundation`. Exactly one pending migration (`20260924010000`), zero remote-only migrations, zero history divergence. Dry-run verified exactly 1 migration to be applied, 0 seeds, 0 custom roles.
+    * Hosted Data Preflight: Read-only inventory confirmed 3 profiles, 1 course (`Adult Basic Life Support`, title length 24, satisfying 2–160 char constraint), 2 cohorts (`BLS Provider Course — Demonstration`, `KTGS BANDAR SERI PUTRA`, name lengths 35 and 22, satisfying 2–160 char constraint), 8 resources. Confirmed target columns, enums, triggers, and functions did not exist prior to push.
+  - Migration Deployment:
+    * Deployed exactly one reviewed migration via `npx supabase db push`: `20260924010000_milestone_7_bilingual_foundation.sql`.
+    * Exit code 0, clean execution, no repair, reset, or rollback flags used.
+  - Post-Deployment Schema & Data Verification:
+    * Hosted migration history contains all 31 migrations matching local 1-to-1, ending at `20260924010000`.
+    * Profiles: `preferred_language text NOT NULL DEFAULT 'en'`, check constraint `preferred_language IN ('en', 'ms')`. All 3 existing profiles successfully backfilled to `'en'`.
+    * Strictly User-Owned Language Preference Security: `profiles_validate_preferred_language_update` trigger and `private.validate_profile_preferred_language_update()` function active on hosted Supabase. Enforces strict self-ownership (`actor <> new.id` raises `42501`); permits active user self-update and trusted service/postgres operations. Column privileges grant `UPDATE (preferred_language)` strictly to `authenticated`, `service_role`, `postgres` (zero anonymous update privilege).
+    * Courses: `title_ms text NULL`, `description_ms text NULL`, check constraint 2–160 chars on `title_ms`. Current course row confirmed NULL for both fields.
+    * Cohorts: `name_ms text NULL`, `description_ms text NULL`, check constraint 2–160 chars on `name_ms`. Current cohort rows confirmed NULL for both fields.
+    * Resources: `public.resource_language` enum (`en`, `ms`, `bilingual`, `language_independent`) and `content_language resource_language NOT NULL DEFAULT 'en'` column active. All 8 existing resources successfully backfilled to `'en'`.
+  - Hosted Type Parity:
+    * Generated TypeScript types from linked hosted project into temporary file.
+    * Compared against `src/lib/supabase/database.types.ts`: verified exact schema equivalence (differed only by standard generator comments/annotations). Temporary comparison file deleted.
+  - Security & Performance Advisors:
+    * Ran `supabase db advisors --linked --type security` and `--type performance`.
+    * Verified **0 security issues** and **0 performance issues** attributable to Phase 7.2 objects.
+  - Production App Smoke:
+    * Production app entry and assets (`https://dr-afif.github.io/bls/`) verified over HTTP: status 200 OK.
+    * Automated build and test suites pass 100% locally (39 files, 224 tests, typecheck 0 errors, lint 0 errors, build succeeds).
+    * Browser UI smoke test reported as MANUAL_CONFIRMATION_REQUIRED per guidelines.
+  - Defensive Backward-Compatibility Adapter Disposition:
+    * The temporary 42703 defensive adapter in `account-access-repository.ts` is deliberately RETAINED during this phase to avoid unnecessary source-code edits during a deployment phase; scheduled for cleanup during Phase 7.2B.
+  - Strict Operational Boundaries:
+    * `HOSTED_PHASE_7_2_MIGRATION = 20260924010000_milestone_7_bilingual_foundation`
+    * `HOSTED_MIGRATION_COUNT = 31`
+    * `SEED_EXECUTED_ON_HOSTED = NO`
+    * `AUTH_CONFIG_MUTATIONS = ZERO`
+    * `EDGE_FUNCTION_DEPLOYS = ZERO`
+    * `SMTP_MUTATIONS = ZERO`
+    * `CLEAN_SLATE_RESET_EXECUTED = NO`
+    * `PHASE_7_2B_STARTED = NO`
 
 - Implemented Milestone 7 Phase 7.2A: Bilingual Locale & Preference Foundation (Local/CI Implementation Only) — COMPLETE (PASS):
   - Lightweight First-Party i18n Framework:
@@ -1017,7 +1057,7 @@ from Tailwind CSS v3 to Tailwind CSS v4 for the current production milestone.
   Git-based development and publication. Keep the OneDrive copy only until all
   unpublished work has been confirmed in GitHub.
 
-- Phase 7.2A bilingual database migration (`20260924010000_milestone_7_bilingual_foundation.sql`) is local/CI only. It has NOT been deployed to hosted Supabase `zlaixhnyydxgbphgsetv` (`HOSTED_SUPABASE_MUTATIONS = ZERO`). The frontend application provides a backward-compatibility adapter that catches missing remote columns (`42703`) so production GitHub Pages builds run safely against the unmigrated hosted schema.
+- Phase 7.2A bilingual database migration (`20260924010000_milestone_7_bilingual_foundation.sql`) is deployed to hosted Supabase `zlaixhnyydxgbphgsetv` (31 total hosted migrations). The defensive 42703 backward-compatibility adapter in `account-access-repository.ts` is temporarily retained and scheduled for removal in Phase 7.2B.
 - Educational guides, video content, and assessment quiz questions/options are not translated in Phase 7.2A. Machine translation is strictly prohibited. Quiz localization with immutable bilingual question snapshots and attempt snapshots is deferred to Phase 7.2B.
 - Broad feature-page UI translation (Learner Guides, Quiz Views, Profile Page, Instructor Teaching Kit, Admin Management forms) is deferred to Phase 7.2B.
 
@@ -1034,17 +1074,15 @@ Milestone 7 Phase 7.2 (Bilingual Application Foundation):
 - Phase 7.2A (Bilingual Locale & Preference Foundation — Local/CI Implementation Only) — COMPLETE (PASS)
 - Phase 7.2A.1 (i18n Foundation Correction Pass — Local/CI Implementation Only) — COMPLETE (PASS)
 - Phase 7.2A.2 (Final Pre-Deployment Language-Preference Hardening — Local/CI Implementation Only) — COMPLETE (PASS)
+- Phase 7.2A.3 (Controlled Hosted Bilingual Foundation Deployment) — COMPLETE (PASS)
 - Phase 7.2 overall status — NOT COMPLETE
-- Phase 7.2B (Assessment & Content Localization + Hosted Deployment) — PLANNED (NOT STARTED)
+- Phase 7.2B (Assessment & Content Localization) — PLANNED (NOT STARTED)
 
-Hosted Supabase Project `zlaixhnyydxgbphgsetv` deployed migrations remain at:
-- `20260922010000_milestone_7_enums.sql`
-- `20260922020000_milestone_7_schema_foundation.sql`
-(Phase 7.2A migration `20260924010000_milestone_7_bilingual_foundation.sql` is NOT deployed to hosted Supabase).
+Hosted Supabase Project `zlaixhnyydxgbphgsetv` deployed migrations (31 total):
+- Ends at: `20260924010000_milestone_7_bilingual_foundation.sql`
 
 Recommended next action:
-1. Review and approve the Phase 7.2A, Phase 7.2A.1, and Phase 7.2A.2 Bilingual Foundation implementation.
-2. Proceed to Phase 7.2B: Content & Assessment Localization + Hosted Migration Deployment.
-3. Do NOT deploy migration 20260924010000 to hosted Supabase until Phase 7.2B is approved for hosted rollout.
-4. Do NOT execute the production clean-slate reset at this time (reserved for post-7.7 pre-launch).
-5. Do NOT mutate hosted production data or seed fixtures during development.
+1. Proceed to Phase 7.2B: Content & Assessment Localization (Quiz/Question bilingual schemas, question version snapshots, attempt payload language selection, admin quiz authoring, and feature page translations).
+2. Clean up temporary 42703 compatibility adapter in `account-access-repository.ts` during Phase 7.2B.
+3. Do NOT execute the production clean-slate reset at this time (reserved for post-7.7 pre-launch).
+4. Do NOT mutate hosted production data or seed fixtures during development.

@@ -399,17 +399,27 @@ authenticated learner journey is not yet implemented.
     - Strictly user-owned `preferred_language`: Added private trigger function `private.validate_profile_preferred_language_update()` and `before update of preferred_language` trigger on `public.profiles`. Prevents same-organization administrators from modifying another user's `preferred_language` (raises 42501), while preserving existing administrator profile management permissions for other fields (e.g. department, profession, staff_id). Permits active user self-update and trusted service/postgres operations.
     - Post-signout state synchronization: Synchronized `localLocale` with authoritative `profile.preferredLanguage` in `I18nProvider`. Ensures that once an authenticated profile preference is established, subsequent signed-out state retains the profile's preferred language seamlessly (preventing revert to stale pre-auth selections) without render loops. Added explicit transition tests for both `ms` -> `en` -> `en` and `en` -> `ms` -> `ms`.
     - Tested via 25 pgTAP assertions (15 total suites, 465 tests) and 39 frontend test suites (224 tests) — 100% PASS.
-    - Zero hosted migrations deployed (`HOSTED_SUPABASE_MUTATIONS = ZERO`).
-    - Phase 7.2 bilingual migration still NOT hosted.
-  - **Phase 7.2 overall status**: NOT COMPLETE (7.2A, 7.2A.1, and 7.2A.2 complete; 7.2B NOT started).
-  - **Phase 7.2B (Assessment & Content Localization + Hosted Deployment — PLANNED / NOT STARTED)**:
+  - **Phase 7.2A.3 (Controlled Hosted Bilingual Foundation Deployment — PASS)**:
+    - Deployed exactly one reviewed migration to linked hosted Supabase (`zlaixhnyydxgbphgsetv`): `20260924010000_milestone_7_bilingual_foundation.sql`.
+    - Hosted migration history count: 31 (ending at `20260924010000`).
+    - `profiles.preferred_language`: text NOT NULL default `'en'`, CHECK `preferred_language IN ('en', 'ms')`. All 3 existing profiles backfilled to `'en'`.
+    - Strictly user-owned language preference: `profiles_validate_preferred_language_update` trigger and `private.validate_profile_preferred_language_update()` active on hosted Supabase. Authenticated users cannot change another user's language (error 42501); active self-updates and postgres operations permitted.
+    - Bilingual course/cohort metadata: `courses.title_ms` / `description_ms` and `cohorts.name_ms` / `description_ms` live, NULL for existing rows, with 2–160 character check constraints.
+    - Resource language classification: `public.resource_language` enum (`en`, `ms`, `bilingual`, `language_independent`) and `resources.content_language` (NOT NULL default `'en'`) live. All 8 existing resources backfilled to `'en'`.
+    - TypeScript type parity: Verified schema equivalence between hosted database and `src/lib/supabase/database.types.ts`.
+    - Security advisors: 0 security or performance warnings attributable to Phase 7.2 objects.
+    - Production app smoke: HTTP 200 on `https://dr-afif.github.io/bls/` with successful asset loads.
+    - Compatibility adapter: Harmless 42703 defensive adapter retained in `account-access-repository.ts` for cleanup in Phase 7.2B.
+    - Quiz/assessment localization remains NOT IMPLEMENTED.
+  - **Phase 7.2 overall status**: NOT COMPLETE (Phase 7.2A, 7.2A.1, 7.2A.2, and 7.2A.3 Hosted Deployment complete; Phase 7.2B NOT started).
+  - **Phase 7.2B (Assessment & Content Localization — PLANNED / NOT STARTED)**:
     - Remaining feature-page UI translation (Learner Guides, Quiz Views, Profile Page, Instructor Teaching Kit, Admin Management forms).
     - Bilingual quiz question/option schema (`prompt_ms`, `option_text_ms`).
     - Bilingual immutable attempt snapshots and question versions.
     - Learner quiz attempt payload language selection.
     - Admin bilingual quiz authoring.
     - Broad course/cohort translated-field rendering across feature components.
-    - Controlled hosted Phase 7.2 migration deployment.
+    - Removal of temporary 42703 compatibility adapter in `account-access-repository.ts`.
 - **Phase 7.3 — Email Transport Spike & Staff Bootstrap**:
   Execute Email Transport Spike to evaluate and verify supported server-side mail transport. Implement `public.staff_access_entries` management, role hierarchy enforcement (`super_admin` -> admin/instructor; `admin` -> instructor; no self-assignment; no super-admin creation in UI), and first legitimate instructor onboarding.
 - **Phase 7.4 — Cohort Roster & Invitation Engine**:
