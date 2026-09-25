@@ -172,6 +172,20 @@ describe('I18nContext and Provider', () => {
     expect(result.current.locale).toBe('en');
     expect(document.documentElement.lang).toBe('en');
     expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('en');
+
+    // 6. User signs out -> signed-out UI MUST remain en (Correction 4 post-signout state)
+    authStateValue = { status: 'signed_out' };
+    accountAccessValue = {
+      data: undefined,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as typeof accountAccessValue;
+    rerender();
+
+    expect(result.current.locale).toBe('en');
+    expect(document.documentElement.lang).toBe('en');
+    expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('en');
   });
 
   it('signed-in profile language ms overrides pre-auth selection of en (Inverse test)', async () => {
@@ -230,6 +244,20 @@ describe('I18nContext and Provider', () => {
     rerender();
 
     // 3. Resulting signed-in locale MUST be ms
+    expect(result.current.locale).toBe('ms');
+    expect(document.documentElement.lang).toBe('ms');
+    expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('ms');
+
+    // 4. User signs out -> signed-out UI MUST remain ms (Correction 4 post-signout state)
+    authStateValue = { status: 'signed_out' };
+    accountAccessValue = {
+      data: undefined,
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as typeof accountAccessValue;
+    rerender();
+
     expect(result.current.locale).toBe('ms');
     expect(document.documentElement.lang).toBe('ms');
     expect(localStorage.getItem(LOCALE_STORAGE_KEY)).toBe('ms');

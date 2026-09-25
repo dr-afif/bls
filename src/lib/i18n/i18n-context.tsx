@@ -65,6 +65,27 @@ export function I18nProvider({ children }: I18nProviderProps) {
     profile.preferredLanguageAvailable &&
     (profile.preferredLanguage === 'en' || profile.preferredLanguage === 'ms');
 
+  const [prevAuthStatus, setPrevAuthStatus] = useState(authState.status);
+  const [lastAuthoritativeProfileLang, setLastAuthoritativeProfileLang] = useState<string | null>(null);
+
+  // If user signs out or auth status changes, clear transient update states during rendering
+  if (authState.status !== prevAuthStatus) {
+    setPrevAuthStatus(authState.status);
+    if (authState.status !== 'signed_in') {
+      setOptimisticLocale(null);
+      setIsUpdatingPreference(false);
+      setPreferenceError(null);
+      setLastAuthoritativeProfileLang(null);
+    }
+  }
+
+  // Synchronize localLocale to authoritative profile language when available.
+  // This ensures that a subsequent signed-out state retains the profile's locale.
+  if (isProfileAvailable && profile.preferredLanguage !== lastAuthoritativeProfileLang) {
+    setLastAuthoritativeProfileLang(profile.preferredLanguage);
+    setLocalLocale(profile.preferredLanguage);
+  }
+
   // Once persisted profile matches requested locale, clear temporary optimistic state.
   // While saving or awaiting refetch, activeOptimistic keeps the UI on the requested locale.
   const activeOptimistic =
@@ -96,6 +117,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
       // If signed in and profile preference is available, perform optimistic persistence
       if (authState.status === 'signed_in' && isProfileAvailable && client && profile) {
         setOptimisticLocale(nextLocale);
+        setLocalLocale(nextLocale);
         writeStoredLocale(nextLocale);
         setIsUpdatingPreference(true);
 
@@ -109,6 +131,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
           if (!result.success) {
             // Revert optimistic update to persisted profile preference
             setOptimisticLocale(null);
+            setLocalLocale(profile.preferredLanguage);
             writeStoredLocale(profile.preferredLanguage);
             setPreferenceError('profile.languageUpdateFailed');
           } else {
@@ -120,6 +143,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
         } catch {
           // Revert optimistic update to persisted profile preference
           setOptimisticLocale(null);
+          setLocalLocale(profile.preferredLanguage);
           writeStoredLocale(profile.preferredLanguage);
           setPreferenceError('profile.languageUpdateFailed');
         } finally {

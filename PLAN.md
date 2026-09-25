@@ -395,7 +395,13 @@ authenticated learner journey is not yet implemented.
     - Schema constraint & policy documentation alignment: verified actual SQL constraints (`title_ms` 2–160 chars, `name_ms` 2–160 chars, unconstrained nullable description text); corrected references to consolidated `profiles_update_authorized` policy.
     - Profile update authorization checkpoint: reconfirmed active user self-update, learner-to-learner denial, and suspended denial. Recorded product/security checkpoint that same-org administrators can update other profiles via existing `profiles_update_authorized` policy.
     - Project-local development ports: documented intentional 5332x ports in `supabase/config.toml` to avoid Windows host port conflicts.
-  - **Phase 7.2 overall status**: NOT COMPLETE (7.2A and 7.2A.1 complete; 7.2B NOT started).
+  - **Phase 7.2A.2 (Final Pre-Deployment Language-Preference Hardening — LOCAL/CI ONLY — COMPLETE)**:
+    - Strictly user-owned `preferred_language`: Added private trigger function `private.validate_profile_preferred_language_update()` and `before update of preferred_language` trigger on `public.profiles`. Prevents same-organization administrators from modifying another user's `preferred_language` (raises 42501), while preserving existing administrator profile management permissions for other fields (e.g. department, profession, staff_id). Permits active user self-update and trusted service/postgres operations.
+    - Post-signout state synchronization: Synchronized `localLocale` with authoritative `profile.preferredLanguage` in `I18nProvider`. Ensures that once an authenticated profile preference is established, subsequent signed-out state retains the profile's preferred language seamlessly (preventing revert to stale pre-auth selections) without render loops. Added explicit transition tests for both `ms` -> `en` -> `en` and `en` -> `ms` -> `ms`.
+    - Tested via 25 pgTAP assertions (15 total suites, 465 tests) and 39 frontend test suites (224 tests) — 100% PASS.
+    - Zero hosted migrations deployed (`HOSTED_SUPABASE_MUTATIONS = ZERO`).
+    - Phase 7.2 bilingual migration still NOT hosted.
+  - **Phase 7.2 overall status**: NOT COMPLETE (7.2A, 7.2A.1, and 7.2A.2 complete; 7.2B NOT started).
   - **Phase 7.2B (Assessment & Content Localization + Hosted Deployment — PLANNED / NOT STARTED)**:
     - Remaining feature-page UI translation (Learner Guides, Quiz Views, Profile Page, Instructor Teaching Kit, Admin Management forms).
     - Bilingual quiz question/option schema (`prompt_ms`, `option_text_ms`).

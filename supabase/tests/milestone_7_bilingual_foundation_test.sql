@@ -4,7 +4,7 @@ set local role postgres;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select extensions.plan(21);
+select extensions.plan(25);
 
 -- ============================================================================
 -- 1. Schema Existence & Structure Checks
@@ -123,12 +123,17 @@ insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data)
 values
   ('82000000-0000-0000-0000-000000000001', 'active_learner@test.local', now(), '{"full_name":"Active Learner"}'),
   ('82000000-0000-0000-0000-000000000002', 'other_learner@test.local', now(), '{"full_name":"Other Learner"}'),
-  ('82000000-0000-0000-0000-000000000003', 'suspended_learner@test.local', now(), '{"full_name":"Suspended Learner"}');
+  ('82000000-0000-0000-0000-000000000003', 'suspended_learner@test.local', now(), '{"full_name":"Suspended Learner"}'),
+  ('82000000-0000-0000-0000-000000000004', 'org_admin@test.local', now(), '{"full_name":"Org Admin"}');
 
 update public.profiles
 set organization_id = '81000000-0000-0000-0000-000000000001',
     account_status = 'active'
-where id in ('82000000-0000-0000-0000-000000000001', '82000000-0000-0000-0000-000000000002');
+where id in (
+  '82000000-0000-0000-0000-000000000001',
+  '82000000-0000-0000-0000-000000000002',
+  '82000000-0000-0000-0000-000000000004'
+);
 
 update public.profiles
 set organization_id = '81000000-0000-0000-0000-000000000001',
@@ -139,7 +144,8 @@ insert into public.user_roles (user_id, role)
 values
   ('82000000-0000-0000-0000-000000000001', 'learner'),
   ('82000000-0000-0000-0000-000000000002', 'learner'),
-  ('82000000-0000-0000-0000-000000000003', 'learner');
+  ('82000000-0000-0000-0000-000000000003', 'learner'),
+  ('82000000-0000-0000-0000-000000000004', 'admin');
 
 -- Existing profiles resolve 'en'
 select extensions.results_eq(
@@ -202,6 +208,59 @@ select extensions.throws_ok(
   '42501',
   null,
   'learner cannot change account_status even when updating preferred_language'
+);
+
+-- Same-organization admin CANNOT change another user's preferred_language
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"82000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+select extensions.throws_ok(
+  $$update public.profiles set preferred_language = 'ms' where id = '82000000-0000-0000-0000-000000000002'$$,
+  '42501',
+  'Cannot update another user''s preferred language',
+  'same-organization admin cannot change another users preferred_language'
+);
+
+-- Admin can still update another legitimate administrator-managed profile field
+update public.profiles
+set department = 'Emergency Medicine'
+where id = '82000000-0000-0000-0000-000000000002';
+
+set local role postgres;
+select extensions.results_eq(
+  $$select department from public.profiles where id = '82000000-0000-0000-0000-000000000002'$$,
+  array['Emergency Medicine'],
+  'admin can update another profile field (department) successfully'
+);
+
+-- Updating another profile without changing preferred_language is permitted
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"82000000-0000-0000-0000-000000000004","role":"authenticated"}';
+
+update public.profiles
+set profession = 'Nurse',
+    preferred_language = 'en'
+where id = '82000000-0000-0000-0000-000000000002';
+
+set local role postgres;
+select extensions.results_eq(
+  $$select profession from public.profiles where id = '82000000-0000-0000-0000-000000000002'$$,
+  array['Nurse'],
+  'admin can update another profile when preferred_language is unchanged'
+);
+
+-- Trusted postgres/service operation can change preferred_language where needed
+set local role postgres;
+set local request.jwt.claims = '';
+
+update public.profiles
+set preferred_language = 'ms'
+where id = '82000000-0000-0000-0000-000000000002';
+
+select extensions.results_eq(
+  $$select preferred_language from public.profiles where id = '82000000-0000-0000-0000-000000000002'$$,
+  array['ms'],
+  'trusted postgres/service role can update preferred_language'
 );
 
 -- ============================================================================

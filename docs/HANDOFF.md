@@ -18,6 +18,7 @@
   - Phase 7.2: Bilingual Application Foundation:
     * Phase 7.2A: Bilingual Locale & Preference Foundation (Local/CI Foundation Only) — COMPLETE (PASS).
     * Phase 7.2A.1: i18n Foundation Correction Pass (Local/CI Only) — COMPLETE (PASS).
+    * Phase 7.2A.2: Final Pre-Deployment Language-Preference Hardening (Local/CI Only) — COMPLETE (PASS).
     * Phase 7.2 overall status: NOT COMPLETE.
     * Phase 7.2B: Assessment & Content Localization + Hosted Deployment — PLANNED (NOT STARTED).
   - Phase 7.3: Email Transport Spike & Staff Bootstrap — PLANNED.
@@ -107,6 +108,33 @@
   - Automated Testing & Verification:
     * pgTAP suite: **15 test suites, 461 total assertions — 100% PASS**.
     * Frontend test suite: **39 test files, 224 total tests — 100% PASS** (added regression tests in `i18n-context.test.tsx` and `language-switcher.test.tsx`).
+    * Typecheck (`npm run typecheck`): 0 errors.
+    * Lint (`npm run lint`): 0 errors, 0 warnings.
+    * Build (`npm run build`): PASS (exit code 0).
+  - Strict Operational Boundaries:
+    * `HOSTED_SUPABASE_MUTATIONS = ZERO`
+    * `PHASE_7_2_HOSTED_MIGRATION_DEPLOYED = NO`
+    * `PHASE_7_2B_STARTED = NO`
+
+- Implemented Milestone 7 Phase 7.2A.2: Final Pre-Deployment Language-Preference Hardening (Local/CI Implementation Only) — COMPLETE (PASS):
+  - Strictly User-Owned Language Preference:
+    * Created private function `private.validate_profile_preferred_language_update()` and `BEFORE UPDATE OF preferred_language` trigger `profiles_validate_preferred_language_update` on `public.profiles`.
+    * Enforces that an authenticated user can only update their own `preferred_language` (`actor <> new.id` raises `42501`: `'Cannot update another user\'s preferred language'`).
+    * Resolves previous checkpoint: same-organization administrators are strictly prevented from changing another user's `preferred_language`.
+    * Preserves existing administrator profile management permissions for other columns (`department`, `profession`, `staff_id`, `account_status`).
+    * Updates where `preferred_language` is unchanged (`OLD.preferred_language IS NOT DISTINCT FROM NEW.preferred_language`) proceed without trigger rejection.
+    * Allows trusted service/postgres operations (`actor IS NULL`).
+    * Added directly to undeployed migration `20260924010000_milestone_7_bilingual_foundation.sql`.
+  - Post-Signout State Synchronization:
+    * Synchronized `localLocale` with authoritative `profile.preferredLanguage` whenever available in `I18nProvider`.
+    * Once an authenticated user's profile preference is resolved, that locale becomes the safe local preference upon subsequent sign-out, eliminating revert to stale pre-auth manual choices.
+    * Guarded state updater prevents render loops.
+    * Transient optimistic update states cleared cleanly on sign-out.
+    * Added explicit sign-in/sign-out transition regression tests in `src/lib/i18n/i18n-context.test.tsx` (`ms` -> `en` -> `en` and `en` -> `ms` -> `ms`).
+  - Automated Testing & Verification:
+    * Extended pgTAP test suite `supabase/tests/milestone_7_bilingual_foundation_test.sql` to 25 assertions covering admin denial, admin update of other fields, unchanged language update, and trusted postgres operations.
+    * Total pgTAP suites: **15 test suites, 465 total assertions — 100% PASS**.
+    * Frontend test suite: **39 test files, 224 total tests — 100% PASS**.
     * Typecheck (`npm run typecheck`): 0 errors.
     * Lint (`npm run lint`): 0 errors, 0 warnings.
     * Build (`npm run build`): PASS (exit code 0).
@@ -1005,6 +1033,7 @@ Milestone 7 Phase 7.1 (Schema & Compatibility Foundation) is COMPLETE and formal
 Milestone 7 Phase 7.2 (Bilingual Application Foundation):
 - Phase 7.2A (Bilingual Locale & Preference Foundation — Local/CI Implementation Only) — COMPLETE (PASS)
 - Phase 7.2A.1 (i18n Foundation Correction Pass — Local/CI Implementation Only) — COMPLETE (PASS)
+- Phase 7.2A.2 (Final Pre-Deployment Language-Preference Hardening — Local/CI Implementation Only) — COMPLETE (PASS)
 - Phase 7.2 overall status — NOT COMPLETE
 - Phase 7.2B (Assessment & Content Localization + Hosted Deployment) — PLANNED (NOT STARTED)
 
@@ -1014,7 +1043,7 @@ Hosted Supabase Project `zlaixhnyydxgbphgsetv` deployed migrations remain at:
 (Phase 7.2A migration `20260924010000_milestone_7_bilingual_foundation.sql` is NOT deployed to hosted Supabase).
 
 Recommended next action:
-1. Review and approve the Phase 7.2A and Phase 7.2A.1 Bilingual Foundation implementation.
+1. Review and approve the Phase 7.2A, Phase 7.2A.1, and Phase 7.2A.2 Bilingual Foundation implementation.
 2. Proceed to Phase 7.2B: Content & Assessment Localization + Hosted Migration Deployment.
 3. Do NOT deploy migration 20260924010000 to hosted Supabase until Phase 7.2B is approved for hosted rollout.
 4. Do NOT execute the production clean-slate reset at this time (reserved for post-7.7 pre-launch).

@@ -10,6 +10,41 @@ comment on column public.profiles.preferred_language is
 
 grant select, update (preferred_language) on table public.profiles to authenticated;
 
+-- Enforce user-owned preferred_language updates.
+-- Existing profiles_update_authorized allows administrators to update profile rows,
+-- but preferred_language must be strictly self-owned.
+create or replace function private.validate_profile_preferred_language_update()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  actor uuid := (select auth.uid());
+begin
+  if old.preferred_language is not distinct from new.preferred_language then
+    return new;
+  end if;
+
+  if actor is null then
+    return new;
+  end if;
+
+  if actor <> new.id then
+    raise exception 'Cannot update another user''s preferred language'
+      using errcode = '42501';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke all on function private.validate_profile_preferred_language_update()
+  from public;
+
+comment on function private.validate_profile_preferred_language_update() is
+  'Ensures preferred_language updates are strictly user-owned by the profile owner; trusted direct/service operations have no auth.uid().';
+
+create trigger profiles_validate_preferred_language_update
+before update of preferred_language on public.profiles
+for each row execute function private.validate_profile_preferred_language_update();
+
 -- 2. Bilingual course metadata
 alter table public.courses
   add column title_ms text null,
