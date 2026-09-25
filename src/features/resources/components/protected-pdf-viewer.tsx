@@ -184,7 +184,7 @@ export function ProtectedPdfViewer({ resource }: { resource: CourseResource }) {
   }
 
   const userId = authState.status === "signed_in" ? authState.user.id : "unknown";
-  const watermark = `${account.data?.profile?.fullName ?? "Authorized user"} · ${userId.slice(0, 8)} · ${formatDateTime(new Date())}`;
+  const watermark = `${account.data?.profile?.fullName ?? t("common.authorizedUser")} · ${userId.slice(0, 8)} · ${formatDateTime(new Date())}`;
 
   return (
     <div className="space-y-4">

@@ -57,4 +57,46 @@ describe("resource taxonomy catalog assembly", () => {
     expect(result.stages.every((item) => item.blockingPublishedResourceCount === 0)).toBe(true);
     expect(result.auditEvents[0]).toMatchObject({ actorName: "Fictional Admin", itemName: "Core BLS" });
   });
+
+  it("keeps audit actor locale-neutral in data and resolves fallbacks correctly across locales without translation of real names", async () => {
+    const { en } = await import("../../../lib/i18n/en");
+    const { ms } = await import("../../../lib/i18n/ms");
+
+    const rows: ResourceTaxonomyRows = {
+      audiences: [],
+      auditEvents: [
+        { action: "resource_taxonomy.topic_created", actor_user_id: "user-1", created_at: "2026-08-17T00:00:00Z", entity_id: topicA, id: "event-1", metadata: { name: "Core BLS" } },
+        { action: "resource_taxonomy.topic_updated", actor_user_id: "user-2", created_at: "2026-08-17T00:00:00Z", entity_id: topicA, id: "event-2", metadata: { name: "Core BLS" } },
+        { action: "resource_taxonomy.topic_updated", actor_user_id: null, created_at: "2026-08-17T00:00:00Z", entity_id: topicA, id: "event-3", metadata: { name: "Core BLS" } },
+      ],
+      profiles: [{ full_name: "Dr. Siti Aminah", id: "user-1" }],
+      resources: [],
+      stageAssignments: [],
+      stages: [],
+      topicAssignments: [],
+      topics: [],
+    };
+
+    const result = assembleResourceTaxonomyCatalog(rows);
+
+    // Data layer is strictly locale-neutral:
+    expect(result.auditEvents[0]).toMatchObject({ actorName: "Dr. Siti Aminah", actorUserId: "user-1" });
+    expect(result.auditEvents[1]).toMatchObject({ actorName: null, actorUserId: "user-2" });
+    expect(result.auditEvents[2]).toMatchObject({ actorName: null, actorUserId: null });
+
+    // UI presentation resolution logic (matches resource-taxonomy-page.tsx and resource-detail-page.tsx)
+    function resolveActorLabel(event: typeof result.auditEvents[number], dict: Record<string, string>) {
+      return event.actorName ?? (event.actorUserId ? dict["common.authorizedSystemActor"] : dict["common.system"]);
+    }
+
+    // English UI resolution
+    expect(resolveActorLabel(result.auditEvents[0], en)).toBe("Dr. Siti Aminah");
+    expect(resolveActorLabel(result.auditEvents[1], en)).toBe("Authorized system actor");
+    expect(resolveActorLabel(result.auditEvents[2], en)).toBe("System");
+
+    // Bahasa Melayu UI resolution (without repository refetch)
+    expect(resolveActorLabel(result.auditEvents[0], ms)).toBe("Dr. Siti Aminah"); // Authored name remains unchanged
+    expect(resolveActorLabel(result.auditEvents[1], ms)).toBe("Pelaku sistem dibenarkan");
+    expect(resolveActorLabel(result.auditEvents[2], ms)).toBe("Sistem");
+  });
 });

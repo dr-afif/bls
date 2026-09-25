@@ -26,7 +26,8 @@ export type AdminResourceVersion = {
 
 export type AdminAuditEvent = {
   action: string;
-  actorName: string;
+  actorName: string | null;
+  actorUserId: string | null;
   createdAt: string;
   id: string;
 };
@@ -38,7 +39,7 @@ export type AdminResource = {
   availableUntil: string | null;
   contentLanguage: ResourceLanguage;
   courseId: string;
-  courseTitle: string;
+  courseTitle: string | null;
   courseTitleMs: string | null;
   currentVersionId: string | null;
   estimatedMinutes: number | null;
@@ -90,20 +91,4 @@ export type CreateResourceInput = {
   type: ResourceType;
   versionContent: Json | null;
   youtubeVideoId: string | null;
-};
-
-export const resourceStatusLabels: Record<ResourceStatus, string> = {
-  approved: "Approved",
-  archived: "Archived",
-  draft: "Draft",
-  published: "Published",
-  retired: "Retired",
-  under_review: "Under review",
-};
-
-export const resourceTypeLabels: Record<ResourceType, string> = {
-  checklist: "Checklist",
-  guide: "Guide",
-  pdf: "PDF document",
-  youtube_video: "YouTube video",
 };

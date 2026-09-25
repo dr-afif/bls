@@ -15,7 +15,8 @@ export type ResourceTaxonomyItem = {
 
 export type ResourceTaxonomyAuditEvent = {
   action: string;
-  actorName: string;
+  actorName: string | null;
+  actorUserId: string | null;
   createdAt: string;
   id: string;
   itemName: string;

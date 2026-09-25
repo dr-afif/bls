@@ -22,7 +22,8 @@
     * Phase 7.2A.3: Controlled Hosted Bilingual Foundation Deployment — COMPLETE (PASS).
     * Deployed hosted migration version: `20260924010000_milestone_7_bilingual_foundation.sql`.
     * Phase 7.2B: Production Non-Assessment Localization & Localized Metadata — COMPLETE (PASS).
-    * Phase 7.2 overall status: IN PROGRESS (7.2A, 7.2A.1, 7.2A.2, 7.2A.3, 7.2B COMPLETE; 7.2C DEFERRED/NOT STARTED).
+    * Phase 7.2B.1: Non-Assessment Localization Completion Pass — COMPLETE (PASS).
+    * Phase 7.2 overall status: IN PROGRESS (7.2A, 7.2A.1, 7.2A.2, 7.2A.3, 7.2B, 7.2B.1 COMPLETE; 7.2C DEFERRED/NOT STARTED).
     * Phase 7.2C: Assessment & Content Localization — PLANNED (NOT STARTED).
   - Phase 7.3: Email Transport Spike & Staff Bootstrap — PLANNED.
   - Phase 7.4: Cohort Roster & Invitation Engine — PLANNED.
@@ -32,6 +33,54 @@
   - Final Release Gate: Controlled Production Clean-Slate Reset — REQUIRED immediately prior to first real participant launch.
 
 ## Work completed
+
+- Implemented Milestone 7 Phase 7.2B.1: Non-Assessment Localization Completion Pass — COMPLETE (PASS):
+  - Resource Content-Language Filtering Semantics Locked:
+    * `all`: Matches all resources (`en`, `ms`, `bilingual`, `language_independent`).
+    * `en`: Matches English (`en`) and Bilingual (`bilingual`).
+    * `ms`: Matches Bahasa Melayu (`ms`) and Bilingual (`bilingual`).
+    * `bilingual`: Strictly matches Bilingual (`bilingual`).
+    * `language_independent`: Strictly matches Language-independent (`language_independent`); never matches under `en` or `ms`.
+    * Implemented unit and integration tests covering all 5 filter values.
+  - URL Query Normalization Utility:
+    * Created `src/features/resources/model/resource-filter-utils.ts` exporting `normalizeLanguageParam(raw)`.
+    * Safely normalizes `null`, `""`, `"all"`, or unrecognized strings (e.g. `?lang=garbage`) to `"all"`.
+  - Dynamic Token Interpolation:
+    * Added support for `{placeholder}` interpolation to `t(key, params)` in `i18n-context.tsx` and `i18n-context-def.ts`.
+    * Resolved count display via `resourceAdmin.resources.showingCountTemplate` ("Showing {count} of {total} resources." / "Menunjukkan {count} daripada {total} sumber.") to prevent English word order assumptions.
+  - Comprehensive Localization of Hardcoded Non-Assessment Strings:
+    * Localized eyebrows across Operations (`shell.liveDevelopmentWorkspace`), Resources (`resource.library.eyebrow`), and Resource Administration (`resourceAdmin.administratorWorkspace`, `resourceAdmin.resourceRecord`).
+    * Localized labels, detail sentences, slug identifiers, version creation dates, screen-reader legends, and fallback watermarks.
+    * Translated administrative notices, safeguards, and confirmation dialogs in `ResourceVersionPage`, `ResourceVersionNewPage`, `ResourceTaxonomyPage`, and `TaxonomyItemForm`.
+  - Repository Locale Neutrality:
+    * Refactored `resource-admin-repository` and `resource-taxonomy-repository` to return raw database values and `null` for missing lookups instead of hardcoded English strings.
+    * Course lookup fallback (`t("resourceAdmin.courseUnavailable")`) resolved purely in presentation layer.
+    * Audit event actor resolution logic:
+      - `actorUserId == null` -> `t("common.system")` ("System" / "Sistem").
+      - `actorUserId != null && actorName == null` -> `t("common.authorizedSystemActor")` ("Authorized system actor" / "Pelaku sistem dibenarkan").
+      - `actorName != null` -> authored person's name verbatim (never translated).
+    * Added tests proving dynamic locale switching updates presentation fallbacks without repository refetch.
+  - Duplicate Label Elimination:
+    * Removed `resourceStatusLabels` and `resourceTypeLabels` from model definitions (`resource-admin-types.ts` and `resource-types.ts`).
+  - Date / Time Formatting Audit:
+    * Verified zero instances of `Intl.DateTimeFormat(undefined)` in targeted non-assessment files.
+    * All timestamps formatted via locale-aware `formatDateTime` and `formatDate`.
+  - 100% Dictionary Key Parity:
+    * Added 55 new translation entries each to `en.ts` and `ms.ts`, maintaining exact key parity (524 keys each).
+  - Strict Boundary Adherence:
+    * `NEW_DATABASE_MIGRATIONS = ZERO` (migration count remains exactly 31).
+    * `HOSTED_SCHEMA_MUTATIONS = ZERO`.
+    * `HOSTED_TEST_DATA_MUTATIONS = ZERO`.
+    * Assessment workflows (`src/features/quiz/**`, `src/features/quiz-admin/**`) remained strictly untouched.
+  - Test Suite & Quality Verification:
+    * TypeScript typecheck: 0 errors (`tsc -b`).
+    * ESLint: 0 errors, 0 warnings.
+    * Vitest suite: 41 test files passed, 244 tests passed (100% PASS).
+    * Vite production build: SUCCESS (`dist/` generated with zero errors).
+    * pgTAP database tests: 15 suites, 465 tests passed (`npx supabase test db`).
+    * Supabase db lint: 0 errors.
+    * Git diff check: clean (0 errors, 0 trailing blanks).
+
 
 - Implemented Milestone 7 Phase 7.2B: Production Non-Assessment Localization & Localized Metadata — COMPLETE (PASS):
   - 42703 Backward-Compatibility Adapter Cleanup:
@@ -1116,14 +1165,15 @@ Milestone 7 Phase 7.2 (Bilingual Application Foundation):
 - Phase 7.2A.2 (Final Pre-Deployment Language-Preference Hardening — Local/CI Implementation Only) — COMPLETE (PASS)
 - Phase 7.2A.3 (Controlled Hosted Bilingual Foundation Deployment) — COMPLETE (PASS)
 - Phase 7.2B (Production Non-Assessment Localization & Localized Metadata) — COMPLETE (PASS)
-- Phase 7.2 overall status — IN PROGRESS (Phase 7.2A, 7.2A.1, 7.2A.2, 7.2A.3, and 7.2B COMPLETE; Phase 7.2C DEFERRED/NOT STARTED)
+- Phase 7.2B.1 (Non-Assessment Localization Completion Pass) — COMPLETE (PASS)
+- Phase 7.2 overall status — IN PROGRESS (Phase 7.2A, 7.2A.1, 7.2A.2, 7.2A.3, 7.2B, and 7.2B.1 COMPLETE; Phase 7.2C DEFERRED/NOT STARTED)
 - Phase 7.2C (Assessment & Content Localization) — PLANNED (NOT STARTED)
 
 Hosted Supabase Project `zlaixhnyydxgbphgsetv` deployed migrations (31 total):
 - Ends at: `20260924010000_milestone_7_bilingual_foundation.sql`
 
 Recommended next action:
-1. Conduct user/stakeholder review of Phase 7.2B non-assessment localization and localized metadata.
+1. Conduct user/stakeholder review of Phase 7.2B and 7.2B.1 non-assessment localization completion pass.
 2. Proceed to Phase 7.2C: Assessment & Content Localization (Quiz/Question bilingual schemas, immutable attempt/question version snapshots, learner quiz payload language selection, admin quiz authoring, item analysis, results, CSV exports, and cohort readiness bilingual views).
 3. Do NOT execute the production clean-slate reset at this time (reserved for post-7.7 pre-launch).
 4. Do NOT mutate hosted production data or seed fixtures during development.

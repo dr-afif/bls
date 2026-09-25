@@ -158,14 +158,18 @@ export function I18nProvider({ children }: I18nProviderProps) {
   );
 
   const t = useCallback(
-    (key: TranslationKey): string => {
+    (key: TranslationKey, params?: Record<string, string | number>): string => {
       const activeDict = DICTIONARIES[locale];
-      const translated = activeDict[key];
-      if (translated != null && translated.length > 0) {
-        return translated;
+      let translated = activeDict[key];
+      if (translated == null || translated.length === 0) {
+        translated = en[key] ?? key;
       }
-      // Fallback to English
-      return en[key] ?? key;
+      if (params) {
+        for (const [pKey, pVal] of Object.entries(params)) {
+          translated = translated.replaceAll(`{${pKey}}`, String(pVal));
+        }
+      }
+      return translated;
     },
     [locale],
   );

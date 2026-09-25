@@ -86,7 +86,8 @@ export function assembleResourceTaxonomyCatalog(rows: ResourceTaxonomyRows): Res
   const profileById = new Map(rows.profiles.map((profile) => [profile.id, profile.full_name]));
   const auditEvents = rows.auditEvents.map<ResourceTaxonomyAuditEvent>((event) => ({
     action: event.action,
-    actorName: event.actor_user_id ? profileById.get(event.actor_user_id) ?? "Authorized administrator" : "System",
+    actorName: event.actor_user_id ? profileById.get(event.actor_user_id) ?? null : null,
+    actorUserId: event.actor_user_id,
     createdAt: event.created_at,
     id: event.id,
     itemName: metadataName(event.metadata),

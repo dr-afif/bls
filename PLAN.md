@@ -411,7 +411,7 @@ authenticated learner journey is not yet implemented.
     - Production app smoke: HTTP 200 on `https://dr-afif.github.io/bls/` with successful asset loads.
     - Compatibility adapter: Harmless 42703 defensive adapter retained in `account-access-repository.ts` for cleanup in Phase 7.2B.
     - Quiz/assessment localization remains NOT IMPLEMENTED.
-  - **Phase 7.2 overall status**: IN PROGRESS (Phase 7.2A, 7.2A.1, 7.2A.2, 7.2A.3, and 7.2B complete; Phase 7.2C deferred / not started).
+  - **Phase 7.2 overall status**: IN PROGRESS (Phase 7.2A, 7.2A.1, 7.2A.2, 7.2A.3, 7.2B, and 7.2B.1 complete; Phase 7.2C deferred / not started).
   - **Phase 7.2B (Production Non-Assessment Localization & Localized Metadata — COMPLETE)**:
     - Removed defensive 42703 adapter from `account-access-repository.ts` and `preferredLanguageAvailable` flag from `AccountAccess['profile']`. `profiles.preferred_language` queried directly as a standard column.
     - Added bilingual cohort authoring (`nameMs`, `descriptionMs`) and active locale rendering in Operations (People, Cohorts Admin, My Cohorts).
@@ -421,6 +421,16 @@ authenticated learner journey is not yet implemented.
     - Accessible date and time formatting via `formatDateTime`/`formatDate`.
     - Zero new database migrations (count stays 31), zero hosted schema/data mutations.
     - Assessment/quiz localization strictly deferred to Phase 7.2C.
+  - **Phase 7.2B.1 (Non-Assessment Localization Completion Pass — COMPLETE — PASS)**:
+    - Locked resource content-language filter semantics: `all` matches all languages; `en` matches English and Bilingual; `ms` matches Bahasa Melayu and Bilingual; `bilingual` strictly matches Bilingual; `language_independent` strictly matches Language-independent (never matches under en/ms).
+    - Extracted and tested URL normalization utility `normalizeLanguageParam(raw)`: maps null, empty, `"all"`, or unrecognized strings (e.g. `"garbage"`) to `"all"`.
+    - Implemented dynamic token interpolation in `t(key, params)` for non-word-order-sensitive phrases (e.g. `resourceAdmin.resources.showingCountTemplate`).
+    - Localized remaining hardcoded strings across non-assessment files (eyebrows in operations/resources/resource-admin, "Resource record", detail sentence templates, "Slug", "created", `aria-label="Resource filters and search"`, screen-reader legends, fallback watermarks, and notices).
+    - Enforced locale neutrality in data repositories (`resource-admin-repository` and `resource-taxonomy-repository`): return raw course titles and profile names/nulls; UI resolves presentation fallbacks (`t("resourceAdmin.courseUnavailable")`, `t("common.system")`, `t("common.authorizedSystemActor")`). Authored person names are preserved verbatim without translation.
+    - Removed duplicate label sources (`resourceStatusLabels` and `resourceTypeLabels` eliminated from model definitions).
+    - Verified all non-assessment date/time formatting respects the active application locale; zero `Intl.DateTimeFormat(undefined)` in targeted files.
+    - Achieved 100% dictionary key parity between English (`en.ts`) and Bahasa Melayu (`ms.ts`) (524 keys each).
+    - Zero new database migrations (count stays 31), zero hosted schema/data mutations, zero assessment files modified (`src/features/quiz/**`, `src/features/quiz-admin/**`).
   - **Phase 7.2C (Assessment & Content Localization — PLANNED / NOT STARTED)**:
     - Bilingual quiz question/option schema (`prompt_ms`, `option_text_ms`).
     - Bilingual immutable attempt snapshots and question versions.

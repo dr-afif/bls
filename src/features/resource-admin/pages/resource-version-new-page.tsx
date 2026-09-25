@@ -28,7 +28,7 @@ export function ResourceVersionNewPage() {
       const created = await createVersion.mutateAsync({ resourceId, ...values });
       navigate(`/app/admin/resources/${resourceId}/versions/${created.version_id}`, { replace: true });
     } catch {
-      setNotice("The new version could not be created. Retired resources cannot receive new versions.");
+      setNotice(t("resourceAdmin.version.createFailedRetired"));
     }
   };
 

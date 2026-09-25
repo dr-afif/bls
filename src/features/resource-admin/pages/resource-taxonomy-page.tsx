@@ -46,7 +46,7 @@ function TaxonomySection({
     try {
       await mutations.create.mutateAsync({ description: values.description.trim() || null, displayOrder: Number(values.displayOrder), kind, name: values.name, organizationId, slug: values.slug });
       setAdding(false);
-      onNotice(`${kind === "topic" ? "Topic" : "Teaching stage"} created and audit recorded.`);
+      onNotice(kind === "topic" ? t("resourceAdmin.taxonomy.topicCreatedAudit") : t("resourceAdmin.taxonomy.stageCreatedAudit"));
     } catch (error) { onNotice(errorMessage(error), true); }
   };
 
@@ -54,16 +54,15 @@ function TaxonomySection({
     try {
       await mutations.update.mutateAsync({ description: values.description.trim() || null, displayOrder: Number(values.displayOrder), id: item.id, kind, name: values.name });
       setEditingId(null);
-      onNotice(`${item.name} updated and audit recorded.`);
+      onNotice(t("resourceAdmin.taxonomy.itemUpdatedAudit", { name: item.name }));
     } catch (error) { onNotice(errorMessage(error), true); }
   };
 
   const toggle = async (item: ResourceTaxonomyItem) => {
-    const action = item.active ? "deactivate" : "activate";
-    if (item.active && !window.confirm(`Deactivate “${item.name}”? It will no longer be offered for new assignments. Existing historical assignments are preserved.`)) return;
+    if (item.active && !window.confirm(t("resourceAdmin.taxonomy.deactivateConfirm", { name: item.name }))) return;
     try {
       await mutations.setActive.mutateAsync({ active: !item.active, id: item.id, kind });
-      onNotice(`${item.name} ${action}d and audit recorded.`);
+      onNotice(item.active ? t("resourceAdmin.taxonomy.itemDeactivatedAudit", { name: item.name }) : t("resourceAdmin.taxonomy.itemActivatedAudit", { name: item.name }));
     } catch (error) { onNotice(errorMessage(error), true); }
   };
 
@@ -159,12 +158,12 @@ function TaxonomySection({
                     {item.active && item.blockingPublishedResourceCount > 0 && (
                       <p className="mt-3 flex gap-2 rounded-lg border border-warning/25 bg-warning-soft p-3 text-sm text-warning">
                         <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                        Reassign {item.blockingPublishedResourceCount} published {item.blockingPublishedResourceCount === 1 ? "resource" : "resources"} before deactivation.
+                        {t("resourceAdmin.taxonomy.reassignWarning", { count: item.blockingPublishedResourceCount, resources: item.blockingPublishedResourceCount === 1 ? t("resource.library.resource") : t("resource.library.resources") })}
                       </p>
                     )}
                     {!item.active && item.usageCount > 0 && (
                       <p className="mt-3 text-xs text-muted-foreground">
-                        Existing assignments remain visible for history and can be removed from individual resources, but this item cannot be newly assigned.
+                        {t("resourceAdmin.taxonomy.inactiveHistoryNotice")}
                       </p>
                     )}
                   </>
@@ -185,8 +184,8 @@ export function ResourceTaxonomyPage() {
   const [notice, setNotice] = useState<{ error: boolean; message: string }>({ error: false, message: "" });
   if (taxonomy.isPending || taxonomy.isError) return <ResourceAdminState query={taxonomy} />;
   const organizationId = access.data?.profile?.organizationId;
-  if (access.isPending) return <StatePanel kind="loading" title="Checking administrator access" description="Confirming the organization for taxonomy changes." />;
-  if (access.isError || !organizationId) return <StatePanel as="h1" kind="error" title="Taxonomy management is unavailable" description="Your administrator profile must belong to an organization before taxonomy can be changed." />;
+  if (access.isPending) return <StatePanel kind="loading" title={t("resourceAdmin.taxonomy.checkingAccessTitle")} description={t("resourceAdmin.taxonomy.checkingAccessDesc")} />;
+  if (access.isError || !organizationId) return <StatePanel as="h1" kind="error" title={t("resourceAdmin.taxonomy.accessUnavailableTitle")} description={t("resourceAdmin.taxonomy.accessUnavailableDesc")} />;
 
   return (
     <div className="space-y-6">
@@ -200,16 +199,16 @@ export function ResourceTaxonomyPage() {
           </Button>
         }
         description={t("resourceAdmin.taxonomy.description")}
-        eyebrow="Administrator workspace"
+        eyebrow={t("resourceAdmin.administratorWorkspace")}
         title={t("resourceAdmin.taxonomy.title")}
       />
       <div aria-live="polite" className={notice.error ? "text-sm font-medium text-destructive" : "text-sm font-medium text-info"}>
         {notice.message}
       </div>
-      <section aria-label="Taxonomy safeguards" className="grid gap-3 rounded-2xl border border-info/25 bg-info-soft p-4 text-sm text-info sm:grid-cols-3">
-        <p><strong>No deletion.</strong> Deactivation preserves historical use.</p>
-        <p><strong>Stable slugs.</strong> Names and ordering can change without breaking identifiers.</p>
-        <p><strong>Publication safe.</strong> Server rules block removal of a published resource’s last active label.</p>
+      <section aria-label={t("resourceAdmin.taxonomy.safeguardsLabel")} className="grid gap-3 rounded-2xl border border-info/25 bg-info-soft p-4 text-sm text-info sm:grid-cols-3">
+        <p><strong>{t("resourceAdmin.taxonomy.noDeletionTitle")}</strong> {t("resourceAdmin.taxonomy.noDeletionDesc")}</p>
+        <p><strong>{t("resourceAdmin.taxonomy.stableSlugsTitle")}</strong> {t("resourceAdmin.taxonomy.stableSlugsDesc")}</p>
+        <p><strong>{t("resourceAdmin.taxonomy.publicationSafeTitle")}</strong> {t("resourceAdmin.taxonomy.publicationSafeDesc")}</p>
       </section>
       <div className="grid min-w-0 gap-6 xl:grid-cols-2">
         <TaxonomySection items={taxonomy.data?.topics ?? []} kind="topic" onNotice={(message, error = false) => setNotice({ error, message })} organizationId={organizationId} />
@@ -225,12 +224,16 @@ export function ResourceTaxonomyPage() {
         <CardContent>
           {taxonomy.data?.auditEvents.length ? (
             <ol className="grid gap-3 md:grid-cols-2">
-              {taxonomy.data.auditEvents.slice(0, 12).map((event) => (
-                <li className="border-l-2 border-primary/25 pl-3 text-sm" key={event.id}>
-                  <p className="font-semibold">{event.itemName} · {event.action.replace("resource_taxonomy.", "").replaceAll("_", " ")}</p>
-                  <p className="mt-1 text-muted-foreground">{event.actorName} · {formatDateTime(event.createdAt, { dateStyle: "medium", timeStyle: "short" })}</p>
-                </li>
-              ))}
+              {taxonomy.data.auditEvents.slice(0, 12).map((event) => {
+                const actorLabel = event.actorName
+                  ?? (event.actorUserId ? t("common.authorizedSystemActor") : t("common.system"));
+                return (
+                  <li className="border-l-2 border-primary/25 pl-3 text-sm" key={event.id}>
+                    <p className="font-semibold">{event.itemName} · {event.action.replace("resource_taxonomy.", "").replaceAll("_", " ")}</p>
+                    <p className="mt-1 text-muted-foreground">{actorLabel} · {formatDateTime(event.createdAt, { dateStyle: "medium", timeStyle: "short" })}</p>
+                  </li>
+                );
+              })}
             </ol>
           ) : (
             <p className="text-sm text-muted-foreground">{t("resourceAdmin.taxonomy.noRecentActivity")}</p>

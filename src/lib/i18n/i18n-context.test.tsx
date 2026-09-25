@@ -397,4 +397,28 @@ describe('I18nContext and Provider', () => {
     expect(updateSpy).not.toHaveBeenCalled();
     expect(result.current.preferenceError).toBeNull();
   });
+
+  it('interpolates parameters into translation templates in en and ms', async () => {
+    const { result } = renderHook(() => useI18n(), {
+      wrapper: createWrapper(),
+    });
+
+    expect(
+      result.current.t('resourceAdmin.resources.showingCountTemplate', {
+        count: 5,
+        total: 10,
+      }),
+    ).toBe('Showing 5 of 10 resources.');
+
+    await act(async () => {
+      await result.current.setLocale('ms');
+    });
+
+    expect(
+      result.current.t('resourceAdmin.resources.showingCountTemplate', {
+        count: 5,
+        total: 10,
+      }),
+    ).toBe('Menunjukkan 5 daripada 10 sumber.');
+  });
 });

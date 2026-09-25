@@ -52,7 +52,7 @@ export function ResourcesAdminPage() {
   const filtered = useMemo(
     () =>
       (catalog.data?.resources ?? []).filter((resource) => {
-        const matchesSearch = `${resource.title} ${resource.slug} ${resource.courseTitle} ${resource.courseTitleMs ?? ""}`
+        const matchesSearch = `${resource.title} ${resource.slug} ${resource.courseTitle ?? ""} ${resource.courseTitleMs ?? ""}`
           .toLowerCase()
           .includes(search.toLowerCase());
         return (
@@ -89,10 +89,10 @@ export function ResourcesAdminPage() {
           </div>
         }
         description={t("resourceAdmin.resources.description")}
-        eyebrow="Live development workspace"
+        eyebrow={t("shell.liveDevelopmentWorkspace")}
         title={t("resourceAdmin.resources.title")}
       />
-      <section aria-label="Resource filters" className="grid gap-3 rounded-2xl border bg-card p-4 shadow-sm md:grid-cols-2 xl:grid-cols-3">
+      <section aria-label={t("resourceAdmin.resources.filtersSectionAriaLabel")} className="grid gap-3 rounded-2xl border bg-card p-4 shadow-sm md:grid-cols-2 xl:grid-cols-3">
         <label className="text-sm font-semibold md:col-span-2 xl:col-span-1">
           {t("resourceAdmin.resources.searchLabel")}
           <span className="relative mt-2 block">
@@ -165,7 +165,7 @@ export function ResourcesAdminPage() {
         </p>
       </section>
       <p aria-live="polite" className="text-sm text-muted-foreground">
-        Showing {filtered.length} of {catalog.data?.resources.length ?? 0} {t("resourceAdmin.resources.showingCount")}.
+        {t("resourceAdmin.resources.showingCountTemplate", { count: filtered.length, total: catalog.data?.resources.length ?? 0 })}
       </p>
       {catalog.data?.resources.length === 0 ? (
         <ResourceAdminState empty query={catalog} />
@@ -179,7 +179,7 @@ export function ResourcesAdminPage() {
       ) : (
         <div className="grid gap-4">
           {filtered.map((resource) => {
-            const courseTitle = localizedText({ en: resource.courseTitle, ms: resource.courseTitleMs, locale });
+            const courseTitle = (resource.courseTitle ? localizedText({ en: resource.courseTitle, ms: resource.courseTitleMs, locale }) : null) ?? t("resourceAdmin.courseUnavailable");
             return (
               <article className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5" key={resource.id}>
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">

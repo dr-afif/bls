@@ -26,7 +26,7 @@ export function MyCohortsPage({ instructor = false }: { instructor?: boolean }) 
     <div className="space-y-6">
       <PageHeader
         description={instructor ? t("operations.myCohorts.instructorDesc") : t("operations.myCohorts.learnerDesc")}
-        eyebrow="Live development workspace"
+        eyebrow={t("shell.liveDevelopmentWorkspace")}
         title={instructor ? t("operations.myCohorts.instructorTitle") : t("operations.myCohorts.learnerTitle")}
       />
       <div className="grid gap-4">

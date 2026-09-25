@@ -37,7 +37,7 @@ export function TaxonomyItemForm({ busy, item, kind, onCancel, onSubmit }: Props
   const slug = item?.slug ?? slugifyTaxonomyName(name);
   const submit = form.handleSubmit(async (values) => {
     if (!slug) {
-      form.setError("name", { message: "Use a name containing letters or numbers." });
+      form.setError("name", { message: t("resourceAdmin.taxonomy.nameLettersNumbers") });
       return;
     }
     await onSubmit({ ...values, slug });

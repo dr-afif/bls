@@ -46,7 +46,8 @@ export async function listAdminResourceCatalog(client: Client): Promise<AdminRes
     audiences: (audiences.data ?? []).filter((item) => item.resource_id === resource.id).map((item) => item.audience),
     auditEvents: (auditEvents.data ?? []).filter((event) => event.entity_id && entityIds.has(event.entity_id)).slice(0, 8).map((event) => ({
       action: event.action,
-      actorName: event.actor_user_id ? profileById.get(event.actor_user_id) ?? "Authorized system actor" : "System",
+      actorName: event.actor_user_id ? profileById.get(event.actor_user_id) ?? null : null,
+      actorUserId: event.actor_user_id,
       createdAt: event.created_at,
       id: event.id,
     })),
@@ -54,7 +55,7 @@ export async function listAdminResourceCatalog(client: Client): Promise<AdminRes
     availableUntil: resource.available_until,
     contentLanguage: resource.content_language,
     courseId: resource.course_id,
-    courseTitle: courseById.get(resource.course_id)?.title ?? "Course unavailable",
+    courseTitle: courseById.get(resource.course_id)?.title ?? null,
     courseTitleMs: courseById.get(resource.course_id)?.title_ms ?? null,
     currentVersionId: resource.current_version_id,
     estimatedMinutes: resource.estimated_minutes,

@@ -46,7 +46,7 @@ export function OperationsPeoplePage() {
           ) : undefined
         }
         description={t("operations.people.description")}
-        eyebrow="Live development workspace"
+        eyebrow={t("shell.liveDevelopmentWorkspace")}
         title={t("operations.people.title")}
       />
       <InviteUserDialog

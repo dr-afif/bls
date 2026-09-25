@@ -473,14 +473,69 @@ export type TranslationKey =
   | 'resourceAdmin.state.errorTitle'
   | 'resourceAdmin.state.errorDesc'
   | 'resourceAdmin.state.emptyTitle'
-  | 'resourceAdmin.state.emptyDesc';
+  | 'resourceAdmin.state.emptyDesc'
+  | 'common.slug'
+  | 'common.system'
+  | 'common.authorizedSystemActor'
+  | 'common.authorizedUser'
+  | 'shell.liveDevelopmentWorkspace'
+  | 'resource.library.eyebrow'
+  | 'resource.courseResource'
+  | 'resource.viewer.temporaryChecklistLegend'
+  | 'resourceAdmin.administratorWorkspace'
+  | 'resourceAdmin.resourceRecord'
+  | 'resourceAdmin.courseUnavailable'
+  | 'resourceAdmin.detail.workspaceDescription'
+  | 'resourceAdmin.detail.versionCreated'
+  | 'resourceAdmin.resources.filtersSectionAriaLabel'
+  | 'resourceAdmin.resources.showingCountTemplate'
+  | 'resourceAdmin.version.notFoundTitle'
+  | 'resourceAdmin.version.notFoundDesc'
+  | 'resourceAdmin.version.createFailedRetired'
+  | 'resourceAdmin.version.draftSavedNotice'
+  | 'resourceAdmin.version.draftSaveFailed'
+  | 'resourceAdmin.version.choosePdfNotice'
+  | 'resourceAdmin.version.pdfUploadedNotice'
+  | 'resourceAdmin.version.uploadFailedNotice'
+  | 'resourceAdmin.version.uploadingChecking'
+  | 'resourceAdmin.version.reviewSubmittedSuccess'
+  | 'resourceAdmin.version.reviewSubmittedFailure'
+  | 'resourceAdmin.version.discardConfirm'
+  | 'resourceAdmin.version.discardCleanupFailed'
+  | 'resourceAdmin.version.reviewRecordedSuccess'
+  | 'resourceAdmin.version.reviewRecordedFailure'
+  | 'resourceAdmin.version.approveSuccess'
+  | 'resourceAdmin.version.approveFailure'
+  | 'resourceAdmin.version.publishConfirm'
+  | 'resourceAdmin.version.publishSuccess'
+  | 'resourceAdmin.version.publishFailure'
+  | 'resourceAdmin.taxonomy.topicCreatedAudit'
+  | 'resourceAdmin.taxonomy.stageCreatedAudit'
+  | 'resourceAdmin.taxonomy.itemUpdatedAudit'
+  | 'resourceAdmin.taxonomy.itemDeactivatedAudit'
+  | 'resourceAdmin.taxonomy.itemActivatedAudit'
+  | 'resourceAdmin.taxonomy.deactivateConfirm'
+  | 'resourceAdmin.taxonomy.reassignWarning'
+  | 'resourceAdmin.taxonomy.inactiveHistoryNotice'
+  | 'resourceAdmin.taxonomy.checkingAccessTitle'
+  | 'resourceAdmin.taxonomy.checkingAccessDesc'
+  | 'resourceAdmin.taxonomy.accessUnavailableTitle'
+  | 'resourceAdmin.taxonomy.accessUnavailableDesc'
+  | 'resourceAdmin.taxonomy.safeguardsLabel'
+  | 'resourceAdmin.taxonomy.noDeletionTitle'
+  | 'resourceAdmin.taxonomy.noDeletionDesc'
+  | 'resourceAdmin.taxonomy.stableSlugsTitle'
+  | 'resourceAdmin.taxonomy.stableSlugsDesc'
+  | 'resourceAdmin.taxonomy.publicationSafeTitle'
+  | 'resourceAdmin.taxonomy.publicationSafeDesc'
+  | 'resourceAdmin.taxonomy.nameLettersNumbers';
 
 export type TranslationDictionary = Record<TranslationKey, string>;
 
 export interface I18nContextValue {
   locale: AppLocale;
   setLocale: (locale: AppLocale) => Promise<void>;
-  t: (key: TranslationKey) => string;
+  t: (key: TranslationKey, params?: Record<string, string | number>) => string;
   formatDate: (date: Date | string | number, options?: Intl.DateTimeFormatOptions) => string;
   formatDateTime: (date: Date | string | number, options?: Intl.DateTimeFormatOptions) => string;
   formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string;

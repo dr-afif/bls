@@ -68,7 +68,7 @@ export function OperationsCohortsAdminPage() {
           </Button>
         }
         description={t("operations.cohorts.description")}
-        eyebrow="Live development workspace"
+        eyebrow={t("shell.liveDevelopmentWorkspace")}
         title={t("operations.cohorts.title")}
       />
       <p aria-live="polite" className="text-sm text-info">{notice}</p>

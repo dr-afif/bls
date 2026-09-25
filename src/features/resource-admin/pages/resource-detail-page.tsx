@@ -41,7 +41,7 @@ export function ResourceDetailPage() {
     );
   }
 
-  const courseTitle = localizedText({ en: resource.courseTitle, ms: resource.courseTitleMs, locale });
+  const courseTitle = (resource.courseTitle ? localizedText({ en: resource.courseTitle, ms: resource.courseTitleMs, locale }) : null) ?? t("resourceAdmin.courseUnavailable");
 
   const updateClassifications = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -109,8 +109,11 @@ export function ResourceDetailPage() {
             )}
           </div>
         }
-        description={`${t(resourceTypeKey(resource.type))} for ${courseTitle}. Manage immutable versions and controlled publication from this workspace.`}
-        eyebrow="Resource record"
+        description={t("resourceAdmin.detail.workspaceDescription", {
+          course: courseTitle,
+          type: t(resourceTypeKey(resource.type)),
+        })}
+        eyebrow={t("resourceAdmin.resourceRecord")}
         title={resource.title}
       />
       <p aria-live="polite" className="text-sm font-medium text-info">{notice}</p>
@@ -182,7 +185,10 @@ export function ResourceDetailPage() {
                             )}
                           </div>
                           <p className="mt-2 text-sm text-muted-foreground">
-                            {version.title} · created {formatDateTime(version.createdAt, { dateStyle: "medium", timeStyle: "short" })}
+                            {t("resourceAdmin.detail.versionCreated", {
+                              date: formatDateTime(version.createdAt, { dateStyle: "medium", timeStyle: "short" }),
+                              title: version.title,
+                            })}
                           </p>
                         </div>
                         <Button asChild variant="outline">
@@ -261,7 +267,7 @@ export function ResourceDetailPage() {
             <CardContent>
               <dl className="space-y-3 text-sm">
                 <div>
-                  <dt className="font-semibold">Slug</dt>
+                  <dt className="font-semibold">{t("common.slug")}</dt>
                   <dd className="break-all text-muted-foreground">{resource.slug}</dd>
                 </div>
                 <div>
@@ -322,14 +328,18 @@ export function ResourceDetailPage() {
             <CardContent>
               {resource.auditEvents.length ? (
                 <ol className="space-y-3">
-                  {resource.auditEvents.map((event) => (
-                    <li className="border-l-2 border-primary/25 pl-3 text-sm" key={event.id}>
-                      <p className="font-semibold">{event.action.replaceAll(".", " · ").replaceAll("_", " ")}</p>
-                      <p className="mt-1 text-muted-foreground">
-                        {event.actorName} · {formatDateTime(event.createdAt, { dateStyle: "medium", timeStyle: "short" })}
-                      </p>
-                    </li>
-                  ))}
+                  {resource.auditEvents.map((event) => {
+                    const actorLabel = event.actorName
+                      ?? (event.actorUserId ? t("common.authorizedSystemActor") : t("common.system"));
+                    return (
+                      <li className="border-l-2 border-primary/25 pl-3 text-sm" key={event.id}>
+                        <p className="font-semibold">{event.action.replaceAll(".", " · ").replaceAll("_", " ")}</p>
+                        <p className="mt-1 text-muted-foreground">
+                          {actorLabel} · {formatDateTime(event.createdAt, { dateStyle: "medium", timeStyle: "short" })}
+                        </p>
+                      </li>
+                    );
+                  })}
                 </ol>
               ) : (
                 <p className="text-sm text-muted-foreground">{t("resourceAdmin.detail.noRecentAudit")}</p>

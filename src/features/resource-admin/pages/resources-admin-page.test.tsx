@@ -60,6 +60,29 @@ const mockCatalog: AdminResourceCatalog = {
       updatedAt: "2026-09-24T00:00:00Z",
       versions: [],
     },
+    {
+      id: "res-3",
+      organizationId: "org-1",
+      courseId: "course-deleted",
+      courseTitle: null,
+      courseTitleMs: null,
+      currentVersionId: "ver-3",
+      title: "Orphaned Protocol",
+      slug: "orphaned-protocol",
+      type: "checklist",
+      status: "published",
+      contentLanguage: "bilingual",
+      estimatedMinutes: 3,
+      featured: false,
+      audiences: ["learner"],
+      topics: [],
+      stages: [],
+      availableFrom: null,
+      availableUntil: null,
+      auditEvents: [],
+      updatedAt: "2026-09-24T00:00:00Z",
+      versions: [],
+    },
   ],
   stages: [],
   topics: [],
@@ -80,8 +103,13 @@ function renderWithLocale(locale: "en" | "ms") {
     setLocale: vi.fn(),
     isUpdatingPreference: false,
     preferenceError: null,
-    t: (key: string) => {
+    t: (key: string, params?: Record<string, string | number>) => {
       const enDict: Record<string, string> = {
+        "common.status": "Status",
+        "resourceAdmin.resources.eyebrow": "Resource Administration",
+        "resourceAdmin.resources.filtersSectionAriaLabel": "Resource filters and search",
+        "resourceAdmin.resources.showingCountTemplate": "Showing {count} of {total} resources.",
+        "resourceAdmin.courseUnavailable": "Course unavailable",
         "resourceAdmin.resources.title": "Resources",
         "resourceAdmin.resources.description": "Manage course materials",
         "resourceAdmin.resources.searchLabel": "Search resources",
@@ -102,6 +130,9 @@ function renderWithLocale(locale: "en" | "ms") {
         "resourceAdmin.resources.bookmarkNotice": "Filters preserved in URL",
         "resourceAdmin.resources.showingCount": "resources",
         "resourceAdmin.resources.notAssigned": "None",
+        "resourceAdmin.resources.versions": "Versions",
+        "resourceAdmin.resources.total": "total",
+        "resourceAdmin.resources.inactive": "inactive",
         "resourceType.guide": "Guide",
         "resourceType.pdf": "Document",
         "resourceStatus.published": "Published",
@@ -110,10 +141,16 @@ function renderWithLocale(locale: "en" | "ms") {
         "resourceAudience.learner": "Learners",
         "resourceAudience.instructor": "Instructors",
         "resource.featured": "Featured",
+        "resource.library.filterType": "Type",
         "resource.library.filterTopic": "BLS topic",
         "resource.library.filterStage": "Teaching stage",
       };
       const msDict: Record<string, string> = {
+        "common.status": "Status",
+        "resourceAdmin.resources.eyebrow": "Pentadbiran Sumber",
+        "resourceAdmin.resources.filtersSectionAriaLabel": "Penapis dan carian sumber",
+        "resourceAdmin.resources.showingCountTemplate": "Menunjukkan {count} daripada {total} sumber.",
+        "resourceAdmin.courseUnavailable": "Kursus tidak tersedia",
         "resourceAdmin.resources.title": "Sumber",
         "resourceAdmin.resources.description": "Urus bahan kursus",
         "resourceAdmin.resources.searchLabel": "Cari sumber",
@@ -134,6 +171,9 @@ function renderWithLocale(locale: "en" | "ms") {
         "resourceAdmin.resources.bookmarkNotice": "Penapis dikekalkan dalam URL",
         "resourceAdmin.resources.showingCount": "sumber",
         "resourceAdmin.resources.notAssigned": "Tiada",
+        "resourceAdmin.resources.versions": "Versi",
+        "resourceAdmin.resources.total": "jumlah",
+        "resourceAdmin.resources.inactive": "tidak aktif",
         "resourceType.guide": "Panduan",
         "resourceType.pdf": "Dokumen",
         "resourceStatus.published": "Diterbitkan",
@@ -142,11 +182,18 @@ function renderWithLocale(locale: "en" | "ms") {
         "resourceAudience.learner": "Pelajar",
         "resourceAudience.instructor": "Pengajar",
         "resource.featured": "Pilihan",
+        "resource.library.filterType": "Jenis",
         "resource.library.filterTopic": "Topik BLS",
         "resource.library.filterStage": "Peringkat pengajaran",
       };
       const dict = locale === "ms" ? msDict : enDict;
-      return dict[key] ?? key;
+      let text = dict[key] ?? key;
+      if (params) {
+        for (const [pKey, pVal] of Object.entries(params)) {
+          text = text.replaceAll(`{${pKey}}`, String(pVal));
+        }
+      }
+      return text;
     },
     formatDate: (val: string | number | Date) => new Date(val).toLocaleDateString(),
     formatDateTime: (val: string | number | Date) => new Date(val).toLocaleString(),
@@ -169,15 +216,20 @@ describe("ResourcesAdminPage bilingual rendering and search", () => {
     expect(screen.getByRole("heading", { name: "Adult CPR Guide" })).toBeInTheDocument();
     expect(screen.getByText(/adult-cpr-guide · Basic Life Support/)).toBeInTheDocument();
     expect(screen.getByText(/defib-protocols · Advanced Resuscitation/)).toBeInTheDocument();
+    expect(screen.getByText(/orphaned-protocol · Course unavailable/)).toBeInTheDocument();
+    expect(screen.getByText("Showing 3 of 3 resources.")).toBeInTheDocument();
   });
 
-  it("renders Bahasa Melayu course title when present, falling back to English when null", () => {
+  it("renders Bahasa Melayu course title when present, falling back to English when null, and fallback string when both null", () => {
     renderWithLocale("ms");
 
     // res-1 has courseTitleMs "Bantuan Hayat Asas"
     expect(screen.getByText(/adult-cpr-guide · Bantuan Hayat Asas/)).toBeInTheDocument();
     // res-2 has courseTitleMs null, so it falls back to "Advanced Resuscitation"
     expect(screen.getByText(/defib-protocols · Advanced Resuscitation/)).toBeInTheDocument();
+    // res-3 has courseTitle null and courseTitleMs null, so it falls back to localized "Kursus tidak tersedia"
+    expect(screen.getByText(/orphaned-protocol · Kursus tidak tersedia/)).toBeInTheDocument();
+    expect(screen.getByText("Menunjukkan 3 daripada 3 sumber.")).toBeInTheDocument();
   });
 
   it("renders content language badges for each resource", () => {

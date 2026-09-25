@@ -122,7 +122,7 @@ export function ResourceNewPage() {
           </Button>
         }
         description={t("resourceAdmin.new.description")}
-        eyebrow="Administrator workspace"
+        eyebrow={t("resourceAdmin.administratorWorkspace")}
         title={t("resourceAdmin.new.title")}
       />
       <p aria-live="polite" className="text-sm font-medium text-destructive">{notice}</p>

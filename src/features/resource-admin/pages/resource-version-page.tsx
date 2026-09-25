@@ -40,8 +40,8 @@ export function ResourceVersionPage() {
       <StatePanel
         as="h1"
         kind="error"
-        title="Version not found"
-        description="This version is unavailable to your administrator account or no longer exists."
+        title={t("resourceAdmin.version.notFoundTitle")}
+        description={t("resourceAdmin.version.notFoundDesc")}
       />
     );
   }
@@ -50,26 +50,26 @@ export function ResourceVersionPage() {
     setNotice("");
     try {
       await mutations.updateDraft.mutateAsync({ values, versionId });
-      setNotice("Draft content saved and audit recorded.");
+      setNotice(t("resourceAdmin.version.draftSavedNotice"));
     } catch {
-      setNotice("The draft could not be saved. Submitted and approved versions are immutable.");
+      setNotice(t("resourceAdmin.version.draftSaveFailed"));
     }
   };
 
   const upload = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const file = new FormData(event.currentTarget).get("pdf") as File | null;
-    if (!file || file.size === 0 || !version.storagePath) return setNotice("Choose one PDF file to upload.");
+    if (!file || file.size === 0 || !version.storagePath) return setNotice(t("resourceAdmin.version.choosePdfNotice"));
     try {
       await mutations.uploadPdf.mutateAsync({ file, path: version.storagePath });
-      setNotice("Private PDF uploaded to the server-issued path.");
+      setNotice(t("resourceAdmin.version.pdfUploadedNotice"));
       void pdfStatus.refetch();
     } catch {
       try {
         await mutations.discard.mutateAsync({ storagePath: version.storagePath, versionId: version.id });
         navigate(`/app/admin/resources/${resource.id}`, { replace: true });
       } catch {
-        setNotice("Upload failed and automatic cleanup was interrupted. This draft remains visible; use Discard draft to retry exact-path cleanup.");
+        setNotice(t("resourceAdmin.version.uploadFailedNotice"));
       }
     }
   };
@@ -193,7 +193,7 @@ export function ResourceVersionPage() {
                   >
                     <Upload aria-hidden="true" />
                     {mutations.uploadPdf.isPending || mutations.discard.isPending
-                      ? "Uploading and checking…"
+                      ? t("resourceAdmin.version.uploadingChecking")
                       : t("resourceAdmin.version.uploadPrivatePdf")}
                   </Button>
                 </form>
@@ -224,8 +224,8 @@ export function ResourceVersionPage() {
                     onClick={() =>
                       void run(
                         () => mutations.submitForReview.mutateAsync(version.id),
-                        "Version submitted for review and audit recorded.",
-                        "Submission failed. Confirm required content and the private PDF are ready.",
+                        t("resourceAdmin.version.reviewSubmittedSuccess"),
+                        t("resourceAdmin.version.reviewSubmittedFailure"),
                       )
                     }
                   >
@@ -236,11 +236,11 @@ export function ResourceVersionPage() {
                     className="w-full"
                     disabled={mutations.discard.isPending}
                     onClick={() => {
-                      if (!window.confirm("Discard this draft version and its private PDF, if present? This cannot be undone.")) return;
+                      if (!window.confirm(t("resourceAdmin.version.discardConfirm"))) return;
                       void mutations.discard
                         .mutateAsync({ storagePath: version.storagePath, versionId: version.id })
                         .then(() => navigate(`/app/admin/resources/${resource.id}`, { replace: true }))
-                        .catch(() => setNotice("Draft cleanup failed. No approved or current version can be discarded."));
+                        .catch(() => setNotice(t("resourceAdmin.version.discardCleanupFailed")));
                     }}
                     variant="danger"
                   >
@@ -261,8 +261,8 @@ export function ResourceVersionPage() {
                             nextReviewAt: new Date(`${value}T23:59:59`).toISOString(),
                             versionId: version.id,
                           }),
-                        "Review evidence recorded and audit updated.",
-                        "Review could not be recorded. Choose a future review date.",
+                        t("resourceAdmin.version.reviewRecordedSuccess"),
+                        t("resourceAdmin.version.reviewRecordedFailure"),
                       );
                     }}
                   >
@@ -281,8 +281,8 @@ export function ResourceVersionPage() {
                     onClick={() =>
                       void run(
                         () => mutations.approve.mutateAsync(version.id),
-                        "Version approved and audit recorded.",
-                        "Approval failed. Complete review evidence and guideline metadata first.",
+                        t("resourceAdmin.version.approveSuccess"),
+                        t("resourceAdmin.version.approveFailure"),
                       )
                     }
                   >
@@ -300,11 +300,11 @@ export function ResourceVersionPage() {
                     className="w-full"
                     disabled={mutations.publish.isPending}
                     onClick={() => {
-                      if (!window.confirm("Publish this approved version as the current catalogue version?")) return;
+                      if (!window.confirm(t("resourceAdmin.version.publishConfirm"))) return;
                       void run(
                         () => mutations.publish.mutateAsync({ resourceId: resource.id, versionId: version.id }),
-                        "Version published as current and audit recorded.",
-                        "Publication failed. Check audience, topic, teaching-stage, and private PDF requirements.",
+                        t("resourceAdmin.version.publishSuccess"),
+                        t("resourceAdmin.version.publishFailure"),
                       );
                     }}
                   >

@@ -6,7 +6,15 @@ import { DEFAULT_LOCALE, type I18nContextValue } from './types';
 export const defaultContextValue: I18nContextValue = {
   locale: DEFAULT_LOCALE,
   setLocale: async () => {},
-  t: (key) => en[key] ?? key,
+  t: (key, params) => {
+    let translated = en[key] ?? key;
+    if (params) {
+      for (const [pKey, pVal] of Object.entries(params)) {
+        translated = translated.replaceAll(`{${pKey}}`, String(pVal));
+      }
+    }
+    return translated;
+  },
   formatDate: (d, opt) => formatDate(d, DEFAULT_LOCALE, opt),
   formatDateTime: (d, opt) => formatDateTime(d, DEFAULT_LOCALE, opt),
   formatNumber: (n, opt) => formatNumber(n, DEFAULT_LOCALE, opt),

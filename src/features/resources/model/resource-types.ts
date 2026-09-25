@@ -51,10 +51,3 @@ export type CourseResource = {
   teachingStages: TeachingStage[];
   relatedResourceIds: string[];
 };
-
-export const resourceTypeLabels: Record<ResourceType, string> = {
-  guide: "Guide",
-  checklist: "Checklist",
-  pdf: "Document",
-  youtube_video: "Video",
-};

@@ -66,7 +66,7 @@ export function LiveResourceViewerPage({ adminPreview = false, scope }: { adminP
 
   const resource = catalog.resource;
   const related = (catalog.data ?? []).filter(({ id }) => resource.relatedResourceIds.includes(id));
-  const sourceLabel = resource.guidelineSource ?? "Course resource";
+  const sourceLabel = resource.guidelineSource ?? t("resource.courseResource");
 
   return (
     <div className={presentationMode ? "fixed inset-0 z-[200] overflow-y-auto bg-background p-4 sm:p-8" : "space-y-7"}>
@@ -128,7 +128,7 @@ export function LiveResourceViewerPage({ adminPreview = false, scope }: { adminP
           </CardHeader>
           <CardContent>
             <fieldset>
-              <legend className="sr-only">Temporary checklist items</legend>
+              <legend className="sr-only">{t("resource.viewer.temporaryChecklistLegend")}</legend>
               <div className="divide-y">
                 {resource.content.items.map((item) => {
                   const checked = checkedItems.includes(item);
